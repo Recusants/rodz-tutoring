@@ -163,6 +163,12 @@
           </span>
         </div>
 
+        <div style="margin-bottom: 12px; display: flex; justify-content: flex-end;">
+          <a href="{% url 'wallet:coin_history' %}?view=all&user_id={{ target_user.id }}" class="btn outline small" style="font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> View {{ target_user.full_name|default:target_user.email }}'s Coin History &rarr;
+          </a>
+        </div>
+
         <form method="POST" style="background: var(--soft); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--line);">
           {% csrf_token %}
           <input type="hidden" name="action" value="adjust_wallet">

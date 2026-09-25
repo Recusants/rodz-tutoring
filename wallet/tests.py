@@ -162,3 +162,60 @@ class WalletTestCase(TestCase):
         wallet = StudentWallet.objects.get(user=self.user)
         self.assertEqual(wallet.coins, 75)
 
+    def test_student_personal_coin_history(self):
+        wallet = StudentWallet.objects.get(user=self.user)
+        wallet.credit_coins(50, description="Welcome gift bonus", transaction_type='BONUS')
+
+        self.client.login(email='walletuser@example.com', password='Password123!')
+        url = reverse('wallet:coin_history')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'MY COIN TRANSACTION HISTORY')
+        self.assertContains(response, 'Welcome gift bonus')
+        self.assertContains(response, '+50 Coins')
+
+    def test_admin_global_coin_transactions_ledger(self):
+        # Create a second student with transactions
+        other_student = CustomUser.objects.create_user(
+            email='other_learner@example.com',
+            password='Password123!',
+            is_student=True
+        )
+        other_wallet = StudentWallet.objects.get(user=other_student)
+        other_wallet.credit_coins(120, description="Term booster deposit", transaction_type='PAYMENT_APPROVED')
+
+        self.client.login(email='adminuser@example.com', password='AdminPassword123!')
+        # Admin accessing global ledger
+        url = reverse('wallet:coin_history')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'GLOBAL COIN TRANSACTIONS LEDGER')
+        self.assertContains(response, 'other_learner@example.com')
+        self.assertContains(response, 'Term booster deposit')
+        self.assertContains(response, 'Coins in Circulation')
+
+    def test_coin_history_filtering_and_search(self):
+        wallet = StudentWallet.objects.get(user=self.user)
+        wallet.credit_coins(80, description="Maths competition award", transaction_type='ADMIN_CREDIT')
+        wallet.debit_coins(30, description="Science Pack Unlock", transaction_type='CONTENT_UNLOCK')
+
+        self.client.login(email='adminuser@example.com', password='AdminPassword123!')
+        url = reverse('wallet:coin_history')
+
+        # Filter by CREDIT
+        res_credit = self.client.get(f"{url}?type=CREDIT")
+        self.assertEqual(res_credit.status_code, 200)
+        self.assertContains(res_credit, 'Maths competition award')
+
+        # Search by description
+        res_search = self.client.get(f"{url}?q=Science+Pack")
+        self.assertEqual(res_search.status_code, 200)
+        self.assertContains(res_search, 'Science Pack Unlock')
+        self.assertNotContains(res_search, 'Maths competition award')
+
+        # Filter by specific user
+        res_user = self.client.get(f"{url}?user_id={self.user.id}")
+        self.assertEqual(res_user.status_code, 200)
+        self.assertContains(res_user, self.user.email)
+
+

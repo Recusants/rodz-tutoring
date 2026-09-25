@@ -1,8 +1,11 @@
+import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Sum, Q
+from django.core.paginator import Paginator
 from urllib.parse import quote
 from .models import StudentWallet, ContentUnlock, CourseUnlock, CoinTransaction, CoinBundle, PaymentMethod, CoinPaymentRequest
 from .forms import CoinPaymentActivationForm
@@ -91,7 +94,7 @@ def unlock_item_view(request, item_slug):
             return redirect('wallet:buy_coins')
 
         # Deduct coins and create unlock record
-        wallet.debit_coins(item.coin_price, description=f"Unlocked: {item.title}")
+        wallet.debit_coins(item.coin_price, description=f"Unlocked: {item.title}", transaction_type='CONTENT_UNLOCK')
         ContentUnlock.objects.create(
             user=request.user,
             content_item=item,
@@ -135,7 +138,7 @@ def unlock_course_view(request, course_slug):
 
         # Debit coins
         if final_price > 0:
-            wallet.debit_coins(final_price, description=f"Course Bundle Unlock: {course.title}")
+            wallet.debit_coins(final_price, description=f"Course Bundle Unlock: {course.title}", transaction_type='COURSE_UNLOCK')
 
         course_unlock = CourseUnlock.objects.create(
             user=request.user,
@@ -209,7 +212,7 @@ def admin_payment_requests_view(request):
                 student_wallet, _ = StudentWallet.objects.get_or_create(user=coin_req.student)
                 bundle_title = coin_req.bundle.name if coin_req.bundle else 'Coin Pack'
                 tx_desc = f"Payment Approved: {bundle_title} (Ref: {coin_req.reference_number})"
-                student_wallet.credit_coins(coin_req.coins_to_credit, description=tx_desc, admin_user=request.user)
+                student_wallet.credit_coins(coin_req.coins_to_credit, description=tx_desc, admin_user=request.user, transaction_type='PAYMENT_APPROVED')
 
                 messages.success(
                     request,
@@ -275,3 +278,131 @@ def admin_credit_panel_view(request):
         'search_query': search_query,
         'recent_transactions': recent_transactions,
     })
+
+
+@login_required
+def coin_history_view(request):
+    """
+    Dedicated Coin History & Global Ledger page.
+    - Admins see comprehensive platform ledger across ALL users with a wallet.
+    - Students / Tutors see their personal coin transaction ledger.
+    - Admins can toggle between 'all' users and 'my' personal wallet.
+    - Supports full-text search, type filtering, date filtering, sorting, and pagination.
+    """
+    user = request.user
+    active_role = request.session.get('active_role_mode', user.default_role_mode)
+    is_admin = (active_role == 'admin') and (user.is_admin_role or user.is_staff or user.is_superuser)
+
+    # Determine view scope: 'all' (all users' wallets) or 'my' (current user)
+    requested_view = request.GET.get('view')
+    if is_admin:
+        view_scope = requested_view if requested_view in ['all', 'my'] else 'all'
+    else:
+        view_scope = 'my'
+
+    # Base Queryset
+    if view_scope == 'all':
+        transactions_qs = CoinTransaction.objects.select_related('wallet__user', 'created_by').all()
+    else:
+        wallet, _ = StudentWallet.objects.get_or_create(user=user)
+        transactions_qs = CoinTransaction.objects.select_related('wallet__user', 'created_by').filter(wallet=wallet)
+
+    # Search filter (User name/email or transaction description)
+    q = request.GET.get('q', '').strip()
+    if q:
+        transactions_qs = transactions_qs.filter(
+            Q(wallet__user__email__icontains=q) |
+            Q(wallet__user__full_name__icontains=q) |
+            Q(description__icontains=q)
+        )
+
+    # Specific user filter (for admin inspecting a specific learner's wallet)
+    user_id = request.GET.get('user_id', '').strip()
+    target_user = None
+    if user_id and is_admin:
+        try:
+            target_user = CustomUser.objects.get(id=user_id)
+            transactions_qs = transactions_qs.filter(wallet__user=target_user)
+        except (CustomUser.DoesNotExist, ValueError):
+            pass
+
+    # Type filter: 'ALL', 'CREDIT', 'DEBIT', or specific transaction_type code
+    type_filter = request.GET.get('type', 'ALL').strip().upper()
+    if type_filter and type_filter != 'ALL':
+        if type_filter == 'CREDIT':
+            transactions_qs = transactions_qs.filter(amount__gt=0)
+        elif type_filter == 'DEBIT':
+            transactions_qs = transactions_qs.filter(amount__lt=0)
+        else:
+            transactions_qs = transactions_qs.filter(transaction_type=type_filter)
+
+    # Time / days filter
+    days_filter = request.GET.get('days', 'ALL').strip().upper()
+    if days_filter and days_filter != 'ALL':
+        try:
+            days_int = int(days_filter)
+            since = timezone.now() - datetime.timedelta(days=days_int)
+            transactions_qs = transactions_qs.filter(created_at__gte=since)
+        except ValueError:
+            pass
+
+    # Ordering
+    sort = request.GET.get('sort', 'newest')
+    if sort == 'oldest':
+        transactions_qs = transactions_qs.order_by('created_at')
+    elif sort == 'highest':
+        transactions_qs = transactions_qs.order_by('-amount')
+    elif sort == 'lowest':
+        transactions_qs = transactions_qs.order_by('amount')
+    else:
+        transactions_qs = transactions_qs.order_by('-created_at')
+
+    # Platform-wide statistics (for all wallets)
+    all_wallets = StudentWallet.objects.select_related('user')
+    total_wallets_count = all_wallets.count()
+    coins_in_circulation = all_wallets.aggregate(total=Sum('coins'))['total'] or 0
+
+    all_tx = CoinTransaction.objects.all()
+    global_total_credited = all_tx.filter(amount__gt=0).aggregate(total=Sum('amount'))['total'] or 0
+    global_total_debited = abs(all_tx.filter(amount__lt=0).aggregate(total=Sum('amount'))['total'] or 0)
+    global_total_tx_count = all_tx.count()
+
+    # User's personal stats
+    user_wallet, _ = StudentWallet.objects.get_or_create(user=user)
+    my_tx = CoinTransaction.objects.filter(wallet=user_wallet)
+    my_total_credited = my_tx.filter(amount__gt=0).aggregate(total=Sum('amount'))['total'] or 0
+    my_total_debited = abs(my_tx.filter(amount__lt=0).aggregate(total=Sum('amount'))['total'] or 0)
+    my_total_tx_count = my_tx.count()
+
+    # Pagination: 25 items per page
+    paginator = Paginator(transactions_qs, 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # All users that have a wallet (for quick jump dropdown in admin mode)
+    wallets_list = all_wallets.order_by('user__email')[:100] if is_admin else []
+
+    return render(request, 'wallet/coin_history.html', {
+        'page_obj': page_obj,
+        'transactions': page_obj.object_list,
+        'view_scope': view_scope,
+        'is_admin': is_admin,
+        'q': q,
+        'type_filter': type_filter,
+        'days_filter': days_filter,
+        'sort': sort,
+        'target_user': target_user,
+        'wallets_list': wallets_list,
+        # Stat counters
+        'total_wallets_count': total_wallets_count,
+        'coins_in_circulation': coins_in_circulation,
+        'global_total_credited': global_total_credited,
+        'global_total_debited': global_total_debited,
+        'global_total_tx_count': global_total_tx_count,
+        'my_wallet': user_wallet,
+        'my_total_credited': my_total_credited,
+        'my_total_debited': my_total_debited,
+        'my_total_tx_count': my_total_tx_count,
+        'TYPE_CHOICES': CoinTransaction.TYPE_CHOICES,
+    })
+

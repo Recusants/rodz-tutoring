@@ -1,0 +1,500 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if view_scope == 'all' %}Global Coin Transactions Ledger | Rodz Tutoring Admin{% else %}My Coin Transaction History | Rodz Tutoring{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .ledger-stat-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ledger-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .stat-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .badge-credit {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  .badge-debit {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  .badge-neutral {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+  }
+  .tx-amount-plus {
+    color: #16a34a;
+    font-weight: 800;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tx-amount-minus {
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 1240px; margin: 0 auto;">
+
+  <!-- Header & Eyebrow -->
+  <div class="section-heading">
+    <div class="eyebrow" style="color: #b45309; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      {% if view_scope == 'all' %}PLATFORM AUDIT & LEDGER{% else %}STUDENT WALLET LEDGER{% endif %}
+    </div>
+    <h2>
+      {% if view_scope == 'all' %}GLOBAL COIN TRANSACTIONS LEDGER{% else %}MY COIN TRANSACTION HISTORY{% endif %}
+    </h2>
+    <p>
+      {% if view_scope == 'all' %}
+        Complete ledger detailing all coin deposits, resource unlocks, refunds, and balances for every user with a wallet.
+      {% else %}
+        Review your personal coin earnings, activation top-ups, study pack unlocks, and current balance.
+      {% endif %}
+    </p>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Admin View Scope Switcher (Toggle between All Users and My Wallet) -->
+  {% if is_admin %}
+    <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Ledger Scope:</span>
+        <a href="?view=all" class="btn {% if view_scope == 'all' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-users"></i> All Users' Wallets (Platform Ledger)
+        </a>
+        <a href="?view=my" class="btn {% if view_scope == 'my' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-user"></i> My Personal Wallet
+        </a>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <a href="{% url 'wallet:admin_credit_panel' %}" class="btn outline small" style="font-size: 11px;">
+          <i class="fa-solid fa-plus-circle" style="color: var(--green);"></i> Manual Credit
+        </a>
+        <a href="{% url 'wallet:admin_payment_requests' %}" class="btn outline small" style="font-size: 11px;">
+          <i class="fa-solid fa-receipt" style="color: var(--gold);"></i> Payment Proofs
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Targeted User Banner (When Admin filters specifically for 1 user) -->
+  {% if target_user %}
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="fa-solid fa-user-check" style="font-size: 22px; color: #2563eb;"></i>
+        <div>
+          <div style="font-size: 14px; font-weight: 800; color: #1e40af;">
+            Filtered by User: {{ target_user.full_name|default:target_user.email }}
+          </div>
+          <div style="font-size: 12px; color: #3b82f6;">
+            Email: <b>{{ target_user.email }}</b> &bull; Role: {{ target_user.roles_display }} &bull; Current Balance: <b>{{ target_user.wallet.coins }} Coins</b>
+          </div>
+        </div>
+      </div>
+      <div>
+        <a href="?view={{ view_scope }}" class="btn outline small" style="background: #fff; font-size: 11px;">
+          <i class="fa-solid fa-xmark"></i> Clear User Filter
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Summary Statistics Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-bottom: 30px;">
+    {% if view_scope == 'all' %}
+      <!-- Stat 1: Total Wallets -->
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #e0f2fe; color: #0284c7;">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;">Total Wallets</div>
+          <div style="font-size: 24px; font-weight: 800; color: var(--blue);">{{ total_wallets_count }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Registered accounts</div>
+        </div>
+      </div>
+
+      <!-- Stat 2: Coins in Circulation -->
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #fef3c7; color: #d97706;">
+          <i class="fa-solid fa-coins"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;">Coins in Circulation</div>
+          <div style="font-size: 24px; font-weight: 800; color: #b45309;">{{ coins_in_circulation }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Held across all wallets</div>
+        </div>
+      </div>
+
+      <!-- Stat 3: Total Credited All-Time -->
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #dcfce7; color: #16a34a;">
+          <i class="fa-solid fa-arrow-trend-up"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;">Total Credited</div>
+          <div style="font-size: 24px; font-weight: 800; color: #15803d;">+{{ global_total_credited }}</div>
+          <div style="font-size: 11px; color: var(--muted);">EFT + admin topups</div>
+        </div>
+      </div>
+
+      <!-- Stat 4: Total Spent All-Time -->
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #fee2e2; color: #dc2626;">
+          <i class="fa-solid fa-arrow-trend-down"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;">Total Spent</div>
+          <div style="font-size: 24px; font-weight: 800; color: #b91c1c;">-{{ global_total_debited }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Content unlocks & fees</div>
+        </div>
+      </div>
+
+      <!-- Stat 5: Total Transactions -->
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #ede9fe; color: #7c3aed;">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;">Total Entries</div>
+          <div style="font-size: 24px; font-weight: 800; color: #6d28d9;">{{ global_total_tx_count }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Audited transactions</div>
+        </div>
+      </div>
+    {% else %}
+      <!-- Student Personal Stats -->
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #fef3c7; color: #d97706;">
+          <i class="fa-solid fa-coins"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Current Balance</div>
+          <div style="font-size: 28px; font-weight: 800; color: var(--blue);">{{ my_wallet.coins }} <span style="font-size: 14px; font-weight: 600; color: var(--muted);">Coins</span></div>
+        </div>
+      </div>
+
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #dcfce7; color: #16a34a;">
+          <i class="fa-solid fa-plus-circle"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Total Coins Added</div>
+          <div style="font-size: 24px; font-weight: 800; color: #15803d;">+{{ my_total_credited }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Purchased / Credited</div>
+        </div>
+      </div>
+
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #fee2e2; color: #dc2626;">
+          <i class="fa-solid fa-unlock-keyhole"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Total Coins Spent</div>
+          <div style="font-size: 24px; font-weight: 800; color: #b91c1c;">-{{ my_total_debited }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Resource Unlocks</div>
+        </div>
+      </div>
+
+      <div class="ledger-stat-card">
+        <div class="stat-icon-box" style="background: #e0f2fe; color: #0284c7;">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Activity Records</div>
+          <div style="font-size: 24px; font-weight: 800; color: #0369a1;">{{ my_total_tx_count }}</div>
+          <div style="font-size: 11px; color: var(--muted);">Total operations</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 26px; box-shadow: var(--shadow-sm);">
+    <form method="GET" style="display: flex; flex-direction: column; gap: 16px;">
+      <input type="hidden" name="view" value="{{ view_scope }}">
+      {% if target_user %}
+        <input type="hidden" name="user_id" value="{{ target_user.id }}">
+      {% endif %}
+
+      <!-- Top Row: Search and Sort -->
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 10px; flex-grow: 1; max-width: 600px;">
+          <div style="position: relative; flex-grow: 1;">
+            <input 
+              type="text" 
+              name="q" 
+              value="{{ q }}" 
+              placeholder="Search by learner name, email, or transaction note..." 
+              class="input-control" 
+              style="padding-left: 36px; font-size: 13px;"
+            >
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 12px; color: var(--muted);"></i>
+          </div>
+          <button type="submit" class="btn primary small" style="padding: 10px 18px;">
+            Search
+          </button>
+          {% if q or type_filter != 'ALL' or days_filter != 'ALL' or sort != 'newest' %}
+            <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}" class="btn outline small" style="padding: 10px 14px; color: var(--muted);">
+              Reset
+            </a>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <label style="font-size: 12px; color: var(--muted); font-weight: 700;">Sort By:</label>
+          <select name="sort" class="input-control" style="width: auto; font-size: 12px; padding: 6px 12px;" onchange="this.form.submit()">
+            <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+            <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+            <option value="highest" {% if sort == 'highest' %}selected{% endif %}>Highest Amount</option>
+            <option value="lowest" {% if sort == 'lowest' %}selected{% endif %}>Lowest Amount</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Bottom Row: Type and Time Filter Pills -->
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border-top: 1px solid var(--line); padding-top: 14px;">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+          <span style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-right: 4px;">Type:</span>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=ALL&days={{ days_filter }}" class="btn {% if type_filter == 'ALL' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            All ({{ page_obj.paginator.count }})
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=CREDIT&days={{ days_filter }}" class="btn {% if type_filter == 'CREDIT' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            <i class="fa-solid fa-arrow-down-left" style="color: #10b981;"></i> Credits (+)
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=DEBIT&days={{ days_filter }}" class="btn {% if type_filter == 'DEBIT' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            <i class="fa-solid fa-arrow-up-right" style="color: #ef4444;"></i> Debits (-)
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=CONTENT_UNLOCK&days={{ days_filter }}" class="btn {% if type_filter == 'CONTENT_UNLOCK' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            Single Unlocks
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=COURSE_UNLOCK&days={{ days_filter }}" class="btn {% if type_filter == 'COURSE_UNLOCK' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            Course Bundles
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=ADMIN_CREDIT&days={{ days_filter }}" class="btn {% if type_filter == 'ADMIN_CREDIT' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            Admin Credits
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=PAYMENT_APPROVED&days={{ days_filter }}" class="btn {% if type_filter == 'PAYMENT_APPROVED' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            EFT / POP Approved
+          </a>
+        </div>
+
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-left: auto;">
+          <span style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-right: 4px;">Time:</span>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type={{ type_filter }}&days=ALL" class="btn {% if days_filter == 'ALL' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            All Time
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type={{ type_filter }}&days=1" class="btn {% if days_filter == '1' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            Today
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type={{ type_filter }}&days=7" class="btn {% if days_filter == '7' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            7 Days
+          </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type={{ type_filter }}&days=30" class="btn {% if days_filter == '30' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            30 Days
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Transactions Table Card -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 30px;">
+    {% if transactions %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--soft); color: var(--blue); border-bottom: 2px solid var(--line);">
+              <th style="padding: 14px 18px;">Date & Time</th>
+              {% if view_scope == 'all' %}
+                <th style="padding: 14px 18px;">Wallet Owner / Learner</th>
+                <th style="padding: 14px 18px;">Current Balance</th>
+              {% endif %}
+              <th style="padding: 14px 18px;">Transaction Type</th>
+              <th style="padding: 14px 18px;">Coins Amount</th>
+              <th style="padding: 14px 18px;">Description & Reference</th>
+              <th style="padding: 14px 18px;">Authorized By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tx in transactions %}
+              <tr style="border-bottom: 1px solid var(--line); transition: background 0.15s ease;" onmouseover="this.style.background='var(--soft)'" onmouseout="this.style.background='transparent'">
+                
+                <!-- Date & Time -->
+                <td style="padding: 14px 18px; white-space: nowrap;">
+                  <div style="font-weight: 700; color: var(--text);">
+                    {{ tx.created_at|date:"d M Y" }}
+                  </div>
+                  <div style="font-size: 11px; color: var(--muted);">
+                    {{ tx.created_at|time:"H:i" }}
+                  </div>
+                </td>
+
+                <!-- Wallet Owner (when in global all users mode) -->
+                {% if view_scope == 'all' %}
+                  <td style="padding: 14px 18px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <span class="avatar-circle" style="width: 32px; height: 32px; font-size: 12px; background: var(--blue); color: #fff;">
+                        {{ tx.wallet.user.full_name|default:tx.wallet.user.email|slice:":1"|upper }}
+                      </span>
+                      <div>
+                        <div style="font-weight: 700; color: var(--blue);">
+                          {{ tx.wallet.user.full_name|default:tx.wallet.user.email }}
+                        </div>
+                        <div style="font-size: 11px; color: var(--muted);">
+                          {{ tx.wallet.user.email }}
+                        </div>
+                        <div style="margin-top: 2px;">
+                          <a href="?view=all&user_id={{ tx.wallet.user.id }}" style="font-size: 10px; color: #2563eb; font-weight: 700; text-decoration: underline;">
+                            <i class="fa-solid fa-filter"></i> Filter this user
+                          </a>
+                          {% if is_admin %}
+                            &bull;
+                            <a href="{% url 'accounts:admin_user_detail' tx.wallet.user.id %}" target="_blank" style="font-size: 10px; color: var(--muted); text-decoration: underline;">
+                              <i class="fa-solid fa-arrow-up-right-from-square"></i> Account
+                            </a>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Current Balance -->
+                  <td style="padding: 14px 18px; white-space: nowrap;">
+                    <span style="font-weight: 800; font-size: 13px; color: var(--blue);">
+                      <i class="fa-solid fa-coins" style="color: var(--gold);"></i> {{ tx.wallet.coins }}
+                    </span>
+                  </td>
+                {% endif %}
+
+                <!-- Transaction Type Badge -->
+                <td style="padding: 14px 18px; white-space: nowrap;">
+                  {% if tx.amount > 0 %}
+                    <span class="badge badge-credit" style="font-size: 11px; padding: 4px 10px;">
+                      <i class="fa-solid fa-arrow-down-left"></i> {{ tx.get_transaction_type_display }}
+                    </span>
+                  {% else %}
+                    <span class="badge badge-debit" style="font-size: 11px; padding: 4px 10px;">
+                      <i class="fa-solid fa-arrow-up-right"></i> {{ tx.get_transaction_type_display }}
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Amount -->
+                <td style="padding: 14px 18px; white-space: nowrap;">
+                  {% if tx.amount > 0 %}
+                    <span class="tx-amount-plus">
+                      <i class="fa-solid fa-circle-plus"></i> +{{ tx.amount }} Coins
+                    </span>
+                  {% else %}
+                    <span class="tx-amount-minus">
+                      <i class="fa-solid fa-circle-minus"></i> {{ tx.amount }} Coins
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Description / Reference -->
+                <td style="padding: 14px 18px; max-width: 320px;">
+                  <div style="font-weight: 600; color: var(--text); line-height: 1.4;">
+                    {{ tx.description }}
+                  </div>
+                </td>
+
+                <!-- Authorized By -->
+                <td style="padding: 14px 18px; white-space: nowrap; color: var(--muted); font-size: 12px;">
+                  {% if tx.created_by %}
+                    <span title="{{ tx.created_by.email }}">
+                      <i class="fa-solid fa-user-shield" style="color: #6366f1;"></i> {{ tx.created_by.full_name|default:tx.created_by.email }}
+                    </span>
+                  {% else %}
+                    <span><i class="fa-solid fa-robot"></i> System Automated</span>
+                  {% endif %}
+                </td>
+
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      {% if page_obj.has_other_pages %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; background: var(--soft); border-top: 1px solid var(--line);">
+          <div style="font-size: 12px; color: var(--muted);">
+            Showing page <b>{{ page_obj.number }}</b> of <b>{{ page_obj.paginator.num_pages }}</b> (Total: {{ page_obj.paginator.count }} entries)
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            {% if page_obj.has_previous %}
+              <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type={{ type_filter }}&days={{ days_filter }}&page={{ page_obj.previous_page_number }}" class="btn outline small">
+                &larr; Previous
+              </a>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+              <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type={{ type_filter }}&days={{ days_filter }}&page={{ page_obj.next_page_number }}" class="btn outline small">
+                Next &rarr;
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <!-- Empty State -->
+      <div style="text-align: center; padding: 60px 20px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 26px; color: var(--muted);">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <h3 style="color: var(--blue); margin-bottom: 8px;">No Coin Transactions Found</h3>
+        <p style="color: var(--muted); font-size: 13px; max-width: 420px; margin: 0 auto 20px;">
+          {% if q or type_filter != 'ALL' or days_filter != 'ALL' or target_user %}
+            No transactions match your current search and filter settings. Try clearing the filters.
+          {% else %}
+            No coin activity has been recorded on this ledger yet.
+          {% endif %}
+        </p>
+        {% if q or type_filter != 'ALL' or days_filter != 'ALL' or target_user %}
+          <a href="?view={{ view_scope }}" class="btn outline small">Reset All Filters</a>
+        {% else %}
+          <a href="{% url 'wallet:buy_coins' %}" class="btn primary small">Top Up Coins</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+</section>
+{% endblock %}

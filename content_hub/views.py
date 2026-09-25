@@ -343,7 +343,7 @@ def tutor_course_create_view(request):
             form.save_m2m()
 
             # Debit publishing fee
-            wallet.debit_coins(50, description=f"Course Publishing Submission: {course.title}")
+            wallet.debit_coins(50, description=f"Course Publishing Submission: {course.title}", transaction_type='COURSE_FEE')
 
             messages.success(
                 request,
@@ -405,7 +405,8 @@ def admin_course_approvals_view(request):
             creator_wallet.credit_coins(
                 course.creation_fee_coins,
                 description=f"Course Submission Refund: {course.title}",
-                admin_user=user
+                admin_user=user,
+                transaction_type='REFUND'
             )
 
             messages.warning(

@@ -24,45 +24,48 @@ class StudentWallet(models.Model):
     def can_afford(self, amount):
         return self.coins >= amount
 
-    def credit_coins(self, amount, description="Manual Admin Credit", admin_user=None):
+    def credit_coins(self, amount, description="Manual Admin Credit", admin_user=None, transaction_type='ADMIN_CREDIT'):
         if amount <= 0:
             raise ValueError("Credit amount must be positive")
         self.coins += amount
         self.save()
-        CoinTransaction.objects.create(
+        return CoinTransaction.objects.create(
             wallet=self,
             amount=amount,
-            transaction_type='ADMIN_CREDIT',
+            transaction_type=transaction_type,
             description=description,
             created_by=admin_user
         )
 
-    def debit_coins(self, amount, description="Content Unlock"):
+    def debit_coins(self, amount, description="Content Unlock", transaction_type='CONTENT_UNLOCK'):
         if amount <= 0:
             raise ValueError("Debit amount must be positive")
         if not self.can_afford(amount):
             raise ValueError("Insufficient coin balance")
         self.coins -= amount
         self.save()
-        CoinTransaction.objects.create(
+        return CoinTransaction.objects.create(
             wallet=self,
             amount=-amount,
-            transaction_type='CONTENT_UNLOCK',
+            transaction_type=transaction_type,
             description=description
         )
 
 
 class CoinTransaction(models.Model):
     TYPE_CHOICES = [
-        ('ADMIN_CREDIT', 'Admin Manual Credit (WhatsApp/Cash)'),
-        ('CONTENT_UNLOCK', 'Resource Unlock Debit'),
+        ('ADMIN_CREDIT', 'Admin Manual Credit'),
+        ('PAYMENT_APPROVED', 'EFT / POP Approved Deposit'),
+        ('CONTENT_UNLOCK', 'Resource Single Unlock'),
+        ('COURSE_UNLOCK', 'Course Bundle Unlock'),
+        ('COURSE_FEE', 'Course Creation Deposit'),
         ('REFUND', 'Admin Refund'),
         ('BONUS', 'Promotional Bonus Coins'),
     ]
 
     wallet = models.ForeignKey(StudentWallet, on_delete=models.CASCADE, related_name='transactions')
     amount = models.IntegerField(help_text="Positive for additions, negative for deductions")
-    transaction_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='ADMIN_CREDIT')
+    transaction_type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='ADMIN_CREDIT')
     description = models.CharField(max_length=255)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -79,6 +82,18 @@ class CoinTransaction(models.Model):
 
     def __str__(self):
         return f"[{self.transaction_type}] {self.wallet.user.email}: {self.amount:+d} coins ({self.description})"
+
+    @property
+    def is_credit(self):
+        return self.amount > 0
+
+    @property
+    def is_debit(self):
+        return self.amount < 0
+
+    @property
+    def formatted_amount(self):
+        return f"+{self.amount}" if self.amount > 0 else f"{self.amount}"
 
 
 def calculate_academic_year_expiry():
