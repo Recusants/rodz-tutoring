@@ -20,7 +20,7 @@ run_dev.bat
 4. Copies `.env.example` to `.env` if missing.
 5. Runs database migrations (`python manage.py migrate`).
 6. Seeds initial demo subjects, users, protected PDFs, videos, and quizzes (`python manage.py seed_rodz`).
-7. Opens your default web browser to `http://127.0.0.1:8088/`.
+7. Opens your default web browser to `http://127.0.0.1:8089/`.
 8. Starts the Django development server.
 
 ---

@@ -30,11 +30,11 @@ RUN SECRET_KEY="build-time-static-collection-key" python manage.py collectstatic
 RUN useradd -m rodzuser && chown -R rodzuser:rodzuser /app
 USER rodzuser
 
-EXPOSE 8088
+EXPOSE 8089
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8088/ || exit 1
+  CMD curl -f http://localhost:8089/ || exit 1
 
 # Launch with Gunicorn WSGI server
-CMD ["gunicorn", "rodz_project.wsgi:application", "--bind", "0.0.0.0:8088", "--workers", "3", "--timeout", "120"]
+CMD ["gunicorn", "rodz_project.wsgi:application", "--bind", "0.0.0.0:8089", "--workers", "3", "--timeout", "120"]
