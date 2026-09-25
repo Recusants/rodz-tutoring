@@ -31,11 +31,11 @@ python manage.py seed_rodz
 
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Green
-Write-Host "  SERVER STARTING AT http://127.0.0.1:8000/" -ForegroundColor Green
+Write-Host "  SERVER STARTING AT http://127.0.0.1:8088/" -ForegroundColor Green
 Write-Host "  Admin login: admin@rodztutoring.co.za / RodzAdmin2026!" -ForegroundColor White
 Write-Host "  Student login: student@rodztutoring.co.za / RodzStudent2026!" -ForegroundColor White
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host ""
 
-Start-Process "http://127.0.0.1:8000/"
-python manage.py runserver 127.0.0.1:8000
+Start-Process "http://127.0.0.1:8088/"
+python manage.py runserver 127.0.0.1:8088

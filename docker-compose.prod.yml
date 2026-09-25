@@ -9,14 +9,14 @@ services:
     container_name: rodz_production_app
     restart: always
     ports:
-      - "80:8000"
+      - "8088:8088"
     env_file:
       - .env.prod
     volumes:
       - rodz_prod_media:/app/media
       - rodz_prod_data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8088/"]
       interval: 30s
       timeout: 10s
       retries: 3

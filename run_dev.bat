@@ -38,16 +38,16 @@ python manage.py seed_rodz
 
 echo.
 echo ========================================================
-echo   SERVER STARTING AT http://127.0.0.1:8000/
+echo   SERVER STARTING AT http://127.0.0.1:8088/
 echo   Admin login: admin@rodztutoring.co.za / RodzAdmin2026!
 echo   Student login: student@rodztutoring.co.za / RodzStudent2026!
 echo ========================================================
 echo.
 
 REM Open browser automatically
-start http://127.0.0.1:8000/
+start http://127.0.0.1:8088/
 
 REM Run development server
-python manage.py runserver 127.0.0.1:8000
+python manage.py runserver 127.0.0.1:8088
 
 pause
