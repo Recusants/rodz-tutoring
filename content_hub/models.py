@@ -331,6 +331,130 @@ class Course(models.Model):
             'owned_item_ids': owned_item_ids,
         }
 
+    @property
+    def bundle_counts(self):
+        """
+        Calculates granular breakdown counts of items contained in this bundle:
+        - videos: content_type == 'VIDEO' or category == 'Video Lessons'
+        - question_papers: category in ['Past Papers', 'Exam Prep'] or has 'paper'/'exam' in category
+        - quizzes: content_type == 'QUIZ' or category == 'Quiz'
+        - reading_pdfs: content_type == 'PDF' and category not in ['Past Papers', 'Exam Prep']
+        - other: any other unclassified resource
+        """
+        counts = {
+            'videos': 0,
+            'question_papers': 0,
+            'quizzes': 0,
+            'reading_pdfs': 0,
+            'other': 0,
+        }
+        for item in self.items.all():
+            cat_lower = (item.category or '').lower()
+            ctype_upper = (item.content_type or '').upper()
+
+            if ctype_upper == 'VIDEO' or 'video' in cat_lower:
+                counts['videos'] += 1
+            elif ctype_upper == 'QUIZ' or 'quiz' in cat_lower:
+                counts['quizzes'] += 1
+            elif any(k in cat_lower for k in ['past paper', 'past_paper', 'exam prep', 'exam', 'question paper']) or item.category in ['Past Papers', 'Exam Prep']:
+                counts['question_papers'] += 1
+            elif ctype_upper == 'PDF':
+                counts['reading_pdfs'] += 1
+            else:
+                counts['other'] += 1
+        return counts
+
+    @property
+    def video_count(self):
+        return self.bundle_counts['videos']
+
+    @property
+    def question_paper_count(self):
+        return self.bundle_counts['question_papers']
+
+    @property
+    def quiz_count(self):
+        return self.bundle_counts['quizzes']
+
+    @property
+    def reading_pdf_count(self):
+        return self.bundle_counts['reading_pdfs']
+
+    @property
+    def bundle_breakdown(self):
+        """
+        Returns an ordered list of non-zero categorized bundle items with label, count, icon, and styling.
+        E.g. "10 Videos", "3 Question Papers", "5 Quizzes", "3 Reading PDFs"
+        """
+        counts = self.bundle_counts
+        breakdown = []
+        if counts['videos'] > 0:
+            c = counts['videos']
+            breakdown.append({
+                'type': 'video',
+                'count': c,
+                'label': f"{c} Video" if c == 1 else f"{c} Videos",
+                'icon': 'fa-solid fa-circle-play',
+                'bg': '#eff6ff',
+                'color': '#1d4ed8',
+                'border': '#bfdbfe',
+            })
+        if counts['question_papers'] > 0:
+            c = counts['question_papers']
+            breakdown.append({
+                'type': 'question_paper',
+                'count': c,
+                'label': f"{c} Question Paper" if c == 1 else f"{c} Question Papers",
+                'icon': 'fa-solid fa-file-circle-question',
+                'bg': '#fef3c7',
+                'color': '#b45309',
+                'border': '#fde68a',
+            })
+        if counts['quizzes'] > 0:
+            c = counts['quizzes']
+            breakdown.append({
+                'type': 'quiz',
+                'count': c,
+                'label': f"{c} Quiz" if c == 1 else f"{c} Quizzes",
+                'icon': 'fa-solid fa-list-check',
+                'bg': '#f5f3ff',
+                'color': '#6d28d9',
+                'border': '#ddd6fe',
+            })
+        if counts['reading_pdfs'] > 0:
+            c = counts['reading_pdfs']
+            breakdown.append({
+                'type': 'reading_pdf',
+                'count': c,
+                'label': f"{c} Reading PDF" if c == 1 else f"{c} Reading PDFs",
+                'icon': 'fa-solid fa-file-pdf',
+                'bg': '#fef2f2',
+                'color': '#b91c1c',
+                'border': '#fecaca',
+            })
+        if counts['other'] > 0:
+            c = counts['other']
+            breakdown.append({
+                'type': 'other',
+                'count': c,
+                'label': f"{c} Resource" if c == 1 else f"{c} Resources",
+                'icon': 'fa-solid fa-folder-open',
+                'bg': '#f3f4f6',
+                'color': '#374151',
+                'border': '#e5e7eb',
+            })
+        return breakdown
+
+    @property
+    def bundle_summary_text(self):
+        """
+        Concise comma-separated summary string e.g.:
+        "10 Videos, 3 Question Papers, 5 Quizzes, 3 Reading PDFs"
+        """
+        parts = [item['label'] for item in self.bundle_breakdown]
+        return ", ".join(parts) if parts else "0 Resources"
+
+
 
 class AboutContent(models.Model):
     eyebrow = models.CharField(max_length=120, default='OUR HERITAGE & MISSION')

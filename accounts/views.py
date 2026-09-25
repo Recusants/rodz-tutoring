@@ -99,7 +99,7 @@ def dashboard_view(request):
 
         unlocked_courses = CourseUnlock.objects.filter(user=user).filter(
             Q(expires_at__isnull=True) | Q(expires_at__gte=timezone.now())
-        ).select_related('course', 'course__subject')
+        ).select_related('course', 'course__subject').prefetch_related('course__items')
 
         recent_transactions = CoinTransaction.objects.filter(wallet=wallet)[:8]
         quiz_attempts = QuizAttempt.objects.filter(student=user).select_related('quiz', 'quiz__content_item')[:6]

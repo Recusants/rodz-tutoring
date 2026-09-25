@@ -150,6 +150,17 @@
               <h3>{{ course.title }}</h3>
               <p>{{ course.description|truncatewords:18|default:"Structured multi-resource syllabus for complete exam mastery." }}</p>
 
+              <!-- Bundle Contents Breakdown Pills -->
+              <div class="bundle-breakdown" style="display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 12px;">
+                {% for b_item in course.bundle_breakdown %}
+                  <span class="breakdown-pill" style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; background: {{ b_item.bg }}; color: {{ b_item.color }}; border: 1px solid {{ b_item.border }}; border-radius: 6px; padding: 2px 8px;" title="{{ b_item.label }}">
+                    <i class="{{ b_item.icon }}"></i> {{ b_item.label }}
+                  </span>
+                {% empty %}
+                  <span style="font-size: 11px; color: var(--muted);"><i class="fa-solid fa-box-open"></i> Empty Bundle</span>
+                {% endfor %}
+              </div>
+
               <div class="resource-card-footer">
                 <div>
                   <span class="cost" style="color: var(--blue); font-weight: 900; font-size: 14px;">

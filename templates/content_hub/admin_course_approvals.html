@@ -81,10 +81,19 @@
           </p>
         {% endif %}
 
-        <!-- Bundled Items Preview -->
+        <!-- Bundled Items Preview & Composition -->
         <div style="margin-bottom: 18px;">
-          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">
-            Bundled Items ({{ course.items.count }}):
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted);">
+              Bundled Items ({{ course.items.count }}):
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              {% for b_item in course.bundle_breakdown %}
+                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; background: {{ b_item.bg }}; color: {{ b_item.color }}; border: 1px solid {{ b_item.border }}; border-radius: 4px; padding: 2px 7px;">
+                  <i class="{{ b_item.icon }}"></i> {{ b_item.label }}
+                </span>
+              {% endfor %}
+            </div>
           </div>
           <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             {% for itm in course.items.all %}

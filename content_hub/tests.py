@@ -3,7 +3,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.conf import settings
 from accounts.models import CustomUser
-from content_hub.models import Subject, ContentItem
+from content_hub.models import Subject, ContentItem, Course
 from wallet.models import StudentWallet, ContentUnlock
 
 
@@ -629,6 +629,168 @@ class VideoStreamingTestCase(TestCase):
         self.assertContains(response, 'PREMIUM PROTECTED CONTENT')
         self.assertContains(response, '35 Coins')
         self.assertNotContains(response, 'https://www.youtube.com/embed/9vKqVkMQHKk')
+
+
+class CourseBundleBreakdownTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.tutor = CustomUser.objects.create_user(
+            email='tutor_breakdown@example.com',
+            password='Password123!',
+            is_tutor=True
+        )
+        self.student = CustomUser.objects.create_user(
+            email='student_breakdown@example.com',
+            password='Password123!',
+            is_student=True
+        )
+        self.subject = Subject.objects.create(name='Physics', slug='physics')
+
+        # Create Course
+        self.course = Course.objects.create(
+            creator=self.tutor,
+            title='Grade 12 Physics Complete Exam Masterclass',
+            slug='g12-physics-exam-masterclass',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS',
+            bundle_price=250,
+            status='APPROVED'
+        )
+
+        # Add 10 Videos
+        self.videos = []
+        for i in range(1, 11):
+            vid = ContentItem.objects.create(
+                title=f'Physics Video Lesson {i}',
+                slug=f'physics-vid-{i}',
+                subject=self.subject,
+                grade='Grade 12',
+                content_type='VIDEO',
+                category='Video Lessons',
+                coin_price=20,
+                youtube_url='https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+            )
+            self.videos.append(vid)
+
+        # Add 3 Question Papers
+        self.question_papers = []
+        for i in range(1, 4):
+            qp = ContentItem.objects.create(
+                title=f'Physics Past Exam Paper {i}',
+                slug=f'physics-past-paper-{i}',
+                subject=self.subject,
+                grade='Grade 12',
+                content_type='PDF',
+                category='Past Papers',
+                coin_price=25
+            )
+            self.question_papers.append(qp)
+
+        # Add 5 Quizzes
+        self.quizzes = []
+        for i in range(1, 6):
+            qz = ContentItem.objects.create(
+                title=f'Physics Topic Quiz {i}',
+                slug=f'physics-quiz-{i}',
+                subject=self.subject,
+                grade='Grade 12',
+                content_type='QUIZ',
+                category='Quiz',
+                coin_price=15
+            )
+            self.quizzes.append(qz)
+
+        # Add 3 Reading PDFs
+        self.reading_pdfs = []
+        for i in range(1, 4):
+            pdf = ContentItem.objects.create(
+                title=f'Physics Theory Notes {i}',
+                slug=f'physics-reading-pdf-{i}',
+                subject=self.subject,
+                grade='Grade 12',
+                content_type='PDF',
+                category='Notes',
+                coin_price=20
+            )
+            self.reading_pdfs.append(pdf)
+
+        # Attach all items to course
+        all_items = self.videos + self.question_papers + self.quizzes + self.reading_pdfs
+        self.course.items.set(all_items)
+
+    def test_bundle_counts_exact_breakdown(self):
+        counts = self.course.bundle_counts
+        self.assertEqual(counts['videos'], 10)
+        self.assertEqual(counts['question_papers'], 3)
+        self.assertEqual(counts['quizzes'], 5)
+        self.assertEqual(counts['reading_pdfs'], 3)
+        self.assertEqual(counts['other'], 0)
+
+        self.assertEqual(self.course.video_count, 10)
+        self.assertEqual(self.course.question_paper_count, 3)
+        self.assertEqual(self.course.quiz_count, 5)
+        self.assertEqual(self.course.reading_pdf_count, 3)
+
+    def test_bundle_breakdown_structure_and_labels(self):
+        breakdown = self.course.bundle_breakdown
+        labels = [item['label'] for item in breakdown]
+        self.assertIn('10 Videos', labels)
+        self.assertIn('3 Question Papers', labels)
+        self.assertIn('5 Quizzes', labels)
+        self.assertIn('3 Reading PDFs', labels)
+
+        self.assertEqual(
+            self.course.bundle_summary_text,
+            '10 Videos, 3 Question Papers, 5 Quizzes, 3 Reading PDFs'
+        )
+
+    def test_singular_plural_grammar(self):
+        single_course = Course.objects.create(
+            creator=self.tutor,
+            title='Single Item Sampler Course',
+            slug='single-item-sampler',
+            subject=self.subject,
+            bundle_price=50,
+            status='APPROVED'
+        )
+        single_course.items.add(self.videos[0])
+        single_course.items.add(self.question_papers[0])
+        single_course.items.add(self.quizzes[0])
+        single_course.items.add(self.reading_pdfs[0])
+
+        breakdown = single_course.bundle_breakdown
+        labels = [item['label'] for item in breakdown]
+        self.assertIn('1 Video', labels)
+        self.assertIn('1 Question Paper', labels)
+        self.assertIn('1 Quiz', labels)
+        self.assertIn('1 Reading PDF', labels)
+        self.assertEqual(
+            single_course.bundle_summary_text,
+            '1 Video, 1 Question Paper, 1 Quiz, 1 Reading PDF'
+        )
+
+    def test_catalog_and_course_detail_html_rendering(self):
+        # 1. Catalog page should render the breakdown badges
+        catalog_url = reverse('content_hub:catalog')
+        res_cat = self.client.get(catalog_url)
+        self.assertEqual(res_cat.status_code, 200)
+        self.assertContains(res_cat, '10 Videos')
+        self.assertContains(res_cat, '3 Question Papers')
+        self.assertContains(res_cat, '5 Quizzes')
+        self.assertContains(res_cat, '3 Reading PDFs')
+
+        # 2. Course Detail page should render the breakdown badges in header and sidebar
+        detail_url = reverse('content_hub:course_detail', kwargs={'slug': self.course.slug})
+        res_detail = self.client.get(detail_url)
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, "What's included in this bundle")
+        self.assertContains(res_detail, "Bundle Contents")
+        self.assertContains(res_detail, '10 Videos')
+        self.assertContains(res_detail, '3 Question Papers')
+        self.assertContains(res_detail, '5 Quizzes')
+        self.assertContains(res_detail, '3 Reading PDFs')
+
 
 
 

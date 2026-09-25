@@ -55,9 +55,18 @@
 
     <!-- Items Preview in this bundle -->
     <div style="margin-bottom: 24px;">
-      <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 10px;">
-        Resources Included in this Bundle ({{ pricing.total_items_count }})
-      </h4>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin: 0;">
+          Resources Included in this Bundle ({{ pricing.total_items_count }})
+        </h4>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          {% for b in course.bundle_breakdown %}
+            <span style="font-size: 10px; font-weight: 700; background: {{ b.bg }}; color: {{ b.color }}; border: 1px solid {{ b.border }}; border-radius: 4px; padding: 2px 7px; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="{{ b.icon }}"></i> {{ b.label }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
       <div style="display: flex; flex-direction: column; gap: 8px;">
         {% for item in course.items.all %}
           <div style="display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px;">
