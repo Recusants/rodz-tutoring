@@ -241,3 +241,33 @@ class AccountsTestCase(TestCase):
         self.assertEqual(sus_res.status_code, 200)
         target.refresh_from_db()
         self.assertFalse(target.is_active)
+
+    def test_user_registration_flow(self):
+        res = self.client.post('/accounts/register/', {
+            'email': 'brandnewlearner@example.com',
+            'full_name': 'Brand New Student',
+            'phone_number': '+27 71 234 5678',
+            'grade': 'Grade 11',
+            'curriculum': 'CAPS',
+            'password': 'SecurePassword987!',
+            'password_confirm': 'SecurePassword987!',
+            'is_student': True,
+        }, follow=True)
+        self.assertEqual(res.status_code, 200)
+        new_user = CustomUser.objects.filter(email='brandnewlearner@example.com').first()
+        self.assertIsNotNone(new_user)
+        self.assertTrue(new_user.is_authenticated)
+        self.assertTrue(new_user.is_student)
+        self.assertEqual(new_user.grade, 'Grade 11')
+
+    def test_user_logout_flow(self):
+        user = CustomUser.objects.create_user(
+            email='logouttest@example.com',
+            password='Password123!'
+        )
+        self.client.login(email='logouttest@example.com', password='Password123!')
+        res = self.client.get('/accounts/logout/', follow=True)
+        self.assertEqual(res.status_code, 200)
+        # User should no longer be authenticated
+        self.assertFalse(res.context['user'].is_authenticated)
+

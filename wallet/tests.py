@@ -103,3 +103,62 @@ class WalletTestCase(TestCase):
         self.assertIsNotNone(unlock.expires_at)
         self.assertTrue(self.user.has_unlocked(item))
 
+    def test_unlock_item_insufficient_coins(self):
+        from content_hub.models import ContentItem, Subject
+        subject = Subject.objects.create(name='Science', slug='science-test')
+        item = ContentItem.objects.create(
+            title='Physics Pack',
+            slug='physics-pack-test',
+            subject=subject,
+            coin_price=80
+        )
+        self.client.login(email='walletuser@example.com', password='Password123!')
+        url = reverse('wallet:unlock_item', kwargs={'item_slug': item.slug})
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.user.has_unlocked(item))
+        wallet = StudentWallet.objects.get(user=self.user)
+        self.assertEqual(wallet.coins, 0)
+
+    def test_unlock_item_sufficient_coins(self):
+        from content_hub.models import ContentItem, Subject
+        subject = Subject.objects.create(name='Biology', slug='biology-test')
+        item = ContentItem.objects.create(
+            title='Genetics Revision',
+            slug='genetics-revision-test',
+            subject=subject,
+            coin_price=45
+        )
+        wallet = StudentWallet.objects.get(user=self.user)
+        wallet.credit_coins(100)
+
+        self.client.login(email='walletuser@example.com', password='Password123!')
+        url = reverse('wallet:unlock_item', kwargs={'item_slug': item.slug})
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(self.user.has_unlocked(item))
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.coins, 55)
+
+    def test_admin_credit_panel_access_and_action(self):
+        # 1. Non-admin is blocked
+        self.client.login(email='walletuser@example.com', password='Password123!')
+        url = reverse('wallet:admin_credit_panel')
+        res_blocked = self.client.get(url)
+        self.assertNotEqual(res_blocked.status_code, 200)
+
+        # 2. Admin is allowed and can credit coins
+        self.client.login(email='adminuser@example.com', password='AdminPassword123!')
+        res_admin = self.client.get(url)
+        self.assertEqual(res_admin.status_code, 200)
+
+        res_credit = self.client.post(url, {
+            'student_email': self.user.email,
+            'coin_amount': '75',
+            'note': 'Bursary topup'
+        }, follow=True)
+        self.assertEqual(res_credit.status_code, 200)
+
+        wallet = StudentWallet.objects.get(user=self.user)
+        self.assertEqual(wallet.coins, 75)
+
