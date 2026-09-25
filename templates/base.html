@@ -44,9 +44,17 @@
         </a>
 
         <a href="{% url 'accounts:dashboard' %}">DASHBOARD</a>
+        <a href="{% url 'accounts:profile' %}">PROFILE</a>
 
         {% if user.is_staff or user.is_admin_role %}
-          <a href="{% url 'wallet:admin_credit_panel' %}" style="color: #b45309;">COIN ADMIN</a>
+          <div class="dropdown">
+            <button style="color: #b45309; font-weight: 700;">ADMIN <span>⌄</span></button>
+            <div class="dropdown-menu">
+              <a href="{% url 'wallet:admin_credit_panel' %}">🪙 Manual Coin Credits</a>
+              <a href="{% url 'accounts:system_settings' %}">⚙️ System .env Settings</a>
+              <a href="/admin/" target="_blank">🛠️ Django Admin &rarr;</a>
+            </div>
+          </div>
         {% endif %}
 
         <a href="{% url 'accounts:logout' %}" class="btn outline small">LOGOUT</a>

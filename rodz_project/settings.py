@@ -98,3 +98,19 @@ LOGOUT_REDIRECT_URL = 'home'
 WHATSAPP_PHONE = config('WHATSAPP_PHONE', default='27745685212')
 WHATSAPP_DISPLAY_PHONE = config('WHATSAPP_DISPLAY_PHONE', default='+27 74 568 5212')
 INFO_EMAIL = config('INFO_EMAIL', default='info@rodztutoring.co.za')
+
+# Email & SMTP Configuration (Loaded from .env, managed dynamically by Admin)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND', 
+    default='django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST_USER else 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+SYSTEM_EMAIL = config('SYSTEM_EMAIL', default='info@rodztutoring.co.za')
+DEFAULT_FROM_EMAIL = SYSTEM_EMAIL
+NOTIFICATION_EMAIL = config('NOTIFICATION_EMAIL', default='admin@rodztutoring.co.za')
+

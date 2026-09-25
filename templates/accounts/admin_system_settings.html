@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Settings Management | Rodz Tutoring Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 950px; margin: 30px auto; padding-top: 20px;">
+  <div class="section-heading">
+    <span class="badge" style="background:#fee2e2; color:#991b1b; font-size: 11px;">ADMIN OPERATIONS</span>
+    <h2 style="margin-top: 8px;">SYSTEM CONFIGURATION MANAGEMENT</h2>
+    <p>Manage system recovery emails, SMTP app passwords, and WhatsApp contact numbers stored in <code>.env</code>.</p>
+    <div class="bar"></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 30px;">
+    
+    <!-- Main Configuration Form -->
+    <div class="dash-section">
+      <h3 style="margin-bottom: 6px;">System Emails &amp; Credentials (.env)</h3>
+      <p style="color: var(--muted); font-size: 12px; margin-bottom: 20px;">
+        Updates submitted here are saved directly to your server's <code>.env</code> file.
+      </p>
+
+      <form method="POST">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert error">
+            {% for error in form.non_field_errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div style="background: var(--soft); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+          <h4 style="font-size: 14px; color: var(--blue); margin-bottom: 10px;">1. System Emails</h4>
+          
+          <div class="form-group">
+            <label class="form-label">{{ form.system_email.label }}</label>
+            {{ form.system_email }}
+            <small style="color: var(--muted); font-size: 11px;">{{ form.system_email.help_text }}</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.notification_email.label }}</label>
+            {{ form.notification_email }}
+            <small style="color: var(--muted); font-size: 11px;">{{ form.notification_email.help_text }}</small>
+          </div>
+        </div>
+
+        <div style="background: var(--soft); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+          <h4 style="font-size: 14px; color: var(--blue); margin-bottom: 10px;">2. SMTP Server &amp; App Passwords</h4>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">{{ form.email_host.label }}</label>
+              {{ form.email_host }}
+            </div>
+            <div class="form-group">
+              <label class="form-label">{{ form.email_port.label }}</label>
+              {{ form.email_port }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.email_host_user.label }}</label>
+            {{ form.email_host_user }}
+            <small style="color: var(--muted); font-size: 11px;">{{ form.email_host_user.help_text }}</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.email_host_password.label }}</label>
+            {{ form.email_host_password }}
+            <small style="color: var(--muted); font-size: 11px;">
+              {% if has_configured_password %}
+                🔒 <i>An App Password is currently configured.</i> Leave blank to keep existing password.
+              {% else %}
+                ⚠️ No SMTP password is currently set. Emails will log to local console.
+              {% endif %}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+              {{ form.email_use_tls }} <span>{{ form.email_use_tls.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="background: var(--soft); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+          <h4 style="font-size: 14px; color: var(--blue); margin-bottom: 10px;">3. WhatsApp Order Numbers</h4>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.whatsapp_phone.label }}</label>
+            {{ form.whatsapp_phone }}
+            <small style="color: var(--muted); font-size: 11px;">{{ form.whatsapp_phone.help_text }}</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.whatsapp_display_phone.label }}</label>
+            {{ form.whatsapp_display_phone }}
+            <small style="color: var(--muted); font-size: 11px;">{{ form.whatsapp_display_display }}</small>
+          </div>
+        </div>
+
+        <button type="submit" class="btn primary" style="width: 100%; padding: 13px;">
+          💾 SAVE CONFIGURATION TO .ENV &rarr;
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Column: Diagnostics & Quick Info -->
+    <div>
+      <!-- Test Email Diagnostic Card -->
+      <div class="dash-section" style="margin-bottom: 24px;">
+        <h4 style="font-size: 16px; margin-bottom: 8px;">SMTP Diagnostic Tool</h4>
+        <p style="color: var(--muted); font-size: 12px; margin-bottom: 14px;">
+          Send a 1-click test email to verify that your configured SMTP credentials and app passwords deliver properly.
+        </p>
+
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="test_email" value="1">
+          <div class="form-group">
+            <label class="form-label">Send Test Email To:</label>
+            <input type="email" name="test_recipient" value="{{ user.email }}" class="form-input" placeholder="recipient@example.com">
+          </div>
+          <button type="submit" class="btn outline small" style="width: 100%;">
+            📤 SEND TEST DIAGNOSTIC EMAIL
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick Guidance Card -->
+      <div class="dash-section">
+        <h4 style="font-size: 16px; margin-bottom: 10px;">Google / Gmail Setup</h4>
+        <p style="color: var(--muted); font-size: 12px; line-height: 1.6; margin-bottom: 12px;">
+          If using Gmail for system emails:
+        </p>
+        <ol style="font-size: 12px; color: var(--muted); padding-left: 18px; line-height: 1.7; margin: 0;">
+          <li>Enable 2-Step Verification on your Google account.</li>
+          <li>Go to <b>Security &gt; App Passwords</b>.</li>
+          <li>Generate a 16-character App Password.</li>
+          <li>Enter your Gmail as <code>SMTP Username</code> and the 16-character code as <code>App Password</code>.</li>
+        </ol>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

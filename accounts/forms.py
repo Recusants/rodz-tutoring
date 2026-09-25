@@ -80,3 +80,92 @@ class LoginForm(forms.Form):
 
     def get_user(self):
         return self.user_cache
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['full_name', 'phone_number', 'grade', 'curriculum']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full Name'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'WhatsApp Contact Number'}),
+            'grade': forms.Select(attrs={'class': 'form-input'}),
+            'curriculum': forms.Select(attrs={'class': 'form-input'}),
+        }
+
+
+from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm, SetPasswordForm
+
+
+class StyledPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-input'})
+
+
+class StyledPasswordResetForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-input',
+            'placeholder': 'Enter your registered email address'
+        })
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-input'})
+
+
+class AdminSystemSettingsForm(forms.Form):
+    system_email = forms.EmailField(
+        label="System Sender Email",
+        help_text="Sender address shown on password reset emails and system alerts",
+        widget=forms.EmailInput(attrs={'class': 'form-input'})
+    )
+    notification_email = forms.EmailField(
+        label="Notification Recipient Email",
+        help_text="Admin address where new user alerts, inquiries, and orders are sent",
+        widget=forms.EmailInput(attrs={'class': 'form-input'})
+    )
+    email_host = forms.CharField(
+        label="SMTP Email Host Server",
+        help_text="e.g. smtp.gmail.com, mail.rodztutoring.co.za",
+        widget=forms.TextInput(attrs={'class': 'form-input'})
+    )
+    email_port = forms.IntegerField(
+        label="SMTP Port",
+        help_text="e.g. 587 (TLS), 465 (SSL), or 25",
+        widget=forms.NumberInput(attrs={'class': 'form-input'})
+    )
+    email_host_user = forms.CharField(
+        label="SMTP Account / Username",
+        required=False,
+        help_text="Your email address or username on the mail server",
+        widget=forms.TextInput(attrs={'class': 'form-input'})
+    )
+    email_host_password = forms.CharField(
+        label="SMTP / App Password",
+        required=False,
+        help_text="Google App Password (16 characters) or email account password (leave blank to keep existing password)",
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': '••••••••••••••••'})
+    )
+    email_use_tls = forms.BooleanField(
+        label="Use TLS Encryption",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-checkbox'})
+    )
+    whatsapp_phone = forms.CharField(
+        label="WhatsApp Number (Numeric Format for Links)",
+        help_text="e.g. 27745685212 (country code + number without plus or spaces)",
+        widget=forms.TextInput(attrs={'class': 'form-input'})
+    )
+    whatsapp_display_phone = forms.CharField(
+        label="WhatsApp Display Format",
+        help_text="e.g. +27 74 568 5212 (as shown to learners on the website)",
+        widget=forms.TextInput(attrs={'class': 'form-input'})
+    )
