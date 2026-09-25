@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, HttpResponseForbidden, Http404
 from django.contrib import messages
 from django.db.models import Q
-from .models import Subject, ContentItem
+from .models import Subject, ContentItem, Curriculum
 from wallet.models import ContentUnlock, StudentWallet
 import os
 
@@ -34,12 +34,16 @@ def catalog_view(request):
     content_type = request.GET.get('type', '')
     pricing = request.GET.get('pricing', '')
 
-    items = ContentItem.objects.select_related('subject').all()
+    items = ContentItem.objects.select_related('subject', 'curriculum_ref').all()
 
     if query:
         items = items.filter(Q(title__icontains=query) | Q(description__icontains=query) | Q(subject__name__icontains=query))
     if curriculum:
-        items = items.filter(curriculum__icontains=curriculum)
+        items = items.filter(
+            Q(curriculum__icontains=curriculum) | 
+            Q(curriculum_ref__code__iexact=curriculum) | 
+            Q(curriculum_ref__name__icontains=curriculum)
+        )
     if grade:
         items = items.filter(grade=grade)
     if subject_slug:
@@ -52,10 +56,12 @@ def catalog_view(request):
         items = items.filter(is_free=False)
 
     subjects = Subject.objects.all()
+    curricula = Curriculum.objects.filter(is_active=True).order_by('order', 'name')
 
     return render(request, 'content_hub/catalog.html', {
         'items': items,
         'subjects': subjects,
+        'curricula': curricula,
         'selected_query': query,
         'selected_curriculum': curriculum,
         'selected_grade': grade,

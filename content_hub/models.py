@@ -3,6 +3,26 @@ from django.utils.text import slugify
 import re
 
 
+class Curriculum(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=50, unique=True, blank=True)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name_plural = 'Curricula'
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name).upper()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Subject(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
@@ -49,17 +69,12 @@ class ContentItem(models.Model):
         ('All Grades', 'All Grades (General)'),
     ]
 
-    CURRICULUM_CHOICES = [
-        ('CAPS & IEB', 'CAPS & IEB'),
-        ('Cambridge', 'Cambridge (O/AS/A Level)'),
-        ('All Curricula', 'All Curricula'),
-    ]
-
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=270, unique=True, blank=True)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='content_items')
+    curriculum = models.CharField(max_length=80, default='CAPS & IEB', help_text="Curriculum programme e.g. Cambridge, CAPS, IEB, IB, etc.")
+    curriculum_ref = models.ForeignKey(Curriculum, on_delete=models.SET_NULL, null=True, blank=True, related_name='content_items')
     grade = models.CharField(max_length=30, choices=GRADE_CHOICES, default='Grade 12')
-    curriculum = models.CharField(max_length=30, choices=CURRICULUM_CHOICES, default='CAPS & IEB')
     content_type = models.CharField(max_length=15, choices=TYPE_CHOICES, default='PDF')
     category = models.CharField(max_length=40, choices=CATEGORY_CHOICES, default='Notes')
     description = models.TextField(blank=True)

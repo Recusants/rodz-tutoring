@@ -24,9 +24,15 @@
         <label class="form-label">Curriculum</label>
         <select name="curriculum" class="form-input">
           <option value="">All Curricula</option>
-          <option value="CAPS" {% if selected_curriculum == 'CAPS' %}selected{% endif %}>CAPS</option>
-          <option value="IEB" {% if selected_curriculum == 'IEB' %}selected{% endif %}>IEB</option>
-          <option value="Cambridge" {% if selected_curriculum == 'Cambridge' %}selected{% endif %}>Cambridge</option>
+          {% for cur in curricula %}
+            <option value="{{ cur.code }}" {% if selected_curriculum == cur.code or selected_curriculum == cur.name %}selected{% endif %}>
+              {{ cur.code }} ({{ cur.name|truncatechars:22 }})
+            </option>
+          {% empty %}
+            <option value="CAPS" {% if selected_curriculum == 'CAPS' %}selected{% endif %}>CAPS</option>
+            <option value="IEB" {% if selected_curriculum == 'IEB' %}selected{% endif %}>IEB</option>
+            <option value="Cambridge" {% if selected_curriculum == 'Cambridge' %}selected{% endif %}>Cambridge</option>
+          {% endfor %}
         </select>
       </div>
 

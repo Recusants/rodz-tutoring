@@ -68,3 +68,15 @@ class ContentSecurityTestCase(TestCase):
         self.assertEqual(stream_response.status_code, 200)
         self.assertEqual(stream_response['Content-Type'], 'application/pdf')
         self.assertIn('inline', stream_response['Content-Disposition'])
+
+    def test_dynamic_curriculum(self):
+        from content_hub.models import Curriculum
+        cambridge = Curriculum.objects.create(name='Cambridge International', code='CAMBRIDGE')
+        self.item.curriculum_ref = cambridge
+        self.item.save()
+
+        # Catalog filter by Cambridge
+        resp = self.client.get(reverse('content_hub:catalog'), {'curriculum': 'CAMBRIDGE'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(self.item, resp.context['items'])
+

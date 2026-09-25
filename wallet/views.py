@@ -2,46 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.conf import settings
+from django.utils import timezone
 from urllib.parse import quote
-from .models import StudentWallet, ContentUnlock, CoinTransaction
+from .models import StudentWallet, ContentUnlock, CoinTransaction, CoinBundle, PaymentMethod, CoinPaymentRequest
+from .forms import CoinPaymentActivationForm
 from content_hub.models import ContentItem
 from accounts.models import CustomUser
 
 
-COIN_PACKAGES = [
-    {
-        'id': 'starter',
-        'name': 'Starter Pack',
-        'coins': 60,
-        'price_zar': 60,
-        'badge': 'ESSENTIAL',
-        'description': 'Ideal for a single study pack or past-paper pack.'
-    },
-    {
-        'id': 'term',
-        'name': 'Term Booster',
-        'coins': 120,
-        'price_zar': 110,
-        'badge': 'MOST POPULAR',
-        'description': 'Great for 2–3 subject revision packs with discount savings.'
-    },
-    {
-        'id': 'exam',
-        'name': 'Exam Master Pack',
-        'coins': 250,
-        'price_zar': 220,
-        'badge': 'BEST VALUE',
-        'description': 'Comprehensive pack for full exam preparation across subjects.'
-    },
-    {
-        'id': 'annual',
-        'name': 'Full Year Academic Access',
-        'coins': 500,
-        'price_zar': 420,
-        'badge': 'PREMIUM',
-        'description': 'Access all grade packs, notes, worked exams and streaming lessons.'
-    },
-]
+def is_admin_or_staff(user):
+    return user.is_authenticated and (user.is_admin_role or user.is_staff or user.is_superuser)
 
 
 @login_required
@@ -49,23 +19,52 @@ def buy_coins_view(request):
     wallet, _ = StudentWallet.objects.get_or_create(user=request.user)
     whatsapp_phone = getattr(settings, 'WHATSAPP_PHONE', '27745685212')
 
-    packages_with_links = []
-    for pkg in COIN_PACKAGES:
-        raw_msg = (
-            f"Hello Rodz Tutoring! 👋\n"
-            f"I want to buy coins for my account:\n\n"
-            f"• Package: {pkg['name']} ({pkg['coins']} Coins for R{pkg['price_zar']})\n"
-            f"• Student Name: {request.user.full_name or 'Learner'}\n"
-            f"• Student Email: {request.user.email}\n"
-            f"• Grade: {request.user.grade}\n\n"
-            f"Please send the banking/payment details so I can transfer and receive my coins."
-        )
-        wa_link = f"https://wa.me/{whatsapp_phone}?text={quote(raw_msg)}"
-        packages_with_links.append({**pkg, 'wa_link': wa_link})
+    bundles = CoinBundle.objects.filter(is_active=True).order_by('order', 'price_zar')
+    payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('order')
+    my_requests = CoinPaymentRequest.objects.filter(student=request.user).order_by('-created_at')[:10]
+
+    # Pre-populate bundle if passed in query param ?bundle_id=...
+    initial_bundle = None
+    bundle_id = request.GET.get('bundle')
+    if bundle_id:
+        initial_bundle = bundles.filter(id=bundle_id).first()
+
+    if request.method == 'POST':
+        form = CoinPaymentActivationForm(request.POST, request.FILES)
+        if form.is_valid():
+            req_obj = form.save(commit=False)
+            req_obj.student = request.user
+            req_obj.coins_to_credit = req_obj.bundle.coins
+            req_obj.amount_paid = req_obj.bundle.price_zar
+            req_obj.save()
+            messages.success(
+                request,
+                f"🎉 Payment activation request for {req_obj.coins_to_credit} coins (R{req_obj.amount_paid}) has been submitted! "
+                f"Our admin team will verify your Proof of Payment and credit your wallet."
+            )
+            return redirect('wallet:buy_coins')
+        else:
+            messages.error(request, "Please correct the errors in the activation form below.")
+    else:
+        form = CoinPaymentActivationForm(initial={'bundle': initial_bundle} if initial_bundle else None)
+
+    # WhatsApp fallback message link
+    wa_msg = (
+        f"Hello Rodz Tutoring! 👋\n"
+        f"I would like to inquire about purchasing coins for my student account:\n"
+        f"Student: {request.user.full_name or 'Learner'} ({request.user.email})\n"
+        f"Grade: {request.user.grade or 'Not set'}"
+    )
+    wa_link = f"https://wa.me/{whatsapp_phone}?text={quote(wa_msg)}"
 
     return render(request, 'wallet/buy_coins.html', {
         'wallet': wallet,
-        'packages': packages_with_links,
+        'bundles': bundles,
+        'payment_methods': payment_methods,
+        'form': form,
+        'my_requests': my_requests,
+        'wa_link': wa_link,
+        'whatsapp_phone': whatsapp_phone,
     })
 
 
@@ -87,7 +86,7 @@ def unlock_item_view(request, item_slug):
             messages.error(
                 request,
                 f"You need {item.coin_price} coins to unlock this resource, but only have {wallet.coins} coins. "
-                f"Please request a coin top-up via WhatsApp."
+                f"Please top up your coins below."
             )
             return redirect('wallet:buy_coins')
 
@@ -107,8 +106,73 @@ def unlock_item_view(request, item_slug):
     })
 
 
-def is_admin_or_staff(user):
-    return user.is_authenticated and (user.is_admin_role or user.is_staff or user.is_superuser)
+@user_passes_test(is_admin_or_staff)
+def admin_payment_requests_view(request):
+    status_filter = request.GET.get('status', 'PENDING')
+    search_q = request.GET.get('q', '').strip()
+
+    requests_qs = CoinPaymentRequest.objects.select_related('student', 'bundle', 'payment_method', 'reviewed_by')
+
+    if status_filter != 'ALL':
+        requests_qs = requests_qs.filter(status=status_filter)
+
+    if search_q:
+        requests_qs = requests_qs.filter(
+            reference_number__icontains=search_q
+        ) | requests_qs.filter(
+            student__email__icontains=search_q
+        ) | requests_qs.filter(
+            student__full_name__icontains=search_q
+        )
+
+    pending_count = CoinPaymentRequest.objects.filter(status='PENDING').count()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        req_id = request.POST.get('request_id')
+        admin_note = request.POST.get('admin_notes', '').strip()
+
+        coin_req = get_object_or_404(CoinPaymentRequest, id=req_id)
+
+        if action == 'approve':
+            if coin_req.status == 'APPROVED':
+                messages.warning(request, f"Request #{coin_req.id} is already approved.")
+            else:
+                coin_req.status = 'APPROVED'
+                coin_req.reviewed_by = request.user
+                coin_req.reviewed_at = timezone.now()
+                if admin_note:
+                    coin_req.admin_notes = admin_note
+                coin_req.save()
+
+                # Credit student wallet
+                student_wallet, _ = StudentWallet.objects.get_or_create(user=coin_req.student)
+                bundle_title = coin_req.bundle.name if coin_req.bundle else 'Coin Pack'
+                tx_desc = f"Payment Approved: {bundle_title} (Ref: {coin_req.reference_number})"
+                student_wallet.credit_coins(coin_req.coins_to_credit, description=tx_desc, admin_user=request.user)
+
+                messages.success(
+                    request,
+                    f"✅ Request #{coin_req.id} APPROVED! Credited {coin_req.coins_to_credit} coins to {coin_req.student.email}. "
+                    f"New wallet balance: {student_wallet.coins} coins."
+                )
+            return redirect(f"{request.path}?status={status_filter}")
+
+        elif action == 'reject':
+            coin_req.status = 'REJECTED'
+            coin_req.reviewed_by = request.user
+            coin_req.reviewed_at = timezone.now()
+            coin_req.admin_notes = admin_note or 'Proof of payment could not be verified.'
+            coin_req.save()
+            messages.info(request, f"❌ Request #{coin_req.id} for {coin_req.student.email} has been marked as DECLINED.")
+            return redirect(f"{request.path}?status={status_filter}")
+
+    return render(request, 'wallet/admin_payment_requests.html', {
+        'payment_requests': requests_qs,
+        'status_filter': status_filter,
+        'pending_count': pending_count,
+        'search_q': search_q,
+    })
 
 
 @user_passes_test(is_admin_or_staff)

@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Subject, ContentItem
+from .models import Subject, ContentItem, Curriculum
+
+
+@admin.register(Curriculum)
+class CurriculumAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'order', 'is_active')
+    list_editable = ('order', 'is_active')
+    search_fields = ('name', 'code')
 
 
 @admin.register(Subject)
@@ -12,6 +19,6 @@ class SubjectAdmin(admin.ModelAdmin):
 @admin.register(ContentItem)
 class ContentItemAdmin(admin.ModelAdmin):
     list_display = ('title', 'subject', 'grade', 'curriculum', 'content_type', 'category', 'is_free', 'coin_price', 'created_at')
-    list_filter = ('subject', 'grade', 'curriculum', 'content_type', 'category', 'is_free')
+    list_filter = ('curriculum', 'subject', 'grade', 'content_type', 'category', 'is_free')
     search_fields = ('title', 'description')
     prepopulated_fields = {'slug': ('title',)}

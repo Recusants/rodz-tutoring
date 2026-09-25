@@ -3,8 +3,8 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from accounts.models import CustomUser
-from content_hub.models import Subject, ContentItem
-from wallet.models import StudentWallet, CoinTransaction
+from content_hub.models import Subject, ContentItem, Curriculum
+from wallet.models import StudentWallet, CoinTransaction, CoinBundle, PaymentMethod
 from quizzes.models import Quiz, Question, Choice
 
 
@@ -96,6 +96,56 @@ class Command(BaseCommand):
             obj, _ = Subject.objects.get_or_create(slug=s['slug'], defaults=s)
             subjects[s['slug']] = obj
         self.stdout.write(self.style.SUCCESS(f"Created {len(subjects)} subjects."))
+
+        # 1b. Curricula (Dynamic)
+        curricula_data = [
+            {'code': 'CAMBRIDGE', 'name': 'Cambridge Assessment International Education (CIE)', 'description': 'IGCSE, AS & A-Levels syllabus covering pure sciences and commercial subjects.', 'order': 1},
+            {'code': 'CAPS', 'name': 'CAPS (Curriculum and Assessment Policy Statement)', 'description': 'South African National Senior Certificate curriculum for Grades 7 to 12.', 'order': 2},
+            {'code': 'IEB', 'name': 'IEB (Independent Examinations Board)', 'description': 'South African independent schools curriculum with deep analytical problem solving.', 'order': 3},
+        ]
+        for c in curricula_data:
+            Curriculum.objects.get_or_create(code=c['code'], defaults=c)
+        self.stdout.write(self.style.SUCCESS("Created standard curricula (Cambridge, CAPS, IEB)."))
+
+        # 1c. Coin Bundles
+        bundles_data = [
+            {'name': 'Starter Pack', 'price_zar': 60.00, 'coins': 60, 'badge': 'STARTER', 'description': 'Ideal for quick revision and quiz assessments', 'order': 1},
+            {'name': 'Most Popular Pack', 'price_zar': 110.00, 'coins': 130, 'badge': '🔥 MOST POPULAR', 'description': 'Extra +10 bonus coins included for full exam revision', 'order': 2},
+            {'name': 'Term Scholar Pack', 'price_zar': 220.00, 'coins': 280, 'badge': '⭐ BEST VALUE', 'description': 'Extra +30 bonus coins included for all subjects', 'order': 3},
+            {'name': 'Mastery Year Pack', 'price_zar': 420.00, 'coins': 580, 'badge': '🏆 PRO SCHOLAR', 'description': 'Extra +80 bonus coins with full past papers & video access', 'order': 4},
+        ]
+        for b in bundles_data:
+            CoinBundle.objects.get_or_create(name=b['name'], defaults=b)
+        self.stdout.write(self.style.SUCCESS("Created coin bundles."))
+
+        # 1d. Payment Methods / Accounts
+        methods_data = [
+            {
+                'title': 'FNB Bank Transfer / EFT',
+                'bank_name': 'First National Bank (FNB)',
+                'account_number': '62891234567',
+                'branch_code': '250655',
+                'account_holder': 'Rodz Tutoring (Pty) Ltd',
+                'account_type': 'Business Cheque',
+                'reference_instructions': 'Use your student email or cell number as your deposit reference.',
+                'additional_notes': 'Upload your bank receipt or notification screenshot below to activate coins.',
+                'order': 1,
+            },
+            {
+                'title': 'Capitec Pay / Instant EFT',
+                'bank_name': 'Capitec Bank',
+                'account_number': '1528994321',
+                'branch_code': '470010',
+                'account_holder': 'Rodz Tutoring (Pty) Ltd',
+                'account_type': 'Savings / Business',
+                'reference_instructions': 'Use your student email as reference.',
+                'additional_notes': 'Instant verification within minutes during business hours.',
+                'order': 2,
+            },
+        ]
+        for m in methods_data:
+            PaymentMethod.objects.get_or_create(title=m['title'], defaults=m)
+        self.stdout.write(self.style.SUCCESS("Created payment methods."))
 
         # 2. Users (Admin, Tutor, Student)
         admin_user, created = CustomUser.objects.get_or_create(

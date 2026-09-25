@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Payment Proof Requests | Rodz Tutoring Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 1200px; margin: 0 auto;">
+  <div class="section-heading">
+    <div class="eyebrow" style="color: #b45309; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">ADMINISTRATIVE VERIFICATION</div>
+    <h2>PAYMENT PROOF & COIN ACTIVATIONS</h2>
+    <p>Review student deposits, verify proof of payment (POP), and approve coin activations.</p>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Status Filters & Search Bar -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px 24px; margin-bottom: 30px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: var(--shadow-sm);">
+    <!-- Filter Pills -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="?status=PENDING" class="btn {% if status_filter == 'PENDING' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
+        ⏳ Pending Verification
+        {% if pending_count > 0 %}
+          <span style="background: #ef4444; color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 12px;">{{ pending_count }}</span>
+        {% endif %}
+      </a>
+      <a href="?status=APPROVED" class="btn {% if status_filter == 'APPROVED' %}primary{% else %}outline{% endif %} small">
+        ✓ Approved & Credited
+      </a>
+      <a href="?status=REJECTED" class="btn {% if status_filter == 'REJECTED' %}primary{% else %}outline{% endif %} small">
+        ✕ Declined
+      </a>
+      <a href="?status=ALL" class="btn {% if status_filter == 'ALL' %}primary{% else %}outline{% endif %} small">
+        All Submissions
+      </a>
+    </div>
+
+    <!-- Search Form -->
+    <form method="GET" style="display: flex; gap: 8px; flex-grow: 1; max-width: 400px;">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="text" name="q" value="{{ search_q }}" placeholder="Search email, student name, or ref..." class="input-control" style="font-size: 13px;">
+      <button type="submit" class="btn outline small">Search</button>
+      {% if search_q %}
+        <a href="?status={{ status_filter }}" class="btn outline small" style="color: var(--muted);">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Payment Requests Table -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);">
+    {% if payment_requests %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--soft); color: var(--blue); border-bottom: 2px solid var(--line);">
+              <th style="padding: 14px 16px;">Req ID & Date</th>
+              <th style="padding: 14px 16px;">Student Learner</th>
+              <th style="padding: 14px 16px;">Bundle & Coins</th>
+              <th style="padding: 14px 16px;">Amount Paid</th>
+              <th style="padding: 14px 16px;">Method & Ref #</th>
+              <th style="padding: 14px 16px;">Proof (POP)</th>
+              <th style="padding: 14px 16px;">Status</th>
+              <th style="padding: 14px 16px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in payment_requests %}
+              <tr style="border-bottom: 1px solid var(--line); {% if req.status == 'PENDING' %}background: #fffdf5;{% endif %}">
+                <!-- ID & Date -->
+                <td style="padding: 14px 16px; white-space: nowrap;">
+                  <div style="font-weight: 800; color: var(--blue);">#{{ req.id }}</div>
+                  <div style="font-size: 11px; color: var(--muted);">{{ req.created_at|date:"d M Y, H:i" }}</div>
+                </td>
+
+                <!-- Student -->
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 700; color: var(--text);">{{ req.student.full_name|default:req.student.email }}</div>
+                  <div style="font-size: 12px; color: var(--muted);">{{ req.student.email }}</div>
+                  {% if req.student.phone_number %}
+                    <div style="font-size: 11px; color: #16a34a;">📱 {{ req.student.phone_number }}</div>
+                  {% endif %}
+                </td>
+
+                <!-- Bundle & Coins -->
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 700;">{{ req.bundle.name|default:"Custom Pack" }}</div>
+                  <div style="font-size: 14px; font-weight: 900; color: #b45309; margin-top: 2px;">
+                    🪙 {{ req.coins_to_credit }} Coins
+                  </div>
+                </td>
+
+                <!-- Amount -->
+                <td style="padding: 14px 16px; font-weight: 800; color: #15803d; font-size: 14px;">
+                  R{{ req.amount_paid }}
+                </td>
+
+                <!-- Method & Ref -->
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 600; font-size: 12px; color: var(--text);">{{ req.payment_method.title|default:"Bank EFT" }}</div>
+                  <div style="font-family: monospace; font-size: 12px; background: var(--soft); padding: 3px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; color: var(--blue); font-weight: 700;">
+                    {{ req.reference_number }}
+                  </div>
+                  {% if req.student_notes %}
+                    <div style="font-size: 11px; color: var(--muted); margin-top: 4px; max-width: 220px; line-height: 1.3;">
+                      💬 <i>"{{ req.student_notes }}"</i>
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- Proof of Payment (POP) -->
+                <td style="padding: 14px 16px; white-space: nowrap;">
+                  {% if req.proof_of_payment %}
+                    <a href="{{ req.proof_of_payment.url }}" target="_blank" rel="noopener" class="btn outline small" style="padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                      📄 Open POP &rarr;
+                    </a>
+                  {% else %}
+                    <span style="color: var(--muted); font-size: 12px;">No file</span>
+                  {% endif %}
+                </td>
+
+                <!-- Status -->
+                <td style="padding: 14px 16px;">
+                  {% if req.status == 'PENDING' %}
+                    <span style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">
+                      ⏳ Pending
+                    </span>
+                  {% elif req.status == 'APPROVED' %}
+                    <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">
+                      ✓ Credited
+                    </span>
+                    <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">
+                      by {{ req.reviewed_by.email|default:"Admin" }}
+                    </div>
+                  {% else %}
+                    <span style="background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">
+                      ✕ Declined
+                    </span>
+                    {% if req.admin_notes %}
+                      <div style="font-size: 10px; color: #b91c1c; margin-top: 3px;">
+                        {{ req.admin_notes }}
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                </td>
+
+                <!-- Actions -->
+                <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
+                  {% if req.status == 'PENDING' %}
+                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                      <!-- Approve Button & Form -->
+                      <form method="POST" style="display: inline;" onsubmit="return confirm('Approve request #{{ req.id }} and credit {{ req.coins_to_credit }} coins to {{ req.student.email }}?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <input type="hidden" name="request_id" value="{{ req.id }}">
+                        <button type="submit" class="btn primary small" style="background: #16a34a; border-color: #16a34a; padding: 5px 12px; font-size: 12px; font-weight: 800;">
+                          ✓ Approve
+                        </button>
+                      </form>
+
+                      <!-- Decline Modal / Form -->
+                      <button type="button" class="btn outline small" style="color: #dc2626; border-color: #fca5a5; padding: 5px 10px; font-size: 12px;" onclick="promptDecline('{{ req.id }}', '{{ req.student.email }}')">
+                        ✕ Decline
+                      </button>
+                    </div>
+                  {% else %}
+                    <span style="font-size: 11px; color: var(--muted);">Processed</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding: 40px; text-align: center; color: var(--muted);">
+        <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
+        <p style="font-size: 14px;">No payment requests found for the selected filter.</p>
+        {% if status_filter != 'ALL' %}
+          <a href="?status=ALL" class="btn outline small" style="margin-top: 10px;">View All Requests</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Admin Quick Navigation -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
+    <a href="{% url 'accounts:dashboard' %}" class="btn outline small">&larr; Back to Dashboard</a>
+    <a href="{% url 'wallet:admin_credit_panel' %}" class="btn outline small">Manual Coin Credits Panel &rarr;</a>
+  </div>
+</section>
+
+<!-- Hidden Form for Decline Prompt -->
+<form id="declineForm" method="POST" style="display: none;">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="reject">
+  <input type="hidden" name="request_id" id="declineReqId" value="">
+  <input type="hidden" name="admin_notes" id="declineReason" value="">
+</form>
+
+<script>
+function promptDecline(reqId, studentEmail) {
+  const reason = prompt(`Enter reason for declining request #${reqId} (${studentEmail}):`, 'Payment reference or POP could not be verified.');
+  if (reason !== null && reason.trim() !== '') {
+    document.getElementById('declineReqId').value = reqId;
+    document.getElementById('declineReason').value = reason.trim();
+    document.getElementById('declineForm').submit();
+  }
+}
+</script>
+{% endblock %}

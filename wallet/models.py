@@ -101,6 +101,78 @@ class ContentUnlock(models.Model):
         return f"{self.user.email} unlocked '{self.content_item.title}' ({self.coins_spent} coins)"
 
 
+class PaymentMethod(models.Model):
+    title = models.CharField(max_length=120, help_text="e.g. FNB Bank EFT, Standard Bank, Capitec, e-Wallet")
+    bank_name = models.CharField(max_length=100, blank=True)
+    account_holder = models.CharField(max_length=120, default="Rodz Tutoring")
+    account_number = models.CharField(max_length=60)
+    branch_code = models.CharField(max_length=40, blank=True, default="250655")
+    account_type = models.CharField(max_length=50, default="Cheque / Current")
+    reference_instructions = models.CharField(
+        max_length=255, 
+        default="Use your Student Email or WhatsApp Phone as payment reference."
+    )
+    additional_notes = models.TextField(blank=True, help_text="Any additional deposit instructions")
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return f"{self.title} ({self.account_number})"
+
+
+class CoinBundle(models.Model):
+    name = models.CharField(max_length=100)
+    coins = models.PositiveIntegerField(help_text="Coins granted on activation")
+    price_zar = models.DecimalField(max_digits=8, decimal_places=2, help_text="Price in ZAR")
+    badge = models.CharField(max_length=50, blank=True, default="POPULAR")
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'price_zar']
+
+    def __str__(self):
+        return f"{self.name} - {self.coins} Coins (R{self.price_zar})"
+
+
+class CoinPaymentRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Verification'),
+        ('APPROVED', 'Approved & Credited'),
+        ('REJECTED', 'Declined'),
+    ]
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='coin_requests')
+    bundle = models.ForeignKey(CoinBundle, null=True, blank=True, on_delete=models.SET_NULL, related_name='requests')
+    payment_method = models.ForeignKey(PaymentMethod, null=True, blank=True, on_delete=models.SET_NULL, related_name='requests')
+    coins_to_credit = models.PositiveIntegerField()
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    reference_number = models.CharField(max_length=120, help_text="Payment transaction ID or deposit reference")
+    proof_of_payment = models.FileField(upload_to='payment_proofs/', help_text="Receipt screenshot or PDF")
+    student_notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    admin_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        related_name='reviewed_coin_requests'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Request #{self.id} - {self.student.email} ({self.coins_to_credit} coins) [{self.status}]"
+
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_wallet(sender, instance, created, **kwargs):
     if created:
