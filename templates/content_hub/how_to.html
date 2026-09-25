@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ primary_guide.title|default:"How It Works" }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 40px; max-width: 1040px; margin: 0 auto;">
+  
+  {% if user.is_staff or user.is_admin_role %}
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <a href="{% url 'accounts:admin_site_content' %}#howto-tab" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px;">
+        <i class="fa-solid fa-pen-to-square"></i> Edit How-To Steps (Admin CMS)
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- Header Banner -->
+  <div class="section-heading" style="margin-bottom: 40px;">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      {{ primary_guide.badge_text|default:"STUDENT STEP-BY-STEP GUIDE" }}
+    </div>
+    <h2>{{ primary_guide.title|default:"HOW RODZ TUTORING WORKS" }}</h2>
+    <p style="max-width: 700px; margin: 0 auto;">
+      {{ primary_guide.subtitle|default:"A step-by-step walkthrough to get registered, acquire study coins, unlock protected materials, and excel in your exams." }}
+    </p>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Step-by-Step Flow Grid -->
+  <div style="display: flex; flex-direction: column; gap: 24px; position: relative;">
+    
+    {% for step in primary_guide.steps.all %}
+      <div class="dash-section" style="padding: 28px; display: grid; grid-template-columns: 80px 1fr auto; gap: 24px; align-items: center; border-left: 5px solid var(--blue); transition: transform 0.2s ease;">
+        
+        <!-- Step Icon & Number -->
+        <div style="text-align: center;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #eff6ff; border: 2px solid #bfdbfe; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 6px;">
+            <i class="{{ step.icon_class|default:'fa-solid fa-check' }}"></i>
+          </div>
+          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em;">
+            {{ step.badge|default:"STEP" }}
+          </span>
+        </div>
+
+        <!-- Step Content -->
+        <div>
+          <h3 style="font-size: 20px; color: var(--blue); margin: 0 0 8px;">
+            {{ step.title }}
+          </h3>
+          <p style="font-size: 14px; color: var(--text); line-height: 1.6; margin: 0;">
+            {{ step.description|linebreaksbr }}
+          </p>
+        </div>
+
+        <!-- Call to Action -->
+        {% if step.call_to_action_text and step.call_to_action_url %}
+          <div>
+            <a href="{{ step.call_to_action_url }}" class="btn primary small" style="white-space: nowrap; padding: 10px 20px; font-weight: 700;">
+              {{ step.call_to_action_text }} &rarr;
+            </a>
+          </div>
+        {% endif %}
+
+      </div>
+    {% empty %}
+      <div class="dash-section" style="padding: 40px; text-align: center; color: var(--muted);">
+        <p>No steps configured yet.</p>
+      </div>
+    {% endfor %}
+
+  </div>
+
+  <!-- Key Student Benefits Box -->
+  <div style="margin-top: 50px; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 36px;">
+    <h3 style="font-size: 22px; color: var(--blue); margin-bottom: 20px; text-align: center;">
+      <i class="fa-solid fa-shield-halved" style="color: var(--blue);"></i> Why Students Choose Rodz Tutoring
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px;">
+        <div style="color: #15803d; font-size: 22px; margin-bottom: 8px;"><i class="fa-solid fa-calendar-check"></i></div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">Academic Year Retention</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          Once you unlock any resource or course bundle, it stays permanently active in your learning vault for the entire school academic year.
+        </p>
+      </div>
+
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px;">
+        <div style="color: #b45309; font-size: 22px; margin-bottom: 8px;"><i class="fa-solid fa-tags"></i></div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">"Complete My Bundle" Savings</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          Bought a single worksheet or video? When upgrading to the complete Course Bundle, the price of items you already bought is subtracted automatically.
+        </p>
+      </div>
+
+      <div style="background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px;">
+        <div style="color: #2563eb; font-size: 22px; margin-bottom: 8px;"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">No Huge Downloads Needed</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          Our non-downloadable secure engine renders pages as crisp, optimized images directly in your browser. Zero device clutter and minimal data usage.
+        </p>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="{% url 'accounts:register' %}" class="btn primary" style="padding: 12px 32px; font-size: 14px; font-weight: 800;">
+        ENROL TODAY & START LEARNING &rarr;
+      </a>
+    </div>
+  </div>
+
+</section>
+{% endblock %}

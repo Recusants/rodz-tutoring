@@ -9,19 +9,27 @@
   <link rel="stylesheet" href="{% static 'css/theme.css' %}">
   <!-- FontAwesome 6 CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
   <!-- Topbar -->
   <div class="topbar">
-    <div><i class="fa-solid fa-phone"></i> {{ WHATSAPP_DISPLAY_PHONE }} &nbsp;&bull;&nbsp; <i class="fa-solid fa-envelope"></i> {{ INFO_EMAIL }}</div>
+    <div><i class="fa-solid fa-phone"></i> {{ site_contact.phone_number }} &nbsp;&bull;&nbsp; <i class="fa-solid fa-envelope"></i> {{ site_contact.email_address }}</div>
     <div>
-      Follow us:
-      <a href="https://bit.ly/4h8HAtr" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i> YouTube</a>
-      <a href="https://bit.ly/4xyxuIz" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i> TikTok</a>
-      <a href="https://bit.ly/4xBMiX1" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i> Facebook</a>
-      <a href="https://wa.me/{{ WHATSAPP_PHONE }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+      Connect with us:
+      {% if site_contact.whatsapp_community_url %}
+        <a href="{{ site_contact.whatsapp_community_url }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Community</a>
+      {% endif %}
+      <a href="https://wa.me/{{ site_contact.whatsapp_number }}" target="_blank" rel="noopener"><i class="fa-solid fa-headset"></i> WhatsApp Support</a>
+      {% if site_contact.facebook_url %}
+        <a href="{{ site_contact.facebook_url }}" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i> Facebook</a>
+      {% endif %}
+      {% if site_contact.instagram_url %}
+        <a href="{{ site_contact.instagram_url }}" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i> Instagram</a>
+      {% endif %}
     </div>
   </div>
 
@@ -38,8 +46,10 @@
     <nav class="nav" id="mainNav">
       <a href="{% url 'home' %}">HOME</a>
       <a href="{% url 'about' %}">ABOUT US</a>
+      <a href="{% url 'how_to' %}">HOW IT WORKS</a>
       <a href="{% url 'tutoring' %}">TUTORING</a>
       <a href="{% url 'content_hub:catalog' %}">RESOURCE HUB</a>
+      <a href="{% url 'contact' %}">CONTACT</a>
 
       {% if user.is_authenticated %}
         <!-- Mode Pill Switcher in Navbar (For Multi-Role Users) -->
@@ -164,6 +174,9 @@
               <a href="{% url 'accounts:system_settings' %}" class="dropdown-item">
                 <i class="fa-solid fa-gear dropdown-icon"></i> System Settings
               </a>
+              <a href="{% url 'accounts:admin_site_content' %}" class="dropdown-item">
+                <i class="fa-solid fa-pen-to-square dropdown-icon"></i> Site Content CMS
+              </a>
               <a href="/admin/" target="_blank" class="dropdown-item">
                 <i class="fa-solid fa-screwdriver-wrench dropdown-icon"></i> Django Admin &rarr;
               </a>
@@ -244,9 +257,10 @@
         <h4>Quick Links</h4>
         <a href="{% url 'home' %}">Home</a>
         <a href="{% url 'about' %}">About Us</a>
+        <a href="{% url 'how_to' %}">How It Works</a>
         <a href="{% url 'tutoring' %}">Tutoring Options</a>
         <a href="{% url 'content_hub:catalog' %}">Study Materials</a>
-        <a href="{% url 'wallet:buy_coins' %}">Buy Coins</a>
+        <a href="{% url 'contact' %}">Contact Us</a>
       </div>
 
       <div>
@@ -258,10 +272,10 @@
 
       <div>
         <h4>Contact Us</h4>
-        <p><i class="fa-solid fa-phone"></i> {{ WHATSAPP_DISPLAY_PHONE }}</p>
-        <p><i class="fa-solid fa-envelope"></i> {{ INFO_EMAIL }}</p>
-        <p><i class="fa-solid fa-clock"></i> Mon – Sun: 07:00 – 21:00</p>
-        <p><i class="fa-solid fa-location-dot"></i> South Africa & Worldwide</p>
+        <p><i class="fa-solid fa-phone"></i> {{ site_contact.phone_number }}</p>
+        <p><i class="fa-solid fa-envelope"></i> {{ site_contact.email_address }}</p>
+        <p><i class="fa-solid fa-clock"></i> {{ site_contact.operating_hours }}</p>
+        <p><i class="fa-solid fa-location-dot"></i> {{ site_contact.physical_address }}</p>
       </div>
     </div>
 

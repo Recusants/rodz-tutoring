@@ -1,11 +1,16 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseForbidden, Http404
+from django.http import HttpResponse, HttpResponseForbidden, Http404, JsonResponse
 from django.contrib import messages
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.utils import timezone
-from .models import Subject, ContentItem, Curriculum, Course
-from .forms import TutorCourseCreateForm
+from .models import (
+    Subject, ContentItem, Curriculum, Course, 
+    AboutContent, ContactInfo, HowToGuide, HowToStep
+)
+from .forms import (
+    TutorCourseCreateForm, AboutContentForm, ContactInfoForm, HowToStepForm
+)
 from wallet.models import ContentUnlock, StudentWallet, CourseUnlock
 import os
 
@@ -32,7 +37,172 @@ def home_view(request):
 
 
 def about_view(request):
-    return render(request, 'content_hub/about.html')
+    about = AboutContent.get_solo()
+    raw_pillars = [p.strip() for p in about.pillars_content.splitlines() if p.strip()]
+    parsed_pillars = []
+    for line in raw_pillars:
+        if ':' in line:
+            title, desc = line.split(':', 1)
+            parsed_pillars.append({'title': title.strip(), 'desc': desc.strip()})
+        else:
+            parsed_pillars.append({'title': '', 'desc': line.strip()})
+
+    return render(request, 'content_hub/about.html', {
+        'about': about,
+        'pillars': parsed_pillars,
+    })
+
+
+def contact_view(request):
+    contact = ContactInfo.get_solo()
+    submitted = False
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        subject = request.POST.get('subject', '').strip()
+        message = request.POST.get('message', '').strip()
+
+        # Handle AJAX submissions with SweetAlert2 response
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            if not name or not email or not message:
+                return JsonResponse({'status': 'error', 'message': 'Please provide your name, email, and message.'}, status=400)
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Thank you {name}! Your message has been received. Our advisory team will respond to {email} shortly.'
+            })
+
+        if name and email and message:
+            messages.success(request, f"Thank you {name}! Your inquiry has been sent successfully.")
+            submitted = True
+        else:
+            messages.error(request, "Please fill in all required fields.")
+
+    return render(request, 'content_hub/contact.html', {
+        'contact': contact,
+        'submitted': submitted,
+    })
+
+
+def how_to_view(request):
+    guides = HowToGuide.objects.filter(is_active=True).prefetch_related('steps').order_by('order', 'title')
+    primary_guide = guides.first()
+    return render(request, 'content_hub/how_to.html', {
+        'guides': guides,
+        'primary_guide': primary_guide,
+    })
+
+
+@login_required
+def admin_site_content_view(request):
+    user = request.user
+    if not (user.is_admin_role or user.is_staff or user.is_superuser):
+        return HttpResponseForbidden("Access Denied: Admin authorization required.")
+
+    about_obj = AboutContent.get_solo()
+    contact_obj = ContactInfo.get_solo()
+    guide_obj, _ = HowToGuide.objects.get_or_create(slug='how-it-works', defaults={'title': 'How Rodz Tutoring Works'})
+    steps = guide_obj.steps.all().order_by('order', 'step_number')
+
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('is_ajax') == '1'
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'save_about':
+            form = AboutContentForm(request.POST, instance=about_obj)
+            if form.is_valid():
+                form.save()
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'message': 'About Us content updated successfully in database!'})
+                messages.success(request, 'About Us content updated successfully!')
+                return redirect('content_hub:admin_site_content')
+            else:
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'message': 'Please correct the form errors.', 'errors': form.errors}, status=400)
+                messages.error(request, 'Please correct the errors in the About form.')
+
+        elif action == 'save_contact':
+            form = ContactInfoForm(request.POST, instance=contact_obj)
+            if form.is_valid():
+                form.save()
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'message': 'Contact information and operating hours updated!'})
+                messages.success(request, 'Contact details updated successfully!')
+                return redirect('content_hub:admin_site_content')
+            else:
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'message': 'Please correct the form errors.', 'errors': form.errors}, status=400)
+                messages.error(request, 'Please correct the errors in the Contact form.')
+
+        elif action == 'save_step':
+            step_id = request.POST.get('step_id')
+            step_instance = get_object_or_404(HowToStep, id=step_id) if step_id else None
+            form = HowToStepForm(request.POST, instance=step_instance)
+            if form.is_valid():
+                saved_step = form.save(commit=False)
+                saved_step.guide = guide_obj
+                saved_step.save()
+                if is_ajax:
+                    return JsonResponse({
+                        'status': 'success', 
+                        'message': f"Step '{saved_step.title}' saved successfully!",
+                        'step': {
+                            'id': saved_step.id,
+                            'step_number': saved_step.step_number,
+                            'badge': saved_step.badge,
+                            'title': saved_step.title,
+                            'icon_class': saved_step.icon_class,
+                            'description': saved_step.description,
+                            'order': saved_step.order,
+                            'call_to_action_text': saved_step.call_to_action_text,
+                            'call_to_action_url': saved_step.call_to_action_url,
+                        }
+                    })
+                messages.success(request, f"Step '{saved_step.title}' saved!")
+                return redirect('content_hub:admin_site_content')
+            else:
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'message': 'Step form errors.', 'errors': form.errors}, status=400)
+                messages.error(request, 'Error saving step.')
+
+        elif action == 'delete_step':
+            step_id = request.POST.get('step_id')
+            step = get_object_or_404(HowToStep, id=step_id)
+            step_title = step.title
+            step.delete()
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': f"Step '{step_title}' removed successfully."})
+            messages.info(request, f"Step '{step_title}' deleted.")
+            return redirect('content_hub:admin_site_content')
+
+        elif action == 'save_guide':
+            guide_title = request.POST.get('title', '').strip()
+            subtitle = request.POST.get('subtitle', '').strip()
+            badge_text = request.POST.get('badge_text', '').strip()
+            if guide_title:
+                guide_obj.title = guide_title
+                guide_obj.subtitle = subtitle
+                guide_obj.badge_text = badge_text
+                guide_obj.save()
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'message': 'Guide header details saved successfully!'})
+                messages.success(request, 'Guide details updated.')
+                return redirect('content_hub:admin_site_content')
+
+    about_form = AboutContentForm(instance=about_obj)
+    contact_form = ContactInfoForm(instance=contact_obj)
+    step_form = HowToStepForm(initial={'guide': guide_obj, 'step_number': steps.count() + 1, 'order': steps.count() + 1})
+
+    return render(request, 'accounts/admin_site_content.html', {
+        'about_obj': about_obj,
+        'contact_obj': contact_obj,
+        'guide_obj': guide_obj,
+        'steps': steps,
+        'about_form': about_form,
+        'contact_form': contact_form,
+        'step_form': step_form,
+    })
 
 
 def tutoring_view(request):

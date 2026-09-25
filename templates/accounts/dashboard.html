@@ -106,6 +106,9 @@
         <a href="{% url 'accounts:system_settings' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-gear"></i> SYSTEM .ENV SETTINGS
         </a>
+        <a href="{% url 'accounts:admin_site_content' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-pen-to-square"></i> SITE CONTENT CMS
+        </a>
         <a href="/admin/" class="btn outline small" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" target="_blank">
           <i class="fa-solid fa-screwdriver-wrench"></i> DJANGO ADMIN &rarr;
         </a>
@@ -203,6 +206,11 @@
             <div style="font-size: 24px; color: #0284c7; margin-bottom: 6px;"><i class="fa-solid fa-gear"></i></div>
             <h4 style="margin: 0; font-size: 15px; color: #0369a1;">System .env Settings</h4>
             <p style="margin: 4px 0 0; font-size: 12px; color: #0284c7;">Manage SMTP email, passwords & WhatsApp</p>
+          </a>
+          <a href="{% url 'accounts:admin_site_content' %}" style="display: block; background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; border-radius: var(--radius-sm); text-decoration: none; color: inherit; transition: transform 0.2s;">
+            <div style="font-size: 24px; color: var(--blue); margin-bottom: 6px;"><i class="fa-solid fa-pen-to-square"></i></div>
+            <h4 style="margin: 0; font-size: 15px; color: var(--blue);">Site Content CMS</h4>
+            <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">Live edit About, Contact & How-To guides</p>
           </a>
         </div>
       </div>

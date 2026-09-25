@@ -363,4 +363,178 @@ class CourseBundleTestCase(TestCase):
         self.assertTrue(ContentUnlock.objects.filter(user=self.student, content_item=self.item2).exists())
 
 
+class SiteContentCMSTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = CustomUser.objects.create_user(
+            email='admin_cms@example.com',
+            password='Password123!',
+            is_staff=True,
+            is_admin_role=True
+        )
+        self.student = CustomUser.objects.create_user(
+            email='student_cms@example.com',
+            password='Password123!',
+            is_student=True
+        )
+
+    def test_about_page_renders_from_db(self):
+        from content_hub.models import AboutContent
+        about = AboutContent.get_solo()
+        about.heading = "CUSTOM DB ACADEMIC EXCELLENCE"
+        about.stat_students = "999+"
+        about.save()
+
+        resp = self.client.get(reverse('about'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "CUSTOM DB ACADEMIC EXCELLENCE")
+        self.assertContains(resp, "999+")
+
+    def test_contact_page_renders_from_db_and_ajax(self):
+        from content_hub.models import ContactInfo
+        contact = ContactInfo.get_solo()
+        contact.phone_number = "+27 88 777 6655"
+        contact.email_address = "custom_contact@rodztutoring.co.za"
+        contact.save()
+
+        # Public GET
+        resp = self.client.get(reverse('contact'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "+27 88 777 6655")
+        self.assertContains(resp, "custom_contact@rodztutoring.co.za")
+
+        # AJAX message submission for SweetAlert2
+        ajax_resp = self.client.post(
+            reverse('contact'),
+            {
+                'name': 'Thabo Mokoena',
+                'email': 'thabo@example.com',
+                'subject': 'Tutoring Inquiry',
+                'message': 'I would like Grade 11 Maths tutoring.'
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(ajax_resp.status_code, 200)
+        data = ajax_resp.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertIn('Thabo', data['message'])
+
+    def test_how_to_page_renders_steps(self):
+        from content_hub.models import HowToGuide, HowToStep
+        guide, _ = HowToGuide.objects.get_or_create(slug='how-it-works', defaults={'title': 'How It Works Guide'})
+        guide.steps.all().delete()
+        step = HowToStep.objects.create(
+            guide=guide,
+            step_number=1,
+            badge='STEP 1',
+            title='Fast Registration Walkthrough',
+            icon_class='fa-solid fa-bolt',
+            description='Register in seconds.',
+            call_to_action_text='Get Started',
+            call_to_action_url='/accounts/register/',
+            order=1
+        )
+
+        resp = self.client.get(reverse('how_to'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Fast Registration Walkthrough')
+        self.assertContains(resp, 'fa-bolt')
+
+    def test_admin_cms_ajax_save_and_permissions(self):
+        from content_hub.models import AboutContent, ContactInfo, HowToGuide, HowToStep
+        cms_url = reverse('content_hub:admin_site_content')
+
+        # Non-admin student blocked (403)
+        self.client.login(username='student_cms@example.com', password='Password123!')
+        student_resp = self.client.get(cms_url)
+        self.assertEqual(student_resp.status_code, 403)
+
+        # Admin logs in
+        self.client.login(username='admin_cms@example.com', password='Password123!')
+        admin_resp = self.client.get(cms_url)
+        self.assertEqual(admin_resp.status_code, 200)
+
+        # 1. AJAX Save About
+        save_about_resp = self.client.post(
+            cms_url,
+            {
+                'action': 'save_about',
+                'eyebrow': 'UPDATED EYEBROW',
+                'heading': 'NEW HEADLINE',
+                'subheading': 'New subhead',
+                'story_title': 'New Story',
+                'story_paragraph_1': 'Paragraph 1 test',
+                'story_paragraph_2': 'Paragraph 2 test',
+                'pillars_title': 'Pillars Title',
+                'pillars_content': 'Pillar 1: Details\nPillar 2: More details',
+                'stat_students': '750+',
+                'stat_pass_rate': '98%',
+                'stat_papers': '1500+',
+                'stat_hours': '3000+',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(save_about_resp.status_code, 200)
+        self.assertEqual(save_about_resp.json()['status'], 'success')
+        about = AboutContent.get_solo()
+        self.assertEqual(about.heading, 'NEW HEADLINE')
+        self.assertEqual(about.stat_students, '750+')
+
+        # 2. AJAX Save Contact
+        save_contact_resp = self.client.post(
+            cms_url,
+            {
+                'action': 'save_contact',
+                'phone_number': '+27 11 222 3333',
+                'whatsapp_number': '27112223333',
+                'email_address': 'admin_updated@rodztutoring.co.za',
+                'support_email': 'support@rodztutoring.co.za',
+                'physical_address': 'Cape Town, South Africa',
+                'operating_hours': 'Mon – Fri: 08:00 – 20:00',
+                'contact_notice': 'Special holiday notice',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(save_contact_resp.status_code, 200)
+        self.assertEqual(save_contact_resp.json()['status'], 'success')
+        contact = ContactInfo.get_solo()
+        self.assertEqual(contact.phone_number, '+27 11 222 3333')
+        self.assertEqual(contact.physical_address, 'Cape Town, South Africa')
+
+        # 3. AJAX Save Step
+        guide = HowToGuide.objects.get(slug='how-it-works')
+        save_step_resp = self.client.post(
+            cms_url,
+            {
+                'action': 'save_step',
+                'guide': guide.id,
+                'step_number': 9,
+                'badge': 'STEP 9',
+                'title': 'New Exam Revision Step',
+                'icon_class': 'fa-solid fa-medal',
+                'description': 'Revise with real examiners.',
+                'order': 9,
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(save_step_resp.status_code, 200)
+        data = save_step_resp.json()
+        self.assertEqual(data['status'], 'success')
+        new_step_id = data['step']['id']
+
+        # 4. AJAX Delete Step
+        del_step_resp = self.client.post(
+            cms_url,
+            {
+                'action': 'delete_step',
+                'step_id': new_step_id,
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(del_step_resp.status_code, 200)
+        self.assertEqual(del_step_resp.json()['status'], 'success')
+        self.assertFalse(HowToStep.objects.filter(id=new_step_id).exists())
+
+
+
 

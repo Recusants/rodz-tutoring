@@ -13,7 +13,8 @@ __pycache__/
 
 # Django Media & Static collected
 staticfiles/
-media/uploads/
+media/
+
 
 # OS & IDE
 .DS_Store

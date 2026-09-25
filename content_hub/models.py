@@ -274,3 +274,102 @@ class Course(models.Model):
             'owned_item_ids': owned_item_ids,
         }
 
+
+class AboutContent(models.Model):
+    eyebrow = models.CharField(max_length=120, default='OUR HERITAGE & MISSION')
+    heading = models.CharField(max_length=255, default='EMPOWERING ACADEMIC EXCELLENCE')
+    subheading = models.CharField(max_length=255, default='Providing high-impact, curriculum-aligned academic support for Grades 7 to 12.')
+    story_title = models.CharField(max_length=255, default='Dedicated to building confidence, mastery, and top marks.')
+    story_paragraph_1 = models.TextField(
+        default="At Rodz Tutoring, we believe that every student has the capacity to grasp difficult subjects when taught with patience, clarity, and systematic problem-solving methods."
+    )
+    story_paragraph_2 = models.TextField(
+        default="Whether a learner is struggling with foundational algebra, technical physical sciences, or advanced accounting principles, our curriculum-specialized tutors provide the exact scaffolding needed to transform marks from 40% to 80%+."
+    )
+    pillars_title = models.CharField(max_length=255, default='The Rodz Standard')
+    pillars_content = models.TextField(
+        default="Qualified & Vetted Tutors: Specialists in CAPS, IEB, and Cambridge curricula.\nExam-Oriented Pedagogy: Real past-paper dissecting and examiner guidance.\nNon-Downloadable Secure Portal: Premium study notes, worked video solutions, and quizzes.\nFlexible Online Delivery: Safe, live interactive classes right from your home.",
+        help_text="One bullet point per line or colon-separated bold prefix."
+    )
+    stat_students = models.CharField(max_length=50, default='500+', help_text="e.g. 500+")
+    stat_pass_rate = models.CharField(max_length=50, default='95%', help_text="e.g. 95%")
+    stat_papers = models.CharField(max_length=50, default='1000+', help_text="e.g. 1000+")
+    stat_hours = models.CharField(max_length=50, default='2000+', help_text="e.g. 2000+")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'About Page Content'
+        verbose_name_plural = 'About Page Content'
+
+    def __str__(self):
+        return f"About Content (Updated: {self.updated_at.strftime('%Y-%m-%d') if self.updated_at else 'Initial'})"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+
+class ContactInfo(models.Model):
+    phone_number = models.CharField(max_length=60, default='+27 74 568 5212', help_text="Display phone e.g. +27 74 568 5212")
+    whatsapp_number = models.CharField(max_length=30, default='27745685212', help_text="Numeric country code format for wa.me links, e.g. 27745685212")
+    email_address = models.EmailField(default='info@rodztutoring.co.za', help_text="Primary public inquiry email")
+    support_email = models.EmailField(default='support@rodztutoring.co.za', help_text="Technical & student support email")
+    physical_address = models.CharField(max_length=255, default='Johannesburg, South Africa & Worldwide Online')
+    operating_hours = models.CharField(max_length=120, default='Mon – Sun: 07:00 – 21:00')
+    whatsapp_community_url = models.URLField(blank=True, default='https://chat.whatsapp.com/sample', help_text="Invite link to free student WhatsApp community")
+    contact_notice = models.TextField(
+        default="Our academic advisory team responds within 15 minutes during operating hours. WhatsApp inquiries receive priority same-day response.",
+        blank=True
+    )
+    facebook_url = models.URLField(blank=True, default='https://facebook.com')
+    instagram_url = models.URLField(blank=True, default='https://instagram.com')
+    linkedin_url = models.URLField(blank=True, default='https://linkedin.com')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Contact & Support Info'
+        verbose_name_plural = 'Contact & Support Info'
+
+    def __str__(self):
+        return f"Contact Info ({self.phone_number})"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+
+class HowToGuide(models.Model):
+    title = models.CharField(max_length=200, default='How Rodz Tutoring Works')
+    slug = models.SlugField(max_length=220, unique=True, default='how-it-works')
+    badge_text = models.CharField(max_length=60, default='STUDENT ONBOARDING GUIDE')
+    subtitle = models.TextField(default='Follow this simple step-by-step guide to get enrolled, acquire study coins, unlock non-downloadable materials, and excel in exams.')
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+class HowToStep(models.Model):
+    guide = models.ForeignKey(HowToGuide, on_delete=models.CASCADE, related_name='steps')
+    step_number = models.PositiveIntegerField(default=1)
+    badge = models.CharField(max_length=40, default='STEP 1')
+    title = models.CharField(max_length=200)
+    icon_class = models.CharField(max_length=80, default='fa-solid fa-user-plus', help_text="FontAwesome icon class e.g. fa-solid fa-coins, fa-solid fa-book-open")
+    description = models.TextField()
+    call_to_action_text = models.CharField(max_length=100, blank=True, help_text="e.g. Enrol Free, Buy Coins, View Packs")
+    call_to_action_url = models.CharField(max_length=255, blank=True, help_text="Relative or absolute URL e.g. /accounts/register/ or /wallet/buy-coins/")
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ['order', 'step_number']
+
+    def __str__(self):
+        return f"Step {self.step_number}: {self.title}"
+
+

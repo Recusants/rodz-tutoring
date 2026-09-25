@@ -3,11 +3,17 @@ from wallet.models import ContentUnlock
 
 
 def brand_context(request):
+    from content_hub.models import ContactInfo, AboutContent
+    contact_info = ContactInfo.get_solo()
+    about_content = AboutContent.get_solo()
+
     ctx = {
         'BRAND_NAME': 'Rodz Tutoring',
-        'WHATSAPP_PHONE': getattr(settings, 'WHATSAPP_PHONE', '27745685212'),
-        'WHATSAPP_DISPLAY_PHONE': getattr(settings, 'WHATSAPP_DISPLAY_PHONE', '+27 74 568 5212'),
-        'INFO_EMAIL': getattr(settings, 'INFO_EMAIL', 'info@rodztutoring.co.za'),
+        'WHATSAPP_PHONE': contact_info.whatsapp_number,
+        'WHATSAPP_DISPLAY_PHONE': contact_info.phone_number,
+        'INFO_EMAIL': contact_info.email_address,
+        'site_contact': contact_info,
+        'site_about': about_content,
     }
 
     user = getattr(request, 'user', None)

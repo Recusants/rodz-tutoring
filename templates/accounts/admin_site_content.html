@@ -1,0 +1,642 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Site Content CMS (About, Contact & How-To) | Rodz Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 1140px; margin: 30px auto; padding: 0 16px;">
+
+  <!-- Header Banner -->
+  <div class="dash-section" style="padding: 24px 28px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <span class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800; font-size: 11px; margin-bottom: 6px; display: inline-block;">
+          <i class="fa-solid fa-shield-halved"></i> ADMIN COMMAND CENTER
+        </span>
+        <h1 style="font-size: 26px; color: var(--blue); margin: 0 0 4px;">Site Content CMS</h1>
+        <p style="font-size: 13px; color: var(--muted); margin: 0;">
+          Update About Us story & metrics, Contact details & operating hours, and How-To guides in real-time.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="{% url 'about' %}" target="_blank" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview About
+        </a>
+        <a href="{% url 'contact' %}" target="_blank" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview Contact
+        </a>
+        <a href="{% url 'how_to' %}" target="_blank" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview How-To
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Buttons -->
+  <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 2px solid var(--line); padding-bottom: 10px;">
+    <button type="button" class="cms-tab-btn active" data-tab="about-tab" style="padding: 10px 20px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; border: none; background: var(--blue); color: #fff; display: inline-flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-landmark"></i> 1. About Us Content
+    </button>
+    <button type="button" class="cms-tab-btn" data-tab="contact-tab" style="padding: 10px 20px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--text); display: inline-flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-address-book"></i> 2. Contact & Hours
+    </button>
+    <button type="button" class="cms-tab-btn" data-tab="howto-tab" style="padding: 10px 20px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--text); display: inline-flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-list-ol"></i> 3. How-To Guide & Steps
+    </button>
+  </div>
+
+  <!-- ==================== TAB 1: ABOUT US CONTENT ==================== -->
+  <div id="about-tab" class="cms-tab-content">
+    <div class="dash-section" style="padding: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <div>
+          <h2 style="font-size: 20px; color: var(--blue); margin: 0 0 4px;">Edit About Page Copy & Statistics</h2>
+          <p style="font-size: 12px; color: var(--muted); margin: 0;">Stored in the database and rendered live on /about/ and the home stats banner.</p>
+        </div>
+      </div>
+
+      <form id="aboutForm" method="POST" action="{% url 'content_hub:admin_site_content' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_about">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Eyebrow Banner</label>
+            {{ about_form.eyebrow }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Main Heading</label>
+            {{ about_form.heading }}
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Subheading</label>
+            {{ about_form.subheading }}
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Story Title</label>
+            {{ about_form.story_title }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Story Paragraph 1</label>
+            {{ about_form.story_paragraph_1 }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Story Paragraph 2</label>
+            {{ about_form.story_paragraph_2 }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Core Pillars Title</label>
+            {{ about_form.pillars_title }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Core Pillars (One bullet per line, format: Bold Title: Description)</label>
+            {{ about_form.pillars_content }}
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div style="border-top: 1px solid var(--line); padding-top: 20px; margin-top: 20px;">
+          <h4 style="font-size: 14px; font-weight: 800; color: var(--blue); margin-bottom: 12px;">Key Achievement Statistics</h4>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Students Taught</label>
+              {{ about_form.stat_students }}
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Pass Rate</label>
+              {{ about_form.stat_pass_rate }}
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Exam Packs</label>
+              {{ about_form.stat_papers }}
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Lesson Hours</label>
+              {{ about_form.stat_hours }}
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end;">
+          <button type="submit" id="saveAboutBtn" class="btn primary" style="padding: 12px 30px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-floppy-disk"></i> SAVE ABOUT CONTENT (AJAX)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 2: CONTACT & OPERATING HOURS ==================== -->
+  <div id="contact-tab" class="cms-tab-content" style="display: none;">
+    <div class="dash-section" style="padding: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <div>
+          <h2 style="font-size: 20px; color: var(--blue); margin: 0 0 4px;">Edit Contact Details, Hours & Channels</h2>
+          <p style="font-size: 12px; color: var(--muted); margin: 0;">Updates reflect in real-time across the topbar, footer, and /contact/ page.</p>
+        </div>
+      </div>
+
+      <form id="contactCmsForm" method="POST" action="{% url 'content_hub:admin_site_content' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_contact">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Display Phone Number *</label>
+            {{ contact_form.phone_number }}
+            <span style="font-size: 11px; color: var(--muted);">e.g. +27 74 568 5212</span>
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">WhatsApp Digits (No spaces or plus) *</label>
+            {{ contact_form.whatsapp_number }}
+            <span style="font-size: 11px; color: var(--muted);">e.g. 27745685212 (used for click-to-chat links)</span>
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Public Inquiries Email *</label>
+            {{ contact_form.email_address }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Support Email</label>
+            {{ contact_form.support_email }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Operating & Teaching Hours *</label>
+            {{ contact_form.operating_hours }}
+            <span style="font-size: 11px; color: var(--muted);">e.g. Mon – Sun: 07:00 – 21:00</span>
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Physical Office / Coverage *</label>
+            {{ contact_form.physical_address }}
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">WhatsApp Community Invite Link</label>
+            {{ contact_form.whatsapp_community_url }}
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Contact Banner Notice</label>
+            {{ contact_form.contact_notice }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Facebook Page URL</label>
+            {{ contact_form.facebook_url }}
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Instagram URL</label>
+            {{ contact_form.instagram_url }}
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">LinkedIn Profile URL</label>
+            {{ contact_form.linkedin_url }}
+          </div>
+        </div>
+
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end;">
+          <button type="submit" id="saveContactBtn" class="btn primary" style="padding: 12px 30px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-floppy-disk"></i> SAVE CONTACT INFO (AJAX)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 3: HOW-TO GUIDE & STEPS ==================== -->
+  <div id="howto-tab" class="cms-tab-content" style="display: none;">
+    <div class="dash-section" style="padding: 30px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <div>
+          <h2 style="font-size: 20px; color: var(--blue); margin: 0 0 4px;">Guide Header & Banner</h2>
+          <p style="font-size: 12px; color: var(--muted); margin: 0;">Main title and instructions displayed at the top of /how-to/.</p>
+        </div>
+      </div>
+
+      <form id="guideHeaderForm" method="POST" action="{% url 'content_hub:admin_site_content' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_guide">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Guide Badge</label>
+            <input type="text" name="badge_text" class="form-input" value="{{ guide_obj.badge_text }}">
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Guide Title</label>
+            <input type="text" name="title" class="form-input" value="{{ guide_obj.title }}" required>
+          </div>
+          <div style="grid-column: span 2;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Guide Subtitle / Introduction</label>
+            <textarea name="subtitle" class="form-input" rows="2" required>{{ guide_obj.subtitle }}</textarea>
+          </div>
+        </div>
+
+        <div style="text-align: right;">
+          <button type="submit" id="saveGuideBtn" class="btn primary small" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-floppy-disk"></i> Update Guide Header (AJAX)
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- How-To Steps List & Manager -->
+    <div class="dash-section" style="padding: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <div>
+          <h2 style="font-size: 20px; color: var(--blue); margin: 0 0 4px;">
+            <i class="fa-solid fa-list-ol"></i> Step-by-Step Flow ({{ steps.count }} Steps)
+          </h2>
+          <p style="font-size: 12px; color: var(--muted); margin: 0;">Ordered guide items shown to students.</p>
+        </div>
+
+        <button type="button" onclick="openStepModal()" class="btn primary small" style="background: #16a34a; border-color: #16a34a; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus-circle"></i> + Add New Step
+        </button>
+      </div>
+
+      <div id="stepsList" style="display: flex; flex-direction: column; gap: 14px;">
+        {% for step in steps %}
+          <div id="step-row-{{ step.id }}" style="background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: var(--radius-sm); padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: #eff6ff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="{{ step.icon_class|default:'fa-solid fa-check' }}"></i>
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 10px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px;">
+                    {{ step.badge|default:"STEP" }} {{ step.step_number }}
+                  </span>
+                  <h4 style="margin: 0; font-size: 16px; color: var(--blue);">{{ step.title }}</h4>
+                </div>
+                <p style="margin: 6px 0 0; font-size: 13px; color: var(--text); max-width: 650px;">
+                  {{ step.description }}
+                </p>
+                {% if step.call_to_action_text %}
+                  <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                    CTA: <b>{{ step.call_to_action_text }}</b> &rarr; <code>{{ step.call_to_action_url }}</code>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="button" onclick="editStepModal({{ step.id }}, '{{ step.badge|escapejs }}', '{{ step.step_number }}', '{{ step.title|escapejs }}', '{{ step.icon_class|escapejs }}', '{{ step.description|escapejs }}', '{{ step.call_to_action_text|escapejs }}', '{{ step.call_to_action_url|escapejs }}', '{{ step.order }}')" class="btn outline small" style="padding: 4px 10px; font-size: 11px;">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              <button type="button" onclick="deleteStep({{ step.id }}, '{{ step.title|escapejs }}')" class="btn outline small" style="color: #dc2626; border-color: #fca5a5; padding: 4px 10px; font-size: 11px;">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+        {% empty %}
+          <div style="text-align: center; padding: 30px; color: var(--muted);">No steps created yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ==================== STEP MODAL (For Add / Edit) ==================== -->
+<div id="stepModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: #fff; width: 100%; max-width: 580px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); overflow: hidden;">
+    <div style="background: var(--soft); padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="stepModalTitle" style="margin: 0; font-size: 16px; color: var(--blue);">Add New How-To Step</h3>
+      <button type="button" onclick="closeStepModal()" style="background: none; border: none; font-size: 18px; color: var(--muted); cursor: pointer;">&times;</button>
+    </div>
+
+    <form id="stepModalForm" style="padding: 20px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_step">
+      <input type="hidden" id="modalStepId" name="step_id" value="">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">Step Number *</label>
+          <input type="number" id="modalStepNumber" name="step_number" class="form-input" min="1" required>
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">Step Badge Text</label>
+          <input type="text" id="modalStepBadge" name="badge" class="form-input" placeholder="e.g. STEP 1" required>
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">Step Title *</label>
+          <input type="text" id="modalStepTitle" name="title" class="form-input" placeholder="e.g. Acquire Study Coins" required>
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">FontAwesome Icon Class</label>
+          <input type="text" id="modalStepIcon" name="icon_class" class="form-input" placeholder="e.g. fa-solid fa-coins, fa-solid fa-book-open">
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">Step Description *</label>
+          <textarea id="modalStepDesc" name="description" class="form-input" rows="3" required></textarea>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">CTA Button Text (Optional)</label>
+          <input type="text" id="modalStepCtaText" name="call_to_action_text" class="form-input" placeholder="e.g. Buy Coins">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">CTA Link URL (Optional)</label>
+          <input type="text" id="modalStepCtaUrl" name="call_to_action_url" class="form-input" placeholder="e.g. /wallet/buy-coins/">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 4px;">Sort Order</label>
+          <input type="number" id="modalStepOrder" name="order" class="form-input" min="1" value="1">
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px;">
+        <button type="button" onclick="closeStepModal()" class="btn outline small">Cancel</button>
+        <button type="submit" id="submitStepModalBtn" class="btn primary small">
+          <i class="fa-solid fa-check"></i> Save Step (AJAX)
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== SweetAlert2 & AJAX Logic ==================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // 1. Tab Switching
+  const tabBtns = document.querySelectorAll('.cms-tab-btn');
+  const tabContents = document.querySelectorAll('.cms-tab-content');
+
+  // Handle URL hash if present
+  const hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById(hash)) {
+    activateTab(hash);
+  }
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+      activateTab(targetTab);
+    });
+  });
+
+  function activateTab(tabId) {
+    tabContents.forEach(c => c.style.display = 'none');
+    tabBtns.forEach(b => {
+      b.style.background = '#fff';
+      b.style.color = 'var(--text)';
+      b.style.border = '1px solid var(--line)';
+    });
+
+    const activeContent = document.getElementById(tabId);
+    if (activeContent) activeContent.style.display = 'block';
+
+    const activeBtn = document.querySelector(`.cms-tab-btn[data-tab="${tabId}"]`);
+    if (activeBtn) {
+      activeBtn.style.background = 'var(--blue)';
+      activeBtn.style.color = '#fff';
+      activeBtn.style.border = 'none';
+    }
+  }
+
+  // 2. Generic AJAX Form Submitter with SweetAlert2
+  function setupAjaxForm(formId, btnId, successTitle) {
+    const form = document.getElementById(formId);
+    const btn = document.getElementById(btnId);
+    if (!form || !btn) return;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      btn.disabled = true;
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+      const formData = new FormData(form);
+
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+
+        if (data.status === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: successTitle || 'Saved!',
+            text: data.message,
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end',
+            background: '#1e3a8a',
+            color: '#fff'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Save Failed',
+            text: data.message || 'Please check the form inputs.',
+            confirmButtonColor: '#dc2626'
+          });
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        Swal.fire({
+          icon: 'error',
+          title: 'Network Error',
+          text: 'Unable to communicate with the server.',
+          confirmButtonColor: '#dc2626'
+        });
+      });
+    });
+  }
+
+  setupAjaxForm('aboutForm', 'saveAboutBtn', 'About Page Updated!');
+  setupAjaxForm('contactCmsForm', 'saveContactBtn', 'Contact Details Updated!');
+  setupAjaxForm('guideHeaderForm', 'saveGuideBtn', 'Guide Header Updated!');
+
+  // 3. Step Form Modal AJAX submission
+  const stepModalForm = document.getElementById('stepModalForm');
+  const submitStepBtn = document.getElementById('submitStepModalBtn');
+
+  if (stepModalForm) {
+    stepModalForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      submitStepBtn.disabled = true;
+      submitStepBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+      const formData = new FormData(stepModalForm);
+
+      fetch("{% url 'content_hub:admin_site_content' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        submitStepBtn.disabled = false;
+        submitStepBtn.innerHTML = '<i class="fa-solid fa-check"></i> Save Step (AJAX)';
+
+        if (data.status === 'success') {
+          closeStepModal();
+          Swal.fire({
+            icon: 'success',
+            title: 'Step Saved!',
+            text: data.message,
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end',
+            background: '#15803d',
+            color: '#fff'
+          });
+          // Reload tab content to reflect change
+          setTimeout(() => window.location.reload(), 800);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: data.message || 'Could not save step.',
+            confirmButtonColor: '#dc2626'
+          });
+        }
+      })
+      .catch(err => {
+        submitStepBtn.disabled = false;
+        submitStepBtn.innerHTML = '<i class="fa-solid fa-check"></i> Save Step (AJAX)';
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Network communication failure.',
+          confirmButtonColor: '#dc2626'
+        });
+      });
+    });
+  }
+
+});
+
+// Step Modal Controls
+function openStepModal() {
+  document.getElementById('stepModalTitle').innerText = 'Add New How-To Step';
+  document.getElementById('modalStepId').value = '';
+  document.getElementById('modalStepNumber').value = '{{ steps.count|add:1 }}';
+  document.getElementById('modalStepBadge').value = 'STEP {{ steps.count|add:1 }}';
+  document.getElementById('modalStepTitle').value = '';
+  document.getElementById('modalStepIcon').value = 'fa-solid fa-check';
+  document.getElementById('modalStepDesc').value = '';
+  document.getElementById('modalStepCtaText').value = '';
+  document.getElementById('modalStepCtaUrl').value = '';
+  document.getElementById('modalStepOrder').value = '{{ steps.count|add:1 }}';
+
+  const modal = document.getElementById('stepModal');
+  modal.style.display = 'flex';
+}
+
+function editStepModal(id, badge, step_number, title, icon_class, desc, cta_text, cta_url, order) {
+  document.getElementById('stepModalTitle').innerText = 'Edit Step: ' + title;
+  document.getElementById('modalStepId').value = id;
+  document.getElementById('modalStepNumber').value = step_number;
+  document.getElementById('modalStepBadge').value = badge;
+  document.getElementById('modalStepTitle').value = title;
+  document.getElementById('modalStepIcon').value = icon_class;
+  document.getElementById('modalStepDesc').value = desc;
+  document.getElementById('modalStepCtaText').value = cta_text;
+  document.getElementById('modalStepCtaUrl').value = cta_url;
+  document.getElementById('modalStepOrder').value = order;
+
+  const modal = document.getElementById('stepModal');
+  modal.style.display = 'flex';
+}
+
+function closeStepModal() {
+  document.getElementById('stepModal').style.display = 'none';
+}
+
+// Delete Step via SweetAlert2 & AJAX
+function deleteStep(stepId, stepTitle) {
+  Swal.fire({
+    title: 'Delete this Step?',
+    text: `Are you sure you want to remove "${stepTitle}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Yes, delete step'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      formData.append('action', 'delete_step');
+      formData.append('step_id', stepId);
+
+      fetch("{% url 'content_hub:admin_site_content' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          const row = document.getElementById('step-row-' + stepId);
+          if (row) row.remove();
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Failed',
+            text: data.message,
+            confirmButtonColor: '#dc2626'
+          });
+        }
+      })
+      .catch(err => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Network Error',
+          text: 'Could not connect to delete step.',
+          confirmButtonColor: '#dc2626'
+        });
+      });
+    }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contact Us & Academic Support | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 40px; max-width: 1100px; margin: 0 auto;">
+  
+  {% if user.is_staff or user.is_admin_role %}
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <a href="{% url 'accounts:admin_site_content' %}#contact-tab" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px;">
+        <i class="fa-solid fa-pen-to-square"></i> Edit Contact Details (Admin CMS)
+      </a>
+    </div>
+  {% endif %}
+
+  <div class="section-heading">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">GET IN TOUCH</div>
+    <h2>WE ARE HERE TO HELP YOU SUCCEED</h2>
+    <p>Reach out for tutoring enrollments, study material inquiries, or student support.</p>
+    <div class="bar"></div>
+  </div>
+
+  {% if contact.contact_notice %}
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 30px; display: flex; align-items: center; gap: 12px; color: #1e40af; font-size: 13px;">
+      <i class="fa-solid fa-bell" style="font-size: 18px; color: #3b82f6;"></i>
+      <span>{{ contact.contact_notice }}</span>
+    </div>
+  {% endif %}
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start;">
+    
+    <!-- Left Column: Contact Channels & Cards -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- WhatsApp Direct Card -->
+      <div class="dash-section" style="padding: 24px; border-left: 4px solid #16a34a; background: #f0fdf4;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 10px;">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: #22c55e; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 18px; color: #15803d;">WhatsApp Academic Line</h3>
+            <span style="font-size: 12px; color: #166534;">Fastest response for enrollments & queries</span>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: #166534; margin: 0 0 14px;">
+          Chat directly with our head of academics regarding tutors, past paper packs, or coin activation.
+        </p>
+        <a href="https://wa.me/{{ contact.whatsapp_number }}?text=Hello%20Rodz%20Tutoring!%20I%20have%20an%20inquiry%20regarding%20my%20studies." target="_blank" rel="noopener" class="btn primary small" style="background: #16a34a; border-color: #16a34a; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-brands fa-whatsapp"></i> OPEN WHATSAPP CHAT &rarr;
+        </a>
+      </div>
+
+      <!-- Phone & Email Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="dash-section" style="padding: 18px;">
+          <div style="font-size: 18px; color: var(--blue); margin-bottom: 8px;"><i class="fa-solid fa-phone"></i></div>
+          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted);">Direct Telephone</div>
+          <div style="font-size: 14px; font-weight: 800; color: var(--blue); margin-top: 2px;">{{ contact.phone_number }}</div>
+        </div>
+
+        <div class="dash-section" style="padding: 18px;">
+          <div style="font-size: 18px; color: var(--blue); margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i></div>
+          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted);">Inquiry Email</div>
+          <div style="font-size: 13px; font-weight: 800; color: var(--blue); margin-top: 2px; word-break: break-all;">{{ contact.email_address }}</div>
+        </div>
+      </div>
+
+      <!-- Address & Operating Hours -->
+      <div class="dash-section" style="padding: 20px;">
+        <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+          <i class="fa-solid fa-clock" style="color: var(--blue); font-size: 18px; margin-top: 2px;"></i>
+          <div>
+            <div style="font-weight: 700; font-size: 13px; color: var(--blue);">Operating & Teaching Hours</div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">{{ contact.operating_hours }}</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <i class="fa-solid fa-location-dot" style="color: var(--blue); font-size: 18px; margin-top: 2px;"></i>
+          <div>
+            <div style="font-weight: 700; font-size: 13px; color: var(--blue);">Head Office & Coverage</div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">{{ contact.physical_address }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Interactive Message Inquiry Form (AJAX + SweetAlert2) -->
+    <div class="dash-section" style="padding: 30px;">
+      <h3 style="font-size: 20px; color: var(--blue); margin-bottom: 8px;">
+        <i class="fa-solid fa-paper-plane"></i> Send Us an Online Message
+      </h3>
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">
+        Fill out the form below and an academic advisor will get back to you within 24 hours.
+      </p>
+
+      <form id="contactForm" method="POST" action="{% url 'contact' %}">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Your Name *</label>
+          <input type="text" name="name" class="form-input" placeholder="e.g. Sipho Ndlovu" required value="{% if user.is_authenticated %}{{ user.full_name }}{% endif %}">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Your Email Address *</label>
+          <input type="email" name="email" class="form-input" placeholder="e.g. learner@example.com" required value="{% if user.is_authenticated %}{{ user.email }}{% endif %}">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Subject *</label>
+          <select name="subject" class="form-input">
+            <option value="Tutoring Inquiry">General Tutoring Inquiry</option>
+            <option value="Coin Purchase / Payment">Coin Top Up / Payment Verification</option>
+            <option value="Study Materials">Resource Hub & Study Packs</option>
+            <option value="Tutor Application">Tutor Teaching Application</option>
+            <option value="Technical Support">Platform Technical Support</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Your Message *</label>
+          <textarea name="message" rows="5" class="form-input" placeholder="How can our educators assist you today?" required></textarea>
+        </div>
+
+        <button type="submit" id="submitContactBtn" class="btn primary" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="fa-solid fa-paper-plane"></i> SEND MESSAGE
+        </button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<!-- SweetAlert2 AJAX Form Handler -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const contactForm = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitContactBtn');
+
+  if (contactForm) {
+    contactForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(contactForm);
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending message...';
+
+      fetch(contactForm.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json().then(data => ({status: response.status, body: data})))
+      .then(res => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SEND MESSAGE';
+
+        if (res.body.status === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Message Sent!',
+            text: res.body.message,
+            confirmButtonColor: '#1e3a8a',
+            confirmButtonText: 'Great!'
+          });
+          contactForm.reset();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: res.body.message || 'Failed to send message. Please try again.',
+            confirmButtonColor: '#dc2626'
+          });
+        }
+      })
+      .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SEND MESSAGE';
+        Swal.fire({
+          icon: 'error',
+          title: 'Connection Error',
+          text: 'Unable to reach the server. Please check your internet connection or use WhatsApp.',
+          confirmButtonColor: '#dc2626'
+        });
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

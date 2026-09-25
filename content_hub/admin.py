@@ -57,3 +57,36 @@ class CourseAdmin(admin.ModelAdmin):
                     )
         self.message_user(request, f"{queryset.count()} course(s) rejected and creation fees refunded.")
     reject_courses.short_description = "Reject selected course bundles and refund coins"
+
+
+from .models import AboutContent, ContactInfo, HowToGuide, HowToStep
+
+
+@admin.register(AboutContent)
+class AboutContentAdmin(admin.ModelAdmin):
+    list_display = ('heading', 'eyebrow', 'stat_students', 'stat_pass_rate', 'updated_at')
+
+
+@admin.register(ContactInfo)
+class ContactInfoAdmin(admin.ModelAdmin):
+    list_display = ('phone_number', 'whatsapp_number', 'email_address', 'operating_hours', 'updated_at')
+
+
+class HowToStepInline(admin.TabularInline):
+    model = HowToStep
+    extra = 1
+    fields = ('step_number', 'badge', 'title', 'icon_class', 'description', 'call_to_action_text', 'call_to_action_url', 'order')
+
+
+@admin.register(HowToGuide)
+class HowToGuideAdmin(admin.ModelAdmin):
+    list_display = ('title', 'badge_text', 'slug', 'is_active', 'order')
+    list_editable = ('is_active', 'order')
+    inlines = [HowToStepInline]
+
+
+@admin.register(HowToStep)
+class HowToStepAdmin(admin.ModelAdmin):
+    list_display = ('guide', 'step_number', 'title', 'badge', 'icon_class', 'order')
+    list_filter = ('guide',)
+

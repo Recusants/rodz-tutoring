@@ -5,38 +5,72 @@
 
 {% block content %}
 <section class="section" style="padding-top: 40px;">
+  
+  {% if user.is_staff or user.is_admin_role %}
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <a href="{% url 'accounts:admin_site_content' %}#about-tab" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px;">
+        <i class="fa-solid fa-pen-to-square"></i> Edit About Page Content (Admin CMS)
+      </a>
+    </div>
+  {% endif %}
+
   <div class="section-heading">
-    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">OUR HERITAGE & MISSION</div>
-    <h2>EMPOWERING ACADEMIC EXCELLENCE</h2>
-    <p>Providing high-impact, curriculum-aligned academic support for Grades 7 to 12.</p>
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      {{ about.eyebrow }}
+    </div>
+    <h2>{{ about.heading }}</h2>
+    <p>{{ about.subheading }}</p>
     <div class="bar"></div>
   </div>
 
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 30px;">
     <div>
-      <h3 style="font-size: 32px; line-height: 1.1; margin-bottom: 20px;">Dedicated to building confidence, mastery, and top marks.</h3>
-      <p style="color: var(--muted); font-size: 15px; margin-bottom: 16px;">
-        At Rodz Tutoring, we believe that every student has the capacity to grasp difficult subjects when taught with patience, clarity, and systematic problem-solving methods.
+      <h3 style="font-size: 32px; line-height: 1.15; margin-bottom: 20px; color: var(--blue);">
+        {{ about.story_title }}
+      </h3>
+      <p style="color: var(--muted); font-size: 15px; margin-bottom: 16px; line-height: 1.7;">
+        {{ about.story_paragraph_1|linebreaksbr }}
       </p>
-      <p style="color: var(--muted); font-size: 15px; margin-bottom: 24px;">
-        Whether a learner is struggling with foundational algebra, technical physical sciences, or advanced accounting principles, our curriculum-specialized tutors provide the exact scaffolding needed to transform marks from 40% to 80%+.
-      </p>
+      {% if about.story_paragraph_2 %}
+        <p style="color: var(--muted); font-size: 15px; margin-bottom: 24px; line-height: 1.7;">
+          {{ about.story_paragraph_2|linebreaksbr }}
+        </p>
+      {% endif %}
 
-      <div style="display: flex; gap: 15px;">
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
         <a href="{% url 'tutoring' %}" class="btn primary">VIEW TUTORING OPTIONS</a>
         <a href="{% url 'content_hub:catalog' %}" class="btn outline">BROWSE STUDY PACKS</a>
       </div>
     </div>
 
     <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 35px;">
-      <h4 style="font-size: 20px; margin-bottom: 15px; color: var(--blue);">The Rodz Standard</h4>
+      <h4 style="font-size: 20px; margin-bottom: 15px; color: var(--blue);">{{ about.pillars_title }}</h4>
       <ul style="padding-left: 20px; color: var(--text); line-height: 2;">
-        <li><b>Qualified & Vetted Tutors:</b> Specialists in CAPS, IEB, and Cambridge curricula.</li>
-        <li><b>Exam-Oriented Pedagogy:</b> Real past-paper dissecting and examiner guidance.</li>
-        <li><b>Non-Downloadable Secure Portal:</b> Premium study notes, worked video solutions, and quizzes.</li>
-        <li><b>Flexible Online Delivery:</b> Safe, live interactive classes right from your home.</li>
+        {% for pillar in pillars %}
+          <li>
+            {% if pillar.title %}
+              <b>{{ pillar.title }}:</b> {{ pillar.desc }}
+            {% else %}
+              {{ pillar.desc }}
+            {% endif %}
+          </li>
+        {% empty %}
+          <li><b>Qualified & Vetted Tutors:</b> Specialists in CAPS, IEB, and Cambridge curricula.</li>
+          <li><b>Exam-Oriented Pedagogy:</b> Real past-paper dissecting and examiner guidance.</li>
+          <li><b>Non-Downloadable Secure Portal:</b> Premium study notes, worked video solutions, and quizzes.</li>
+          <li><b>Flexible Online Delivery:</b> Safe, live interactive classes right from your home.</li>
+        {% endfor %}
       </ul>
     </div>
+  </div>
+
+  <!-- Dynamic Stats Banner from DB -->
+  <div class="stats-banner" style="margin-top: 50px;">
+    <div class="stat-box"><b>{{ about.stat_students }}</b><span>Students Taught</span></div>
+    <div class="stat-box"><b>{{ about.stat_pass_rate }}</b><span>Pass Rate</span></div>
+    <div class="stat-box"><b>{{ about.stat_papers }}</b><span>Exam Papers & Packs</span></div>
+    <div class="stat-box"><b>{{ about.stat_hours }}</b><span>Lesson Hours Delivered</span></div>
+    <div class="stat-box"><b>100%</b><span>Dedication to Success</span></div>
   </div>
 </section>
 {% endblock %}
