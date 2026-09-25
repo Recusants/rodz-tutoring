@@ -94,6 +94,9 @@
         <a href="{% url 'accounts:admin_user_list' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #6d28d9;">
           <i class="fa-solid fa-users-gear"></i> USER ACCOUNTS CONTROL
         </a>
+        <a href="{% url 'content_hub:admin_course_approvals' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-stamp"></i> COURSE APPROVALS
+        </a>
         <a href="{% url 'wallet:admin_payment_requests' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-receipt"></i> PAYMENT PROOFS
         </a>
@@ -118,7 +121,10 @@
         <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
           Educator access across all curricula, lesson study packs, and student assessments.
         </p>
-        <a href="{% url 'content_hub:catalog' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+        <a href="{% url 'content_hub:tutor_course_create' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #16a34a;">
+          <i class="fa-solid fa-circle-plus"></i> CREATE COURSE BUNDLE
+        </a>
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-book-open"></i> BROWSE LESSONS
         </a>
       </div>
@@ -163,14 +169,25 @@
               {{ pending_payments }}
             </div>
           </div>
+          <div style="background: var(--soft); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Pending Courses</div>
+            <div style="font-size: 22px; font-weight: 900; color: {% if pending_courses_count > 0 %}#dc2626{% else %}#15803d{% endif %};">
+              {{ pending_courses_count }}
+            </div>
+          </div>
         </div>
 
         <!-- Quick Launch Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 10px;">
           <a href="{% url 'accounts:admin_user_list' %}" style="display: block; background: #fdf4ff; border: 1px solid #f0abfc; padding: 16px; border-radius: var(--radius-sm); text-decoration: none; color: inherit; transition: transform 0.2s;">
             <div style="font-size: 24px; color: #a21caf; margin-bottom: 6px;"><i class="fa-solid fa-users-gear"></i></div>
             <h4 style="margin: 0; font-size: 15px; color: #86198f;">User Accounts Control</h4>
             <p style="margin: 4px 0 0; font-size: 12px; color: #a21caf;">Manage roles, passwords, wallets & unlocks</p>
+          </a>
+          <a href="{% url 'content_hub:admin_course_approvals' %}" style="display: block; background: #faf5ff; border: 1px solid #d8b4fe; padding: 16px; border-radius: var(--radius-sm); text-decoration: none; color: inherit; transition: transform 0.2s;">
+            <div style="font-size: 24px; color: #7c3aed; margin-bottom: 6px;"><i class="fa-solid fa-stamp"></i></div>
+            <h4 style="margin: 0; font-size: 15px; color: #6d28d9;">Course Approvals Queue</h4>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #7c3aed;">Review & publish tutor course bundles</p>
           </a>
           <a href="{% url 'wallet:admin_payment_requests' %}" style="display: block; background: #fffdf5; border: 1px solid #fde68a; padding: 16px; border-radius: var(--radius-sm); text-decoration: none; color: inherit; transition: transform 0.2s;">
             <div style="font-size: 24px; color: #b45309; margin-bottom: 6px;"><i class="fa-solid fa-receipt"></i></div>
@@ -241,15 +258,76 @@
               You have unrestricted teaching access to all {{ tutor_content_count }} learning items across CAPS, IEB, and Cambridge curricula.
             </p>
           </div>
-          <a href="{% url 'content_hub:catalog' %}" class="btn primary small">
-            <i class="fa-solid fa-book-open"></i> BROWSE ALL LESSONS
+          <div style="display: flex; gap: 8px;">
+            <a href="{% url 'content_hub:tutor_course_create' %}" class="btn primary small" style="background: #16a34a; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-circle-plus"></i> Create Course Bundle (50c)
+            </a>
+            <a href="{% url 'content_hub:catalog' %}" class="btn outline small">
+              <i class="fa-solid fa-book-open"></i> Browse Lessons
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tutor Course Bundles Section -->
+      <div class="dash-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-layer-group" style="color: #16a34a;"></i> My Course Bundles ({{ my_courses|length }})
+          </h3>
+          <a href="{% url 'content_hub:tutor_course_create' %}" class="btn primary small" style="font-size: 11px;">
+            + New Course Bundle
           </a>
         </div>
+
+        {% if my_courses %}
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for course in my_courses %}
+              <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 18px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span class="badge" style="font-size: 10px; font-weight: 800; {% if course.status == 'PENDING' %}background: #fffbeb; color: #b45309;{% elif course.status == 'APPROVED' %}background: #f0fdf4; color: #15803d;{% else %}background: #fef2f2; color: #b91c1c;{% endif %}">
+                      {{ course.get_status_display }}
+                    </span>
+                    <span style="font-size: 11px; color: var(--muted); font-weight: 700;">
+                      {{ course.grade }} &bull; {{ course.subject.name }} &bull; {{ course.items.count }} Items
+                    </span>
+                  </div>
+                  <h4 style="font-size: 15px; margin: 0 0 2px; color: var(--blue);">{{ course.title }}</h4>
+                  <div style="font-size: 11px; color: var(--muted);">
+                    Selling Price: <b>{{ course.bundle_price }} Coins</b> &bull; Submitted on {{ course.created_at|date:"M d, Y" }}
+                    {% if course.admin_notes %}&bull; <span style="color: #b91c1c;">Admin Note: "{{ course.admin_notes }}"</span>{% endif %}
+                  </div>
+                </div>
+
+                <div>
+                  {% if course.status == 'APPROVED' %}
+                    <a href="{% url 'content_hub:course_detail' course.slug %}" class="btn primary small" style="font-size: 11px;">
+                      View Live &rarr;
+                    </a>
+                  {% else %}
+                    <span style="font-size: 11px; color: var(--muted); font-weight: 600;">
+                      <i class="fa-solid fa-clock"></i> In Queue
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="text-align: center; padding: 24px; background: var(--soft); border-radius: var(--radius-sm); color: var(--muted);">
+            <i class="fa-solid fa-layer-group" style="font-size: 28px; margin-bottom: 6px; opacity: 0.5;"></i>
+            <p style="font-size: 13px; margin: 0 0 10px;">You haven't created any course bundles yet.</p>
+            <a href="{% url 'content_hub:tutor_course_create' %}" class="btn primary small">
+              Create Your First Course Bundle (50 Coins)
+            </a>
+          </div>
+        {% endif %}
       </div>
 
       <div class="dash-section">
         <h3 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-layer-group" style="color: var(--blue);"></i> Recent Teaching Resources
+          <i class="fa-solid fa-book-bookmark" style="color: var(--blue);"></i> Recent Teaching Resources
         </h3>
         <div class="resource-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
           {% for r_item in recent_items %}
@@ -276,6 +354,41 @@
 
     <!-- ==================== 3. STUDENT MODE MAIN DASHBOARD ==================== -->
     {% if active_mode == 'student' %}
+      {% if unlocked_courses %}
+        <!-- UNLOCKED COURSE BUNDLES -->
+        <div class="dash-section" style="border-top: 4px solid var(--gold); margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-graduation-cap" style="font-size: 22px; color: var(--gold);"></i>
+              <h2 style="margin: 0; font-size: 20px;">My Unlocked Course Bundles</h2>
+              <span style="background: #fef3c7; color: #b45309; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+                {{ unlocked_courses|length }} Courses
+              </span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+            {% for uc in unlocked_courses %}
+              <div class="resource-card" style="box-shadow: var(--shadow-sm); border: 2px solid #e0f2fe;">
+                <div class="resource-card-cover">
+                  <img src="{% static 'assets/resource-covers/' %}{{ uc.course.cover_svg_name|default:'caps-g12-maths.svg' }}" alt="{{ uc.course.title }}">
+                  <span class="badge free" style="position: absolute; top: 12px; left: 12px; font-size: 10px; padding: 2px 7px;">
+                    <i class="fa-solid fa-circle-check"></i> FULL BUNDLE UNLOCKED
+                  </span>
+                </div>
+                <div class="resource-card-body" style="padding: 14px;">
+                  <div class="meta" style="font-size: 11px;">{{ uc.course.grade }} &bull; {{ uc.course.subject.name }}</div>
+                  <h4 style="font-size: 14px; margin: 4px 0 10px; line-height: 1.3;">{{ uc.course.title }}</h4>
+                  <a href="{% url 'content_hub:course_detail' uc.course.slug %}" class="btn primary small" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fa-solid fa-book-open"></i> OPEN COURSE SYLLABUS
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       <!-- 1. PRIORITY SECTION: STUDENT UNLOCKED MATERIALS -->
       <div class="dash-section" style="border-top: 4px solid var(--blue);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">

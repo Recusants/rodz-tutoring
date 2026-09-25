@@ -116,6 +116,70 @@
     </div>
   {% endif %}
 
+  <!-- Complete Course Bundles Section -->
+  {% if courses %}
+    <div style="margin-bottom: 36px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+        <div>
+          <h2 style="font-size: 22px; color: var(--blue); margin: 0 0 4px;">
+            <i class="fa-solid fa-layer-group" style="color: var(--gold);"></i> Complete Course Bundles
+          </h2>
+          <p style="font-size: 13px; color: var(--muted); margin: 0;">
+            Comprehensive bundles combining video masterclasses, PDF notes, and past paper walkthroughs with dynamic bundle discounting.
+          </p>
+        </div>
+      </div>
+
+      <div class="resource-grid">
+        {% for course in courses %}
+          <div class="resource-card" style="border: 2px solid #e0f2fe;">
+            <div class="resource-card-cover">
+              <img src="{% static 'assets/resource-covers/' %}{{ course.cover_svg_name|default:'caps-g12-maths.svg' }}" alt="{{ course.title }}">
+              <div class="top-badge">
+                <span class="badge" style="background: #0284c7; color: #fff; font-weight: 800; font-size: 10px;">
+                  <i class="fa-solid fa-layer-group"></i> BUNDLE &bull; {{ course.items.count }} ITEMS
+                </span>
+              </div>
+            </div>
+
+            <div class="resource-card-body">
+              <div class="meta">
+                {{ course.grade }} &bull; {{ course.curriculum }} &bull; {{ course.subject.name }}
+              </div>
+
+              <h3>{{ course.title }}</h3>
+              <p>{{ course.description|truncatewords:18|default:"Structured multi-resource syllabus for complete exam mastery." }}</p>
+
+              <div class="resource-card-footer">
+                <div>
+                  <span class="cost" style="color: var(--blue); font-weight: 900; font-size: 14px;">
+                    <i class="fa-solid fa-coins" style="color: var(--gold);"></i> {{ course.bundle_price }} Coins
+                  </span>
+                  <div style="font-size: 10px; color: #15803d; font-weight: 700; margin-top: 2px;">
+                    <i class="fa-solid fa-tag"></i> Dynamic discounting applied
+                  </div>
+                </div>
+
+                <a href="{% url 'content_hub:course_detail' course.slug %}" class="btn primary small" style="padding: 6px 12px; font-size: 11px;">
+                  View Bundle &rarr;
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div style="margin-bottom: 16px;">
+    <h2 style="font-size: 20px; color: var(--blue); margin: 0 0 4px;">
+      <i class="fa-solid fa-file-lines"></i> Individual Study Packs & Videos
+    </h2>
+    <p style="font-size: 13px; color: var(--muted); margin: 0;">
+      Purchase single lessons or study packs individually. Any unlocked items will be deducted if you later upgrade to a full course bundle!
+    </p>
+  </div>
+
   <!-- Content Results Grid -->
   <div class="resource-grid">
     {% for item in items %}

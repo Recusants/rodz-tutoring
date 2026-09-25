@@ -147,3 +147,220 @@ startxref
         self.assertEqual(items[0].grade, 'Grade 12')
 
 
+class CourseBundleTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.subject = Subject.objects.create(name='Mathematics', slug='mathematics')
+        
+        self.tutor = CustomUser.objects.create_user(
+            email='tutor@example.com',
+            password='Password123!',
+            is_tutor=True
+        )
+        self.tutor_wallet = StudentWallet.objects.get(user=self.tutor)
+        self.tutor_wallet.credit_coins(100)
+
+        self.admin_user = CustomUser.objects.create_user(
+            email='admin@example.com',
+            password='Password123!',
+            is_staff=True,
+            is_admin_role=True
+        )
+
+        self.student = CustomUser.objects.create_user(
+            email='learner@example.com',
+            password='Password123!',
+            is_student=True
+        )
+        self.student_wallet = StudentWallet.objects.get(user=self.student)
+        self.student_wallet.credit_coins(200)
+
+        # Create 3 items (40 coins each)
+        self.item1 = ContentItem.objects.create(
+            title='Calculus Limits Video',
+            slug='calc-limits-video',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS & IEB',
+            content_type='VIDEO',
+            is_free=False,
+            coin_price=40
+        )
+        self.item2 = ContentItem.objects.create(
+            title='Calculus Derivatives PDF',
+            slug='calc-derivatives-pdf',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS & IEB',
+            content_type='PDF',
+            is_free=False,
+            coin_price=40
+        )
+        self.item3 = ContentItem.objects.create(
+            title='Calculus Past Exam Memo PDF',
+            slug='calc-memo-pdf',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS & IEB',
+            content_type='PDF',
+            is_free=False,
+            coin_price=40
+        )
+
+    def test_dynamic_bundle_discounting(self):
+        from content_hub.models import Course
+        course = Course.objects.create(
+            creator=self.tutor,
+            title='Grade 12 Complete Calculus Masterclass',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS & IEB',
+            bundle_price=100,
+            status='APPROVED'
+        )
+        course.items.add(self.item1, self.item2, self.item3)
+
+        # Baseline: Learner has 0 items owned
+        pricing = course.get_pricing_for_user(self.student)
+        self.assertEqual(pricing['final_price'], 100)
+        self.assertEqual(pricing['owned_items_count'], 0)
+        self.assertFalse(pricing['is_fully_owned'])
+
+        # Now student buys item1 individually (40 coins)
+        ContentUnlock.objects.create(user=self.student, content_item=self.item1, coins_spent=40)
+
+        # Check bundle dynamic price: 100 - 40 = 60 coins!
+        pricing = course.get_pricing_for_user(self.student)
+        self.assertEqual(pricing['owned_items_count'], 1)
+        self.assertEqual(pricing['owned_items_value'], 40)
+        self.assertEqual(pricing['final_price'], 60)
+        self.assertFalse(pricing['is_fully_owned'])
+
+        # Student also buys item2 (40 coins)
+        ContentUnlock.objects.create(user=self.student, content_item=self.item2, coins_spent=40)
+        pricing = course.get_pricing_for_user(self.student)
+        self.assertEqual(pricing['owned_items_count'], 2)
+        self.assertEqual(pricing['owned_items_value'], 80)
+        self.assertEqual(pricing['final_price'], 20)
+
+        # Student unlocks the remaining item3: bundle is fully complete!
+        ContentUnlock.objects.create(user=self.student, content_item=self.item3, coins_spent=40)
+        pricing = course.get_pricing_for_user(self.student)
+        self.assertTrue(pricing['is_fully_owned'])
+        self.assertEqual(pricing['final_price'], 0)
+
+    def test_tutor_course_creation_fee_and_queue(self):
+        from content_hub.models import Course
+        self.client.login(username='tutor@example.com', password='Password123!')
+
+        url = reverse('content_hub:tutor_course_create')
+        initial_balance = self.tutor_wallet.coins
+        self.assertEqual(initial_balance, 100)
+
+        post_data = {
+            'title': 'New Tutor Course Bundle',
+            'subject': self.subject.id,
+            'grade': 'Grade 12',
+            'curriculum': 'CAPS & IEB',
+            'bundle_price': 90,
+            'cover_svg_name': 'caps-g12-maths.svg',
+            'description': 'Tutor syllabus test description',
+            'items': [self.item1.id, self.item2.id],
+        }
+
+        resp = self.client.post(url, post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        # Check that 50 coins were deducted
+        self.tutor_wallet.refresh_from_db()
+        self.assertEqual(self.tutor_wallet.coins, 50)
+
+        # Course should be created with status PENDING
+        course = Course.objects.get(title='New Tutor Course Bundle')
+        self.assertEqual(course.status, 'PENDING')
+        self.assertEqual(course.items.count(), 2)
+
+    def test_admin_course_approval_and_rejection_refund(self):
+        from content_hub.models import Course
+        course = Course.objects.create(
+            creator=self.tutor,
+            title='Pending Approval Course',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS & IEB',
+            bundle_price=80,
+            creation_fee_coins=50,
+            status='PENDING'
+        )
+        self.tutor_wallet.coins = 50
+        self.tutor_wallet.save()
+
+        # Admin logs in
+        self.client.login(username='admin@example.com', password='Password123!')
+        approvals_url = reverse('content_hub:admin_course_approvals')
+
+        # Test Reject -> should refund 50 coins
+        resp = self.client.post(approvals_url, {
+            'course_id': course.id,
+            'action': 'reject',
+            'admin_notes': 'Please add more worksheets.',
+        })
+        self.assertEqual(resp.status_code, 302)
+
+        course.refresh_from_db()
+        self.assertEqual(course.status, 'REJECTED')
+        self.tutor_wallet.refresh_from_db()
+        self.assertEqual(self.tutor_wallet.coins, 100)  # 50 + 50 refunded
+
+        # Reset to PENDING and test Approve
+        course.status = 'PENDING'
+        course.save()
+
+        resp2 = self.client.post(approvals_url, {
+            'course_id': course.id,
+            'action': 'approve',
+        })
+        self.assertEqual(resp2.status_code, 302)
+
+        course.refresh_from_db()
+        self.assertEqual(course.status, 'APPROVED')
+
+    def test_student_unlock_course_bundle(self):
+        from content_hub.models import Course
+        from wallet.models import CourseUnlock
+        course = Course.objects.create(
+            creator=self.tutor,
+            title='Live Calculus Bundle',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS & IEB',
+            bundle_price=100,
+            status='APPROVED'
+        )
+        course.items.add(self.item1, self.item2)
+
+        # Student already owns item1 (40c)
+        ContentUnlock.objects.create(user=self.student, content_item=self.item1, coins_spent=40)
+
+        # Student unlocks course bundle
+        self.client.login(username='learner@example.com', password='Password123!')
+        unlock_url = reverse('wallet:unlock_course', kwargs={'course_slug': course.slug})
+
+        # Dynamic price is 100 - 40 = 60 coins
+        self.student_wallet.refresh_from_db()
+        initial_student_coins = self.student_wallet.coins
+
+        resp = self.client.post(unlock_url)
+        self.assertEqual(resp.status_code, 302)
+
+        self.student_wallet.refresh_from_db()
+        self.assertEqual(self.student_wallet.coins, initial_student_coins - 60)
+
+        # Verify CourseUnlock created
+        self.assertTrue(CourseUnlock.objects.filter(user=self.student, course=course).exists())
+
+        # Verify bundled item2 was also unlocked for student
+        self.assertTrue(ContentUnlock.objects.filter(user=self.student, content_item=self.item2).exists())
+
+
+

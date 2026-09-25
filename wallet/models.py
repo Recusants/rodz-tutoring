@@ -128,6 +128,45 @@ class ContentUnlock(models.Model):
         return f"{self.user.email} unlocked '{self.content_item.title}' ({self.coins_spent} coins) [{status}]"
 
 
+class CourseUnlock(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='unlocked_courses'
+    )
+    course = models.ForeignKey(
+        'content_hub.Course', 
+        on_delete=models.CASCADE, 
+        related_name='unlocked_by_users'
+    )
+    coins_spent = models.PositiveIntegerField(default=0)
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        null=True, 
+        blank=True, 
+        help_text="Expiry date for course retention (defaults to end of academic school year)"
+    )
+
+    class Meta:
+        unique_together = ('user', 'course')
+        ordering = ['-unlocked_at']
+
+    @property
+    def is_active(self):
+        if not self.expires_at:
+            return True
+        return timezone.now() <= self.expires_at
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = calculate_academic_year_expiry()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Expired"
+        return f"{self.user.email} unlocked course '{self.course.title}' ({self.coins_spent} coins) [{status}]"
+
+
 class PaymentMethod(models.Model):
     title = models.CharField(max_length=120, help_text="e.g. FNB Bank EFT, Standard Bank, Capitec, e-Wallet")
     bank_name = models.CharField(max_length=100, blank=True)

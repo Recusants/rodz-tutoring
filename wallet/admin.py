@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import StudentWallet, CoinTransaction, ContentUnlock, PaymentMethod, CoinBundle, CoinPaymentRequest
+from .models import StudentWallet, CoinTransaction, ContentUnlock, CourseUnlock, PaymentMethod, CoinBundle, CoinPaymentRequest
 
 
 @admin.register(PaymentMethod)
@@ -38,6 +38,14 @@ class CoinTransactionAdmin(admin.ModelAdmin):
 
 @admin.register(ContentUnlock)
 class ContentUnlockAdmin(admin.ModelAdmin):
-    list_display = ('user', 'content_item', 'coins_spent', 'unlocked_at')
-    list_filter = ('unlocked_at',)
+    list_display = ('user', 'content_item', 'coins_spent', 'unlocked_at', 'expires_at')
+    list_filter = ('unlocked_at', 'expires_at')
     search_fields = ('user__email', 'content_item__title')
+
+
+@admin.register(CourseUnlock)
+class CourseUnlockAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'coins_spent', 'unlocked_at', 'expires_at')
+    list_filter = ('unlocked_at', 'expires_at')
+    search_fields = ('user__email', 'course__title')
+

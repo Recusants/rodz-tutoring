@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
 from urllib.parse import quote
-from .models import StudentWallet, ContentUnlock, CoinTransaction, CoinBundle, PaymentMethod, CoinPaymentRequest
+from .models import StudentWallet, ContentUnlock, CourseUnlock, CoinTransaction, CoinBundle, PaymentMethod, CoinPaymentRequest
 from .forms import CoinPaymentActivationForm
 from content_hub.models import ContentItem
 from accounts.models import CustomUser
@@ -102,6 +102,66 @@ def unlock_item_view(request, item_slug):
 
     return render(request, 'wallet/confirm_unlock.html', {
         'item': item,
+        'wallet': wallet,
+    })
+
+
+@login_required
+def unlock_course_view(request, course_slug):
+    from content_hub.models import Course
+    course = get_object_or_404(Course, slug=course_slug)
+    wallet, _ = StudentWallet.objects.get_or_create(user=request.user)
+
+    # Creators and staff get direct access
+    if request.user == course.creator or request.user.is_admin_role or request.user.is_staff:
+        messages.info(request, f"You have tutor/management access to '{course.title}'.")
+        return redirect('content_hub:course_detail', slug=course.slug)
+
+    pricing = course.get_pricing_for_user(request.user)
+    if pricing['is_fully_owned']:
+        messages.info(request, f"You already own all materials in '{course.title}'!")
+        return redirect('content_hub:course_detail', slug=course.slug)
+
+    final_price = pricing['final_price']
+
+    if request.method == 'POST':
+        if not wallet.can_afford(final_price):
+            messages.error(
+                request,
+                f"You need {final_price} coins to unlock this course bundle, but currently have {wallet.coins} coins. "
+                f"Please top up below."
+            )
+            return redirect('wallet:buy_coins')
+
+        # Debit coins
+        if final_price > 0:
+            wallet.debit_coins(final_price, description=f"Course Bundle Unlock: {course.title}")
+
+        course_unlock = CourseUnlock.objects.create(
+            user=request.user,
+            course=course,
+            coins_spent=final_price
+        )
+
+        # Grant access to all bundled resources
+        for item in course.items.all():
+            if not request.user.has_unlocked(item):
+                ContentUnlock.objects.create(
+                    user=request.user,
+                    content_item=item,
+                    coins_spent=0,
+                    expires_at=course_unlock.expires_at
+                )
+
+        messages.success(
+            request, 
+            f"🎉 Congratulations! You have successfully unlocked the complete course bundle '{course.title}' for {final_price} coins!"
+        )
+        return redirect('content_hub:course_detail', slug=course.slug)
+
+    return render(request, 'wallet/confirm_course_unlock.html', {
+        'course': course,
+        'pricing': pricing,
         'wallet': wallet,
     })
 

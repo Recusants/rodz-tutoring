@@ -85,6 +85,7 @@ def dashboard_view(request):
     if active_mode == 'student':
         from django.db.models import Q
         from django.utils import timezone
+        from wallet.models import CourseUnlock
         unlocked_records = ContentUnlock.objects.filter(user=user).filter(
             Q(expires_at__isnull=True) | Q(expires_at__gte=timezone.now())
         ).select_related('content_item', 'content_item__subject')
@@ -96,28 +97,38 @@ def dashboard_view(request):
                 grade=user.grade
             ).exclude(id__in=unlocked_ids).select_related('subject')[:6]
 
+        unlocked_courses = CourseUnlock.objects.filter(user=user).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gte=timezone.now())
+        ).select_related('course', 'course__subject')
+
         recent_transactions = CoinTransaction.objects.filter(wallet=wallet)[:8]
         quiz_attempts = QuizAttempt.objects.filter(student=user).select_related('quiz', 'quiz__content_item')[:6]
 
         context.update({
             'unlocked_records': unlocked_records,
+            'unlocked_courses': unlocked_courses,
             'recommended_items': recommended_items,
             'recent_transactions': recent_transactions,
             'quiz_attempts': quiz_attempts,
         })
     elif active_mode == 'tutor':
+        from content_hub.models import Course
         tutor_content_count = ContentItem.objects.count()
         recent_items = ContentItem.objects.select_related('subject')[:10]
+        my_courses = Course.objects.filter(creator=user).select_related('subject').prefetch_related('items')
         context.update({
             'tutor_content_count': tutor_content_count,
             'recent_items': recent_items,
+            'my_courses': my_courses,
         })
     elif active_mode == 'admin':
         from wallet.models import CoinPaymentRequest
+        from content_hub.models import Course
         total_users = CustomUser.objects.count()
         student_count = CustomUser.objects.filter(is_student=True).count()
         tutor_count = CustomUser.objects.filter(is_tutor=True).count()
         pending_payments = CoinPaymentRequest.objects.filter(status='PENDING').count()
+        pending_courses_count = Course.objects.filter(status='PENDING').count()
         recent_users = CustomUser.objects.order_by('-date_joined')[:6]
         recent_payments = CoinPaymentRequest.objects.filter(status='PENDING')[:5]
 
@@ -126,6 +137,7 @@ def dashboard_view(request):
             'student_count': student_count,
             'tutor_count': tutor_count,
             'pending_payments': pending_payments,
+            'pending_courses_count': pending_courses_count,
             'recent_users': recent_users,
             'recent_payments': recent_payments,
         })

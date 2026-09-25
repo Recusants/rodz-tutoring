@@ -4,8 +4,9 @@ from django.http import HttpResponse, HttpResponseForbidden, Http404
 from django.contrib import messages
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.utils import timezone
-from .models import Subject, ContentItem, Curriculum
-from wallet.models import ContentUnlock, StudentWallet
+from .models import Subject, ContentItem, Curriculum, Course
+from .forms import TutorCourseCreateForm
+from wallet.models import ContentUnlock, StudentWallet, CourseUnlock
 import os
 
 
@@ -96,11 +97,23 @@ def catalog_view(request):
     else:
         items = items.order_by('-id')
 
+    # Also load approved courses for bundle shopping
+    courses = Course.objects.filter(status='APPROVED').select_related('creator', 'subject').prefetch_related('items')
+    if query:
+        courses = courses.filter(Q(title__icontains=query) | Q(description__icontains=query) | Q(subject__name__icontains=query))
+    if curriculum:
+        courses = courses.filter(Q(curriculum__icontains=curriculum) | Q(curriculum_ref__code__iexact=curriculum))
+    if grade:
+        courses = courses.filter(grade=grade)
+    if subject_slug:
+        courses = courses.filter(subject__slug=subject_slug)
+
     subjects = Subject.objects.all()
     curricula = Curriculum.objects.filter(is_active=True).order_by('order', 'name')
 
     return render(request, 'content_hub/catalog.html', {
         'items': items,
+        'courses': courses,
         'subjects': subjects,
         'curricula': curricula,
         'selected_query': query,
@@ -112,6 +125,129 @@ def catalog_view(request):
         'user_unlocked_ids': user_unlocked_ids,
         'my_unlocked_items': my_unlocked_items,
         'student_grade': student_grade,
+    })
+
+
+def course_detail_view(request, slug):
+    course = get_object_or_404(Course.objects.select_related('creator', 'subject').prefetch_related('items'), slug=slug)
+    
+    # Check permissions if not approved yet
+    if course.status != 'APPROVED':
+        is_creator = request.user.is_authenticated and course.creator == request.user
+        is_admin = request.user.is_authenticated and (request.user.is_admin_role or request.user.is_staff or request.user.is_superuser)
+        if not (is_creator or is_admin):
+            raise Http404("This course is currently pending admin review.")
+
+    pricing = course.get_pricing_for_user(request.user)
+    is_manager = request.user.is_authenticated and (course.creator == request.user or request.user.is_admin_role or request.user.is_staff)
+
+    return render(request, 'content_hub/course_detail.html', {
+        'course': course,
+        'pricing': pricing,
+        'is_manager': is_manager,
+    })
+
+
+@login_required
+def tutor_course_create_view(request):
+    user = request.user
+    if not (user.is_tutor or user.is_admin_role or user.is_staff or user.is_superuser):
+        messages.error(request, "Only registered Tutors can create and publish course bundles.")
+        return redirect('accounts:dashboard')
+
+    wallet, _ = StudentWallet.objects.get_or_create(user=user)
+    tutor_coins = wallet.coins
+
+    if request.method == 'POST':
+        form = TutorCourseCreateForm(request.POST)
+        if form.is_valid():
+            if not wallet.can_afford(50):
+                messages.error(request, f"Insufficient coins! You need 50 coins to publish a course for admin review, but only have {wallet.coins} coins.")
+                return redirect('wallet:buy_coins')
+
+            course = form.save(commit=False)
+            course.creator = user
+            course.status = 'PENDING'
+            course.creation_fee_coins = 50
+            course.save()
+            form.save_m2m()
+
+            # Debit publishing fee
+            wallet.debit_coins(50, description=f"Course Publishing Submission: {course.title}")
+
+            messages.success(
+                request,
+                f"🎉 Course '{course.title}' submitted successfully! 50 coins have been deposited. "
+                f"Our admin team will review your bundled materials before publishing live."
+            )
+            return redirect('accounts:dashboard')
+        else:
+            messages.error(request, "Please review the errors in the course form below.")
+    else:
+        form = TutorCourseCreateForm()
+
+    return render(request, 'content_hub/tutor_course_create.html', {
+        'form': form,
+        'tutor_coins': tutor_coins,
+    })
+
+
+@login_required
+def admin_course_approvals_view(request):
+    user = request.user
+    if not (user.is_admin_role or user.is_staff or user.is_superuser):
+        return HttpResponseForbidden("Access Denied: Admin authorization required.")
+
+    status_filter = request.GET.get('status', 'PENDING')
+    courses_qs = Course.objects.select_related('creator', 'subject', 'reviewed_by').prefetch_related('items')
+
+    if status_filter != 'ALL':
+        courses_qs = courses_qs.filter(status=status_filter)
+
+    pending_count = Course.objects.filter(status='PENDING').count()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        course_id = request.POST.get('course_id')
+        notes = request.POST.get('admin_notes', '').strip()
+
+        course = get_object_or_404(Course, id=course_id)
+
+        if action == 'approve':
+            course.status = 'APPROVED'
+            course.reviewed_by = user
+            course.reviewed_at = timezone.now()
+            if notes:
+                course.admin_notes = notes
+            course.save()
+            messages.success(request, f"✅ Course '{course.title}' approved and published live in the Resource Hub!")
+            return redirect(f"{request.path}?status={status_filter}")
+
+        elif action == 'reject':
+            course.status = 'REJECTED'
+            course.reviewed_by = user
+            course.reviewed_at = timezone.now()
+            course.admin_notes = notes or "Does not meet course bundle guidelines."
+            course.save()
+
+            # Refund tutor deposit fee
+            creator_wallet, _ = StudentWallet.objects.get_or_create(user=course.creator)
+            creator_wallet.credit_coins(
+                course.creation_fee_coins,
+                description=f"Course Submission Refund: {course.title}",
+                admin_user=user
+            )
+
+            messages.warning(
+                request,
+                f"❌ Course '{course.title}' rejected. {course.creation_fee_coins} coins refunded to tutor {course.creator.email}."
+            )
+            return redirect(f"{request.path}?status={status_filter}")
+
+    return render(request, 'content_hub/admin_course_approvals.html', {
+        'courses': courses_qs,
+        'status_filter': status_filter,
+        'pending_count': pending_count,
     })
 
 

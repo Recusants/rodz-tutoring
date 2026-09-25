@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Unlock Bundle: {{ course.title }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 760px; margin: 40px auto;">
+  <div class="dash-section" style="padding: 36px;">
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 48px; color: var(--blue); margin-bottom: 12px;">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <span class="badge premium" style="font-size: 12px; padding: 5px 12px;">
+        <i class="fa-solid fa-layer-group"></i> COMPLETE COURSE BUNDLE
+      </span>
+      <h1 style="font-size: 28px; margin: 12px 0 6px;">{{ course.title }}</h1>
+      <p style="color: var(--muted); font-size: 13px;">
+        {{ course.grade }} &bull; {{ course.curriculum }} &bull; {{ course.subject.name }} &bull; Taught by {{ course.creator.full_name|default:course.creator.email }}
+      </p>
+    </div>
+
+    <!-- Dynamic Bundle Breakdown Card -->
+    <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--blue);">
+        <i class="fa-solid fa-tags"></i> Dynamic "Complete My Bundle" Pricing
+      </h3>
+
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px;">
+        <span>Original Bundle Value ({{ pricing.total_items_count }} Resources):</span>
+        <b>{{ pricing.original_bundle_price }} Coins</b>
+      </div>
+
+      {% if pricing.owned_items_count > 0 %}
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: #15803d;">
+          <span>
+            <i class="fa-solid fa-circle-check"></i> Already Owned Deduction ({{ pricing.owned_items_count }} Items):
+          </span>
+          <b>-{{ pricing.owned_items_value }} Coins</b>
+        </div>
+      {% endif %}
+
+      <div style="display: flex; justify-content: space-between; padding: 12px 0 4px; font-size: 18px; font-weight: 800; color: var(--blue);">
+        <span>Your Personalized Bundle Price:</span>
+        <span><i class="fa-solid fa-coins" style="color: var(--gold);"></i> {{ pricing.final_price }} Coins</span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 12px; color: var(--muted);">
+        <span>Your Current Balance:</span>
+        <span style="font-weight: 700; color: {% if wallet.coins >= pricing.final_price %}#15803d{% else %}#b91c1c{% endif %};">
+          {{ wallet.coins }} Coins
+        </span>
+      </div>
+    </div>
+
+    <!-- Items Preview in this bundle -->
+    <div style="margin-bottom: 24px;">
+      <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 10px;">
+        Resources Included in this Bundle ({{ pricing.total_items_count }})
+      </h4>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for item in course.items.all %}
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              {% if item.content_type == 'PDF' %}
+                <i class="fa-solid fa-file-pdf" style="color: #ef4444; font-size: 16px;"></i>
+              {% elif item.content_type == 'VIDEO' %}
+                <i class="fa-solid fa-circle-play" style="color: #3b82f6; font-size: 16px;"></i>
+              {% else %}
+                <i class="fa-solid fa-list-check" style="color: #8b5cf6; font-size: 16px;"></i>
+              {% endif %}
+              <div>
+                <div style="font-weight: 600; font-size: 13px;">{{ item.title }}</div>
+                <div style="font-size: 11px; color: var(--muted);">{{ item.category }} &bull; {{ item.coin_price }} Coins individually</div>
+              </div>
+            </div>
+            <div>
+              {% if item.id in pricing.owned_item_ids %}
+                <span style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px;">
+                  <i class="fa-solid fa-check"></i> Already Owned
+                </span>
+              {% else %}
+                <span style="font-size: 11px; color: var(--muted); font-weight: 600;">
+                  Included in Bundle
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="text-align: center;">
+      {% if wallet.coins >= pricing.final_price %}
+        <form method="POST" action="{% url 'wallet:unlock_course' course.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="btn primary" style="padding: 12px 32px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-unlock"></i> UNLOCK COMPLETE BUNDLE FOR {{ pricing.final_price }} COINS
+          </button>
+        </form>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 10px;">
+          <i class="fa-solid fa-calendar-check"></i> Access to all bundled videos, PDFs, and worksheets remains active for the full academic year.
+        </p>
+      {% else %}
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px; color: #991b1b; font-size: 13px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> You need <b>{{ pricing.final_price }} coins</b> to unlock this bundle, but currently have <b>{{ wallet.coins }} coins</b>.
+        </div>
+        <a href="{% url 'wallet:buy_coins' %}" class="btn primary" style="padding: 10px 24px; font-size: 13px;">
+          <i class="fa-solid fa-plus-circle"></i> TOP UP COINS
+        </a>
+      {% endif %}
+      <div style="margin-top: 14px;">
+        <a href="{% url 'content_hub:course_detail' course.slug %}" style="color: var(--muted); font-size: 12px; text-decoration: underline;">
+          &larr; Return to Course Overview
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

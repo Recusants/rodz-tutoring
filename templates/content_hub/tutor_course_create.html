@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Course Bundle | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 860px; margin: 30px auto; padding: 0 16px;">
+  
+  <!-- Header Banner -->
+  <div class="dash-section" style="padding: 28px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 11px; margin-bottom: 6px; display: inline-block;">
+          <i class="fa-solid fa-chalkboard-user"></i> TUTOR COURSE PUBLISHING
+        </span>
+        <h1 style="font-size: 26px; color: var(--blue); margin: 0 0 4px;">Create New Course Bundle</h1>
+        <p style="font-size: 13px; color: var(--muted); margin: 0;">
+          Bundle your study packs, video lessons, and past papers into a complete structured course.
+        </p>
+      </div>
+
+      <!-- Tutor Coin Balance Box -->
+      <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 18px; text-align: right;">
+        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted);">Publishing Deposit Fee</div>
+        <div style="font-size: 18px; font-weight: 900; color: #b45309;">
+          <i class="fa-solid fa-coins"></i> 50 Coins
+        </div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
+          Your Balance: <b>{{ tutor_coins }} Coins</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if tutor_coins < 50 %}
+    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px; color: #92400e; font-size: 13px;">
+        <i class="fa-solid fa-circle-exclamation" style="font-size: 20px;"></i>
+        <div>
+          <b>Insufficient Coin Balance:</b> You need at least 50 coins to publish a course for admin review.
+        </div>
+      </div>
+      <a href="{% url 'wallet:buy_coins' %}" class="btn primary small" style="white-space: nowrap; font-size: 12px;">
+        <i class="fa-solid fa-plus-circle"></i> Top Up Coins
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- Creation Form -->
+  <form method="POST" class="dash-section" style="padding: 30px;">
+    {% csrf_token %}
+
+    {% if form.errors %}
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 20px; color: #991b1b; font-size: 13px;">
+        <b>Please correct the errors below:</b>
+        <ul style="margin: 6px 0 0 18px;">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ field|title }}: {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+      <div style="grid-column: span 2;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Course Bundle Title *</label>
+        {{ form.title }}
+        <span style="font-size: 11px; color: var(--muted);">Clear, engaging title (e.g. "Grade 12 Calculus Masterclass & Past Paper Solutions")</span>
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Subject *</label>
+        {{ form.subject }}
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Target Grade *</label>
+        {{ form.grade }}
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Curriculum Programme *</label>
+        {{ form.curriculum }}
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Course Cover Theme *</label>
+        {{ form.cover_svg_name }}
+      </div>
+
+      <div style="grid-column: span 2;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Selling Price (Coins) *</label>
+        {{ form.bundle_price }}
+        <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 4px;">
+          The price students pay for this entire bundle. If students already purchased some single items, those costs are automatically deducted from this price!
+        </span>
+      </div>
+
+      <div style="grid-column: span 2;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Course Description & Syllabus Overview</label>
+        {{ form.description }}
+      </div>
+    </div>
+
+    <!-- Items Selector -->
+    <div style="border-top: 1px solid var(--line); padding-top: 24px; margin-top: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+        <label style="font-size: 14px; font-weight: 800; color: var(--blue);">
+          Select Resources to Bundle *
+        </label>
+        <span style="font-size: 11px; color: var(--muted);">Check all videos, PDFs, and worksheets to include</span>
+      </div>
+
+      <div style="max-height: 380px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; background: #fafafa; display: flex; flex-direction: column; gap: 8px;">
+        {% for widget in form.items %}
+          <label style="display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; cursor: pointer; transition: background 0.15s ease;">
+            {{ widget.tag }}
+            <span style="font-size: 13px; font-weight: 600; color: var(--text);">
+              {{ widget.choice_label }}
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Submission Bar -->
+    <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+      <a href="{% url 'accounts:dashboard' %}" style="font-size: 13px; color: var(--muted); text-decoration: underline;">
+        Cancel & Return to Dashboard
+      </a>
+
+      <button type="submit" class="btn primary" {% if tutor_coins < 50 %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %} style="padding: 12px 28px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-paper-plane"></i> SUBMIT FOR ADMIN APPROVAL (50 COINS)
+      </button>
+    </div>
+  </form>
+
+</section>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Course Approvals Queue | Rodz Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 1140px; margin: 30px auto; padding: 0 16px;">
+  
+  <!-- Header -->
+  <div class="dash-section" style="padding: 24px 28px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <span class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800; font-size: 11px; margin-bottom: 6px; display: inline-block;">
+          <i class="fa-solid fa-shield-halved"></i> ADMIN COMMAND CENTER
+        </span>
+        <h1 style="font-size: 26px; color: var(--blue); margin: 0 0 4px;">Course Bundle Approvals</h1>
+        <p style="font-size: 13px; color: var(--muted); margin: 0;">
+          Review tutor course submissions, verify bundled materials, approve for live publishing or reject with refunds.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <span style="background: {% if pending_count > 0 %}#fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% else %}#f0fdf4; color: #166534; border: 1px solid #bbf7d0;{% endif %} padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-stamp"></i> {{ pending_count }} Pending Review
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+    <a href="?status=PENDING" style="padding: 8px 16px; font-size: 12px; font-weight: 700; border-radius: 20px; text-decoration: none; {% if status_filter == 'PENDING' %}background: var(--blue); color: #fff;{% else %}background: #fff; color: var(--text); border: 1px solid var(--line);{% endif %}">
+      Pending Approvals ({{ pending_count }})
+    </a>
+    <a href="?status=APPROVED" style="padding: 8px 16px; font-size: 12px; font-weight: 700; border-radius: 20px; text-decoration: none; {% if status_filter == 'APPROVED' %}background: var(--blue); color: #fff;{% else %}background: #fff; color: var(--text); border: 1px solid var(--line);{% endif %}">
+      Approved & Live
+    </a>
+    <a href="?status=REJECTED" style="padding: 8px 16px; font-size: 12px; font-weight: 700; border-radius: 20px; text-decoration: none; {% if status_filter == 'REJECTED' %}background: var(--blue); color: #fff;{% else %}background: #fff; color: var(--text); border: 1px solid var(--line);{% endif %}">
+      Rejected & Refunded
+    </a>
+    <a href="?status=ALL" style="padding: 8px 16px; font-size: 12px; font-weight: 700; border-radius: 20px; text-decoration: none; {% if status_filter == 'ALL' %}background: var(--blue); color: #fff;{% else %}background: #fff; color: var(--text); border: 1px solid var(--line);{% endif %}">
+      All Courses
+    </a>
+  </div>
+
+  <!-- Course Submissions List -->
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    {% for course in courses %}
+      <div class="dash-section" style="padding: 24px; border-left: 4px solid {% if course.status == 'PENDING' %}#f59e0b{% elif course.status == 'APPROVED' %}#10b981{% else %}#ef4444{% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+              <span class="badge" style="font-size: 10px; font-weight: 800; {% if course.status == 'PENDING' %}background: #fffbeb; color: #b45309;{% elif course.status == 'APPROVED' %}background: #f0fdf4; color: #15803d;{% else %}background: #fef2f2; color: #b91c1c;{% endif %}">
+                {{ course.get_status_display }}
+              </span>
+              <span class="badge" style="font-size: 10px; font-weight: 700; background: var(--soft); color: var(--muted);">
+                {{ course.grade }} &bull; {{ course.curriculum }} &bull; {{ course.subject.name }}
+              </span>
+            </div>
+            <h2 style="font-size: 20px; margin: 0 0 4px; color: var(--blue);">{{ course.title }}</h2>
+            <div style="font-size: 12px; color: var(--muted);">
+              Submitted by <b>{{ course.creator.full_name|default:course.creator.email }}</b> on {{ course.created_at|date:"M d, Y H:i" }}
+            </div>
+          </div>
+
+          <!-- Price & Financial Meta -->
+          <div style="text-align: right; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 16px;">
+            <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted);">Selling Bundle Price</div>
+            <div style="font-size: 18px; font-weight: 900; color: var(--blue);">
+              <i class="fa-solid fa-coins" style="color: var(--gold);"></i> {{ course.bundle_price }} Coins
+            </div>
+            <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">
+              Tutor Fee Paid: <b>{{ course.creation_fee_coins }} Coins</b>
+            </div>
+          </div>
+        </div>
+
+        {% if course.description %}
+          <p style="font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 16px;">
+            {{ course.description|linebreaksbr }}
+          </p>
+        {% endif %}
+
+        <!-- Bundled Items Preview -->
+        <div style="margin-bottom: 18px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">
+            Bundled Items ({{ course.items.count }}):
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for itm in course.items.all %}
+              <div style="background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+                {% if itm.content_type == 'PDF' %}
+                  <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+                {% elif itm.content_type == 'VIDEO' %}
+                  <i class="fa-solid fa-circle-play" style="color: #3b82f6;"></i>
+                {% else %}
+                  <i class="fa-solid fa-list-check" style="color: #8b5cf6;"></i>
+                {% endif %}
+                <span>{{ itm.title|truncatechars:35 }}</span>
+                <span style="color: var(--muted);">({{ itm.coin_price }}c)</span>
+              </div>
+            {% empty %}
+              <span style="font-size: 12px; color: var(--muted); font-style: italic;">No items linked.</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% if course.status == 'PENDING' %}
+          <!-- Review Actions Form -->
+          <div style="border-top: 1px solid var(--line); padding-top: 16px; margin-top: 14px;">
+            <form method="POST" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              {% csrf_token %}
+              <input type="hidden" name="course_id" value="{{ course.id }}">
+              
+              <input type="text" name="admin_notes" placeholder="Feedback or rejection reason notes (optional)..." style="flex: 1; min-width: 250px; font-size: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);">
+
+              <button type="submit" name="action" value="approve" class="btn primary small" style="background: #15803d; border-color: #15803d; padding: 8px 18px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-check"></i> APPROVE & PUBLISH LIVE
+              </button>
+
+              <button type="submit" name="action" value="reject" onclick="return confirm('Reject course and refund {{ course.creation_fee_coins }} coins to tutor?');" class="btn outline small" style="color: #dc2626; border-color: #fca5a5; padding: 8px 16px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-xmark"></i> REJECT & REFUND COINS
+              </button>
+            </form>
+          </div>
+        {% else %}
+          <div style="border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              Reviewed by <b>{{ course.reviewed_by.email|default:"Administrator" }}</b> on {{ course.reviewed_at|date:"M d, Y H:i" }}
+              {% if course.admin_notes %} &bull; Note: "{{ course.admin_notes }}"{% endif %}
+            </div>
+            {% if course.status == 'APPROVED' %}
+              <a href="{% url 'content_hub:course_detail' course.slug %}" target="_blank" style="color: var(--blue); font-weight: 700; text-decoration: underline;">
+                View Live Course &rarr;
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+      </div>
+    {% empty %}
+      <div class="dash-section" style="padding: 40px; text-align: center; color: var(--muted);">
+        <i class="fa-solid fa-folder-open" style="font-size: 40px; margin-bottom: 12px; opacity: 0.5;"></i>
+        <p style="font-size: 14px; margin: 0;">No course submissions found under this filter.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+</section>
+{% endblock %}
