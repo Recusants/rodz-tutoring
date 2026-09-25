@@ -49,8 +49,12 @@ class RegistrationForm(forms.ModelForm):
 
 
 class LoginForm(forms.Form):
-    email = forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Enter your registered email'})
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Enter password'}))
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Enter your registered email'})
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Enter password'})
+    )
 
     def __init__(self, request=None, *args, **kwargs):
         self.request = request
@@ -62,7 +66,12 @@ class LoginForm(forms.Form):
         password = self.cleaned_data.get('password')
 
         if email and password:
+            email = email.strip().lower()
             self.user_cache = authenticate(self.request, username=email, password=password)
+            if self.user_cache is None:
+                # Also try email= parameter in case of backend differences
+                self.user_cache = authenticate(self.request, email=email, password=password)
+
             if self.user_cache is None:
                 raise forms.ValidationError('Invalid email or password. Please try again.')
             elif not self.user_cache.is_active:

@@ -115,7 +115,7 @@
               <td style="padding: 10px 8px;">{{ tx.description }}</td>
               <td style="padding: 10px 8px; color: var(--muted);">{{ tx.created_by.email|default:"System" }}</td>
               <td style="padding: 10px 8px; text-align: right; font-weight: 800; color: {% if tx.amount > 0 %}var(--green){% else %}var(--red){% endif %};">
-                {{ tx.amount:+d }}
+                {% if tx.amount > 0 %}+{{ tx.amount }}{% else %}{{ tx.amount }}{% endif %}
               </td>
             </tr>
           {% empty %}

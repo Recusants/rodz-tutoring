@@ -29,3 +29,16 @@ class AccountsTestCase(TestCase):
         self.assertTrue(user.is_tutor)
         self.assertIn('Student', user.roles_display)
         self.assertIn('Tutor', user.roles_display)
+
+    def test_login_post(self):
+        user = CustomUser.objects.create_user(
+            email='loginuser@example.com',
+            password='MyPassword123!'
+        )
+        response = self.client.post('/accounts/login/', {
+            'email': 'loginuser@example.com',
+            'password': 'MyPassword123!'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].email, 'loginuser@example.com')
