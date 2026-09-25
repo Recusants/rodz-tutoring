@@ -476,6 +476,8 @@ def view_content_view(request, item_slug):
     elif item.content_type == 'VIDEO':
         return render(request, 'content_hub/video_viewer.html', {
             'item': item,
+            'video_stream': item.video_stream_source,
+            'watermark_text': f"LICENSED TO: {user.email} • RODZ TUTORING • NON-DOWNLOADABLE STREAM",
         })
     elif item.content_type == 'QUIZ':
         if hasattr(item, 'quiz'):

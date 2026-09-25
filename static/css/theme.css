@@ -1084,3 +1084,32 @@ footer {
   .stats-banner { grid-template-columns: 1fr; }
   .trust-row { flex-direction: column; gap: 12px; }
 }
+
+/* ========================================================
+   VIDEO PLAYER & STREAMING WRAPPER
+   ======================================================== */
+.video-stream-box,
+.video-player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.video-stream-box iframe,
+.video-stream-box video,
+.video-player-container iframe,
+.video-player-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  display: block;
+}
+

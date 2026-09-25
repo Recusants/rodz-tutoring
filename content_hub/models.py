@@ -102,10 +102,16 @@ class ContentItem(models.Model):
         null=True, 
         help_text="Protected PDF stored securely away from public direct download"
     )
+    video_file = models.FileField(
+        upload_to='protected_videos/', 
+        blank=True, 
+        null=True, 
+        help_text="Optional direct MP4/WebM video file upload for in-app streaming"
+    )
     youtube_url = models.URLField(
         blank=True, 
         null=True, 
-        help_text="YouTube video link for streaming inside the app (e.g. https://www.youtube.com/watch?v=...)"
+        help_text="Video stream link (YouTube, Vimeo, or direct MP4/WebM URL)"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -127,9 +133,60 @@ class ContentItem(models.Model):
     def youtube_embed_id(self):
         if not self.youtube_url:
             return ""
-        # Match standard youtube watch URLs or short links
-        match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", self.youtube_url)
+        url = self.youtube_url.strip()
+        # Direct 11-char ID
+        if re.fullmatch(r'[0-9A-Za-z_-]{11}', url):
+            return url
+        # Standard youtube watch, embed, shorts, live, or youtu.be
+        match = re.search(r'(?:youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([0-9A-Za-z_-]{11})', url)
+        if match:
+            return match.group(1)
+        # Fallback to broader 11-char regex
+        match_fallback = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11})', url)
+        return match_fallback.group(1) if match_fallback else ""
+
+    @property
+    def vimeo_id(self):
+        if not self.youtube_url:
+            return ""
+        match = re.search(r'vimeo\.com/(?:video/)?([0-9]+)', self.youtube_url)
         return match.group(1) if match else ""
+
+    @property
+    def is_direct_video_url(self):
+        if not self.youtube_url:
+            return False
+        return bool(re.search(r'\.(mp4|webm|ogg)($|\?)', self.youtube_url, re.I))
+
+    @property
+    def video_stream_source(self):
+        """
+        Returns structured playback metadata:
+        {'type': 'file'|'youtube'|'vimeo'|'direct'|'external'|'none', 'id': ..., 'url': ...}
+        """
+        if self.video_file:
+            return {'type': 'file', 'url': self.video_file.url, 'id': ''}
+        yt_id = self.youtube_embed_id
+        if yt_id:
+            return {
+                'type': 'youtube', 
+                'id': yt_id, 
+                'url': f"https://www.youtube.com/watch?v={yt_id}",
+                'embed_url': f"https://www.youtube.com/embed/{yt_id}"
+            }
+        vm_id = self.vimeo_id
+        if vm_id:
+            return {
+                'type': 'vimeo', 
+                'id': vm_id, 
+                'url': f"https://vimeo.com/{vm_id}",
+                'embed_url': f"https://player.vimeo.com/video/{vm_id}"
+            }
+        if self.is_direct_video_url:
+            return {'type': 'direct', 'url': self.youtube_url, 'id': ''}
+        if self.youtube_url:
+            return {'type': 'external', 'url': self.youtube_url, 'id': ''}
+        return {'type': 'none', 'url': '', 'id': ''}
 
     @property
     def is_locked_by_default(self):

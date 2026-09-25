@@ -536,5 +536,101 @@ class SiteContentCMSTestCase(TestCase):
         self.assertFalse(HowToStep.objects.filter(id=new_step_id).exists())
 
 
+class VideoStreamingTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.subject = Subject.objects.create(name='Physics', slug='physics')
+        self.student = CustomUser.objects.create_user(
+            email='videostudent@example.com',
+            password='Password123!',
+            is_student=True
+        )
+
+        self.free_yt_video = ContentItem.objects.create(
+            title='Free YouTube Physics Stream',
+            slug='free-yt-physics-stream',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS',
+            content_type='VIDEO',
+            is_free=True,
+            coin_price=0,
+            youtube_url='https://www.youtube.com/watch?v=2WS1dQ9-Bl8'
+        )
+
+        self.vimeo_video = ContentItem.objects.create(
+            title='Free Vimeo Calculus Lesson',
+            slug='free-vimeo-calculus-lesson',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS',
+            content_type='VIDEO',
+            is_free=True,
+            coin_price=0,
+            youtube_url='https://vimeo.com/76979871'
+        )
+
+        self.direct_mp4_video = ContentItem.objects.create(
+            title='Direct MP4 Work Energy Video',
+            slug='direct-mp4-work-energy',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS',
+            content_type='VIDEO',
+            is_free=True,
+            coin_price=0,
+            youtube_url='https://example.com/videos/lesson.mp4'
+        )
+
+        self.paid_video = ContentItem.objects.create(
+            title='Paid Premium Video Pack',
+            slug='paid-premium-video-pack',
+            subject=self.subject,
+            grade='Grade 12',
+            curriculum='CAPS',
+            content_type='VIDEO',
+            is_free=False,
+            coin_price=35,
+            youtube_url='https://www.youtube.com/watch?v=9vKqVkMQHKk'
+        )
+
+    def test_youtube_embed_rendering_and_security(self):
+        self.client.login(email='videostudent@example.com', password='Password123!')
+        url = reverse('content_hub:view_content', kwargs={'item_slug': self.free_yt_video.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'https://www.youtube.com/embed/2WS1dQ9-Bl8')
+        self.assertContains(response, 'strict-origin-when-cross-origin')
+        self.assertContains(response, 'allowfullscreen')
+        self.assertContains(response, 'video-player-container')
+
+    def test_vimeo_video_rendering(self):
+        self.client.login(email='videostudent@example.com', password='Password123!')
+        url = reverse('content_hub:view_content', kwargs={'item_slug': self.vimeo_video.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'https://player.vimeo.com/video/76979871')
+
+    def test_direct_mp4_video_rendering(self):
+        self.client.login(email='videostudent@example.com', password='Password123!')
+        url = reverse('content_hub:view_content', kwargs={'item_slug': self.direct_mp4_video.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<video')
+        self.assertContains(response, 'controlsList="nodownload"')
+        self.assertContains(response, 'https://example.com/videos/lesson.mp4')
+
+    def test_locked_video_requires_unlock(self):
+        self.client.login(email='videostudent@example.com', password='Password123!')
+        url = reverse('content_hub:view_content', kwargs={'item_slug': self.paid_video.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Should render locked screen
+        self.assertContains(response, 'PREMIUM PROTECTED CONTENT')
+        self.assertContains(response, '35 Coins')
+        self.assertNotContains(response, 'https://www.youtube.com/embed/9vKqVkMQHKk')
+
+
+
 
 
