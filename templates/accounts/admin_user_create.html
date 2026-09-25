@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create New User Account | Rodz Tutoring Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 720px; margin: 0 auto;">
+  <div class="section-heading">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">ADMINISTRATIVE PROVISIONING</div>
+    <h2>CREATE NEW USER ACCOUNT</h2>
+    <p>Register a student, tutor, or staff member directly with customized roles and initial coin balance.</p>
+    <div class="bar"></div>
+  </div>
+
+  <div class="dash-section" style="background: var(--white); box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); padding: 30px;">
+    <form method="POST">
+      {% csrf_token %}
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text);">Email Address *</label>
+        {{ form.email }}
+        {{ form.email.errors }}
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text);">Full Name</label>
+        {{ form.full_name }}
+        {{ form.full_name.errors }}
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text);">WhatsApp Contact Number</label>
+        {{ form.phone_number }}
+        {{ form.phone_number.errors }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 700; color: var(--text);">Grade</label>
+          {{ form.grade }}
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 700; color: var(--text);">Curriculum</label>
+          {{ form.curriculum }}
+        </div>
+      </div>
+
+      <!-- Initial Password -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text);">Initial Password *</label>
+        {{ form.password }}
+        <small style="color: var(--muted); font-size: 11px;">The user can change this later from their profile or via password reset.</small>
+        {{ form.password.errors }}
+      </div>
+
+      <!-- Welcome Coins -->
+      <div style="margin-bottom: 18px;">
+        <label style="font-size: 13px; font-weight: 700; color: #b45309;">
+          <i class="fa-solid fa-coins"></i> Welcome Study Coins Allocation
+        </label>
+        {{ form.initial_coins }}
+        <small style="color: var(--muted); font-size: 11px;">Initial balance to credit to the user's study wallet.</small>
+      </div>
+
+      <!-- Role Permissions -->
+      <div style="background: var(--soft); padding: 16px 18px; border-radius: var(--radius-sm); margin-bottom: 24px; border: 1px solid var(--line);">
+        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--blue); margin-bottom: 10px;">
+          Assign Roles & Status
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            {{ form.is_student }} <b>Student Access</b>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            {{ form.is_tutor }} <b>Tutor Access</b>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            {{ form.is_admin_role }} <b>Admin Access</b>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            {{ form.is_staff }} <b>Staff / Django Admin</b>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; grid-column: 1/-1;">
+            {{ form.is_active }} <b>Account Active (Immediately can log in)</b>
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <a href="{% url 'accounts:admin_user_list' %}" class="btn outline small">Cancel</a>
+        <button type="submit" class="btn primary">
+          <i class="fa-solid fa-user-plus"></i> CREATE ACCOUNT NOW
+        </button>
+      </div>
+
+    </form>
+  </div>
+</section>
+{% endblock %}

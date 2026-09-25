@@ -93,3 +93,44 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if unlock and unlock.is_active:
             return True
         return False
+
+    @property
+    def available_roles(self):
+        roles = []
+        if self.is_admin_role or self.is_staff or self.is_superuser:
+            roles.append('admin')
+        if self.is_tutor:
+            roles.append('tutor')
+        if self.is_student:
+            roles.append('student')
+        return roles
+
+    @property
+    def has_multiple_roles(self):
+        return len(self.available_roles) > 1
+
+    @property
+    def default_role_mode(self):
+        roles = self.available_roles
+        if not roles:
+            return 'student'
+        if 'admin' in roles:
+            return 'admin'
+        if 'tutor' in roles:
+            return 'tutor'
+        return 'student'
+
+    def get_active_mode(self, request):
+        if not self.is_authenticated:
+            return 'student'
+        roles = self.available_roles
+        if not roles:
+            return 'student'
+        if len(roles) == 1:
+            return roles[0]
+        mode = request.session.get('active_role_mode')
+        if mode in roles:
+            return mode
+        default_mode = self.default_role_mode
+        request.session['active_role_mode'] = default_mode
+        return default_mode

@@ -81,6 +81,14 @@ class CoinTransaction(models.Model):
         return f"[{self.transaction_type}] {self.wallet.user.email}: {self.amount:+d} coins ({self.description})"
 
 
+def calculate_academic_year_expiry():
+    now = timezone.now()
+    target_year = now.year if now.month < 10 else now.year + 1
+    return timezone.make_aware(
+        datetime.datetime(target_year, 12, 31, 23, 59, 59)
+    )
+
+
 class ContentUnlock(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -112,13 +120,7 @@ class ContentUnlock(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.expires_at:
-            now = timezone.now()
-            # Academic school year ends Dec 31
-            # If unlocked in Q4 (Oct-Dec), extend to Dec 31 of next year so student gets at least a full academic year
-            target_year = now.year if now.month < 10 else now.year + 1
-            self.expires_at = timezone.make_aware(
-                datetime.datetime(target_year, 12, 31, 23, 59, 59)
-            )
+            self.expires_at = calculate_academic_year_expiry()
         super().save(*args, **kwargs)
 
     def __str__(self):

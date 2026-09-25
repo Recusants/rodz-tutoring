@@ -42,6 +42,40 @@
       <a href="{% url 'content_hub:catalog' %}">RESOURCE HUB</a>
 
       {% if user.is_authenticated %}
+        <!-- Active Role Mode Switcher Pill (For Multi-Role Users) -->
+        {% if has_multiple_roles %}
+          <div class="dropdown">
+            <button class="profile-btn" style="background: {% if active_mode == 'admin' %}#ede9fe; color: #6d28d9; border: 1px solid #ddd6fe;{% elif active_mode == 'tutor' %}#fef3c7; color: #b45309; border: 1px solid #fde68a;{% else %}#dcfce7; color: #15803d; border: 1px solid #bbf7d0;{% endif %} padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;" title="Switch operating mode">
+              {% if active_mode == 'admin' %}
+                <i class="fa-solid fa-shield-halved"></i> ADMIN MODE
+              {% elif active_mode == 'tutor' %}
+                <i class="fa-solid fa-chalkboard-user"></i> TUTOR MODE
+              {% else %}
+                <i class="fa-solid fa-user-graduate"></i> STUDENT MODE
+              {% endif %}
+              <i class="fa-solid fa-repeat" style="font-size: 9px; opacity: 0.8; margin-left: 2px;"></i>
+            </button>
+            <div class="dropdown-menu dropdown-right" style="min-width: 190px;">
+              <div style="font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; padding: 4px 12px; letter-spacing: 0.05em;">Switch Mode (1 at a time)</div>
+              {% if 'student' in available_roles %}
+                <a href="{% url 'accounts:switch_mode' 'student' %}" {% if active_mode == 'student' %}style="font-weight: 800; color: #16a34a; background: #f0fdf4;"{% endif %}>
+                  <i class="fa-solid fa-user-graduate"></i> Student View {% if active_mode == 'student' %}<i class="fa-solid fa-check" style="float: right;"></i>{% endif %}
+                </a>
+              {% endif %}
+              {% if 'tutor' in available_roles %}
+                <a href="{% url 'accounts:switch_mode' 'tutor' %}" {% if active_mode == 'tutor' %}style="font-weight: 800; color: #b45309; background: #fffdf5;"{% endif %}>
+                  <i class="fa-solid fa-chalkboard-user"></i> Tutor View {% if active_mode == 'tutor' %}<i class="fa-solid fa-check" style="float: right;"></i>{% endif %}
+                </a>
+              {% endif %}
+              {% if 'admin' in available_roles %}
+                <a href="{% url 'accounts:switch_mode' 'admin' %}" {% if active_mode == 'admin' %}style="font-weight: 800; color: #7c3aed; background: #faf5ff;"{% endif %}>
+                  <i class="fa-solid fa-shield-halved"></i> Admin Console {% if active_mode == 'admin' %}<i class="fa-solid fa-check" style="float: right;"></i>{% endif %}
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
         <!-- Quick Coins Pill -->
         <a href="{% url 'wallet:buy_coins' %}" class="coin-pill" title="Click to buy or activate coins">
           <span><i class="fa-solid fa-coins"></i></span> <b>{{ user_coins }} Coins</b>
@@ -68,7 +102,7 @@
               <div class="user-email">{{ user.email }}</div>
               <div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap;">
                 {% if user.is_admin_role or user.is_superuser %}
-                  <span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px;">Admin</span>
+                  <span style="background: #ede9fe; color: #6d28d9; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px;">Admin</span>
                 {% endif %}
                 {% if user.is_tutor %}
                   <span style="background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px;">Tutor</span>
@@ -79,18 +113,33 @@
               </div>
             </div>
 
+            <!-- Mode Switcher in Dropdown (For Multi-Role Users) -->
+            {% if has_multiple_roles %}
+              <div style="background: var(--soft); padding: 8px 12px; border-radius: var(--radius-sm); margin: 4px 0 6px; border: 1px solid var(--line);">
+                <div style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Current Mode: <b>{{ active_mode|upper }}</b></div>
+                <div style="display: flex; gap: 4px;">
+                  {% for r in available_roles %}
+                    <a href="{% url 'accounts:switch_mode' r %}" style="padding: 2px 6px; font-size: 10px; font-weight: 800; border-radius: 4px; text-transform: capitalize; {% if active_mode == r %}background: var(--blue); color: #fff;{% else %}background: #fff; color: var(--text); border: 1px solid var(--line);{% endif %}">
+                      {{ r }}
+                    </a>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
             <!-- Coin Balance / Top Up Link -->
             <a href="{% url 'wallet:buy_coins' %}" style="display: flex; justify-content: space-between; align-items: center; background: #fffdf5; border: 1px solid #fde68a; margin: 4px 0 8px; border-radius: var(--radius-sm); font-weight: 700; color: #b45309;">
               <span><i class="fa-solid fa-coins"></i> Top Up / Activate</span>
               <span style="font-size: 11px; background: #fbbf24; color: #78350f; padding: 2px 7px; border-radius: 10px;">{{ user_coins }} Coins</span>
             </a>
 
-            <a href="{% url 'accounts:dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Learner Dashboard</a>
+            <a href="{% url 'accounts:dashboard' %}"><i class="fa-solid fa-gauge-high"></i> My Dashboard</a>
             <a href="{% url 'accounts:profile' %}"><i class="fa-solid fa-user"></i> My Profile & Account</a>
 
             {% if user.is_staff or user.is_admin_role %}
               <div class="dropdown-divider"></div>
-              <div style="font-size: 10px; font-weight: 800; color: #b45309; text-transform: uppercase; padding: 4px 12px; letter-spacing: 0.05em;">Admin Portal</div>
+              <div style="font-size: 10px; font-weight: 800; color: #b45309; text-transform: uppercase; padding: 4px 12px; letter-spacing: 0.05em;">Admin Control Center</div>
+              <a href="{% url 'accounts:admin_user_list' %}"><i class="fa-solid fa-users-gear"></i> User Accounts Control</a>
               <a href="{% url 'wallet:admin_payment_requests' %}"><i class="fa-solid fa-receipt"></i> Payment Proof Requests</a>
               <a href="{% url 'wallet:admin_credit_panel' %}"><i class="fa-solid fa-coins"></i> Manual Coin Credits</a>
               <a href="{% url 'accounts:system_settings' %}"><i class="fa-solid fa-gear"></i> System .env Settings</a>

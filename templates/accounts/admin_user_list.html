@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Accounts Control | Rodz Tutoring Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 1250px; margin: 0 auto;">
+  <div class="section-heading">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">ADMINISTRATIVE CONTROL CENTER</div>
+    <h2>USER ACCOUNTS & ROLE DIRECTORY</h2>
+    <p>Complete control of student, tutor, and administrator accounts, roles, passwords, wallets, and access.</p>
+    <div class="bar"></div>
+  </div>
+
+  <!-- KPI Overview Stat Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 25px;">
+    <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Total Users</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--blue);">{{ total_count }}</div>
+      </div>
+    </div>
+
+    <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+        <i class="fa-solid fa-user-graduate"></i>
+      </div>
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Students</div>
+        <div style="font-size: 24px; font-weight: 800; color: #15803d;">{{ student_count }}</div>
+      </div>
+    </div>
+
+    <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+        <i class="fa-solid fa-chalkboard-user"></i>
+      </div>
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Tutors</div>
+        <div style="font-size: 24px; font-weight: 800; color: #b45309;">{{ tutor_count }}</div>
+      </div>
+    </div>
+
+    <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: #ede9fe; color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Admins</div>
+        <div style="font-size: 24px; font-weight: 800; color: #6d28d9;">{{ admin_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 25px; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
+      <!-- Role Filter Tabs -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <a href="?role=ALL{% if search_q %}&q={{ search_q }}{% endif %}{% if grade_filter != 'ALL' %}&grade={{ grade_filter }}{% endif %}{% if status_filter != 'ALL' %}&status={{ status_filter }}{% endif %}" 
+           class="btn {% if role_filter == 'ALL' %}primary{% else %}outline{% endif %} small">
+          All Users
+        </a>
+        <a href="?role=STUDENT{% if search_q %}&q={{ search_q }}{% endif %}{% if grade_filter != 'ALL' %}&grade={{ grade_filter }}{% endif %}{% if status_filter != 'ALL' %}&status={{ status_filter }}{% endif %}" 
+           class="btn {% if role_filter == 'STUDENT' %}primary{% else %}outline{% endif %} small">
+          <i class="fa-solid fa-user-graduate"></i> Students
+        </a>
+        <a href="?role=TUTOR{% if search_q %}&q={{ search_q }}{% endif %}{% if grade_filter != 'ALL' %}&grade={{ grade_filter }}{% endif %}{% if status_filter != 'ALL' %}&status={{ status_filter }}{% endif %}" 
+           class="btn {% if role_filter == 'TUTOR' %}primary{% else %}outline{% endif %} small">
+          <i class="fa-solid fa-chalkboard-user"></i> Tutors
+        </a>
+        <a href="?role=ADMIN{% if search_q %}&q={{ search_q }}{% endif %}{% if grade_filter != 'ALL' %}&grade={{ grade_filter }}{% endif %}{% if status_filter != 'ALL' %}&status={{ status_filter }}{% endif %}" 
+           class="btn {% if role_filter == 'ADMIN' %}primary{% else %}outline{% endif %} small">
+          <i class="fa-solid fa-shield-halved"></i> Admins
+        </a>
+      </div>
+
+      <!-- Action Button: Create New Account -->
+      <a href="{% url 'accounts:admin_user_create' %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-user-plus"></i> CREATE NEW ACCOUNT
+      </a>
+    </div>
+
+    <!-- Secondary Filter Bar (Search + Grade Dropdown + Status Dropdown) -->
+    <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--line);">
+      <input type="hidden" name="role" value="{{ role_filter }}">
+
+      <!-- Search Input -->
+      <div style="flex-grow: 1; min-width: 240px;">
+        <input type="text" name="q" value="{{ search_q }}" placeholder="Search by name, email, or phone number..." class="input-control" style="font-size: 13px; width: 100%;">
+      </div>
+
+      <!-- Grade Filter -->
+      <div style="min-width: 150px;">
+        <select name="grade" class="input-control" style="font-size: 13px; width: 100%;" onchange="this.form.submit()">
+          <option value="ALL" {% if grade_filter == 'ALL' %}selected{% endif %}>All Grades</option>
+          {% for code, label in grade_choices %}
+            <option value="{{ code }}" {% if grade_filter == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div style="min-width: 140px;">
+        <select name="status" class="input-control" style="font-size: 13px; width: 100%;" onchange="this.form.submit()">
+          <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
+          <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
+          <option value="SUSPENDED" {% if status_filter == 'SUSPENDED' %}selected{% endif %}>Suspended</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn outline small">Filter</button>
+      {% if search_q or grade_filter != 'ALL' or status_filter != 'ALL' %}
+        <a href="{% url 'accounts:admin_user_list' %}?role={{ role_filter }}" class="btn outline small" style="color: var(--muted);">Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Accounts Table -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);">
+    {% if users %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--soft); color: var(--blue); border-bottom: 2px solid var(--line);">
+              <th style="padding: 14px 16px;">User Details</th>
+              <th style="padding: 14px 16px;">Grade & Curriculum</th>
+              <th style="padding: 14px 16px;">Assigned Roles</th>
+              <th style="padding: 14px 16px;">Wallet Coins</th>
+              <th style="padding: 14px 16px;">Status</th>
+              <th style="padding: 14px 16px;">Joined</th>
+              <th style="padding: 14px 16px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr style="border-bottom: 1px solid var(--line); {% if not u.is_active %}background: #fff1f2;{% endif %}">
+                <!-- User Details -->
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 700; color: var(--text);">{{ u.full_name|default:"(No name provided)" }}</div>
+                  <div style="font-size: 12px; color: var(--blue); font-weight: 600;">{{ u.email }}</div>
+                  {% if u.phone_number %}
+                    <div style="font-size: 11px; color: #16a34a; margin-top: 2px; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-brands fa-whatsapp"></i> {{ u.phone_number }}
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- Grade & Curriculum -->
+                <td style="padding: 14px 16px;">
+                  <div style="font-weight: 700;">{{ u.grade|default:"Not specified" }}</div>
+                  <div style="font-size: 11px; color: var(--muted);">{{ u.curriculum }}</div>
+                </td>
+
+                <!-- Roles -->
+                <td style="padding: 14px 16px;">
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    {% if u.is_admin_role or u.is_staff or u.is_superuser %}
+                      <span style="background: #ede9fe; color: #6d28d9; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 12px; border: 1px solid #ddd6fe;">
+                        <i class="fa-solid fa-shield-halved"></i> Admin
+                      </span>
+                    {% endif %}
+                    {% if u.is_tutor %}
+                      <span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 12px; border: 1px solid #fde68a;">
+                        <i class="fa-solid fa-chalkboard-user"></i> Tutor
+                      </span>
+                    {% endif %}
+                    {% if u.is_student %}
+                      <span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 12px; border: 1px solid #bbf7d0;">
+                        <i class="fa-solid fa-user-graduate"></i> Student
+                      </span>
+                    {% endif %}
+                  </div>
+                </td>
+
+                <!-- Wallet Coins -->
+                <td style="padding: 14px 16px;">
+                  <span style="font-weight: 800; color: #b45309; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">
+                    <i class="fa-solid fa-coins"></i> {{ u.wallet.coins|default:0 }}
+                  </span>
+                </td>
+
+                <!-- Status -->
+                <td style="padding: 14px 16px;">
+                  {% if u.is_active %}
+                    <span style="background: #dcfce7; color: #166534; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 12px;">
+                      <i class="fa-solid fa-circle-check"></i> Active
+                    </span>
+                  {% else %}
+                    <span style="background: #fee2e2; color: #991b1b; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 12px;">
+                      <i class="fa-solid fa-ban"></i> Suspended
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Date Joined -->
+                <td style="padding: 14px 16px; font-size: 11px; color: var(--muted); white-space: nowrap;">
+                  {{ u.date_joined|date:"d M Y" }}
+                </td>
+
+                <!-- Action -->
+                <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
+                  <a href="{% url 'accounts:admin_user_detail' u.id %}" class="btn primary small" style="padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+                    <i class="fa-solid fa-sliders"></i> Control &rarr;
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 60px 20px;">
+        <i class="fa-solid fa-user-slash" style="font-size: 38px; color: var(--muted); margin-bottom: 12px; display: block;"></i>
+        <h3>No accounts found matching filter criteria</h3>
+        <p style="color: var(--muted); font-size: 13px; margin: 6px 0 16px;">Try adjusting your search query, grade, or role filter.</p>
+        <a href="{% url 'accounts:admin_user_list' %}" class="btn outline small">View All Accounts</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div style="margin-top: 25px;">
+    <a href="{% url 'accounts:dashboard' %}" class="btn outline small">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</section>
+{% endblock %}

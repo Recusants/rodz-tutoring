@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Control: {{ target_user.email }} | Rodz Tutoring Admin{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 1200px; margin: 0 auto;">
+
+  <!-- Header Banner -->
+  <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 25px; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+        <a href="{% url 'accounts:admin_user_list' %}" class="btn outline small" style="padding: 4px 8px;">
+          <i class="fa-solid fa-arrow-left"></i> All Accounts
+        </a>
+        <h2 style="margin: 0; font-size: 22px;">{{ target_user.full_name|default:target_user.email }}</h2>
+        {% if target_user.is_active %}
+          <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+            <i class="fa-solid fa-circle-check"></i> Active
+          </span>
+        {% else %}
+          <span style="background: #fee2e2; color: #991b1b; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+            <i class="fa-solid fa-ban"></i> Suspended
+          </span>
+        {% endif %}
+      </div>
+      <div style="font-size: 13px; color: var(--muted); display: flex; gap: 15px; flex-wrap: wrap;">
+        <span><i class="fa-solid fa-envelope"></i> {{ target_user.email }}</span>
+        {% if target_user.phone_number %}
+          <span><i class="fa-brands fa-whatsapp" style="color: #16a34a;"></i> {{ target_user.phone_number }}</span>
+        {% endif %}
+        <span><i class="fa-solid fa-graduation-cap"></i> {{ target_user.grade }} ({{ target_user.curriculum }})</span>
+        <span><i class="fa-solid fa-calendar"></i> Joined {{ target_user.date_joined|date:"d M Y, H:i" }}</span>
+      </div>
+    </div>
+
+    <!-- Quick Action: Suspend / Activate Toggle -->
+    <div style="display: flex; gap: 10px;">
+      <form method="POST" onsubmit="return confirm('Are you sure you want to change the active status of this account?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_status">
+        {% if target_user.is_active %}
+          <button type="submit" class="btn outline small" style="color: #b91c1c; border-color: #fca5a5;" {% if target_user == user %}disabled title="Cannot suspend your own account"{% endif %}>
+            <i class="fa-solid fa-ban"></i> Suspend Account
+          </button>
+        {% else %}
+          <button type="submit" class="btn primary small" style="background: #16a34a;">
+            <i class="fa-solid fa-circle-check"></i> Reactivate Account
+          </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+    <!-- PANEL 1: Profile & Roles Editing -->
+    <div class="dash-section" style="margin-bottom: 0;">
+      <h3 style="font-size: 17px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-user-pen" style="color: var(--blue);"></i> Profile & Role Assignment
+      </h3>
+
+      <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit_profile">
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text);">Email Address</label>
+          {{ profile_form.email }}
+          {{ profile_form.email.errors }}
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text);">Full Name</label>
+          {{ profile_form.full_name }}
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text);">WhatsApp Contact Number</label>
+          {{ profile_form.phone_number }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--text);">Grade</label>
+            {{ profile_form.grade }}
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--text);">Curriculum</label>
+            {{ profile_form.curriculum }}
+          </div>
+        </div>
+
+        <!-- Role Toggles Box -->
+        <div style="background: var(--soft); padding: 14px 16px; border-radius: var(--radius-sm); margin-bottom: 18px; border: 1px solid var(--line);">
+          <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--blue); margin-bottom: 10px;">
+            Role Permissions & Access
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              {{ profile_form.is_student }} <b>Student Role</b>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              {{ profile_form.is_tutor }} <b>Tutor Role</b>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              {{ profile_form.is_admin_role }} <b>Admin Role</b>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              {{ profile_form.is_staff }} <b>Staff / Django Admin</b>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; grid-column: 1/-1;">
+              {{ profile_form.is_active }} <b>Account Active (Allowed to sign in)</b>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn primary small" style="width: 100%;">
+          <i class="fa-solid fa-floppy-disk"></i> SAVE PROFILE & ROLES
+        </button>
+      </form>
+    </div>
+
+    <!-- PANEL 2: Password Management & Wallet Control -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- Direct Password Reset -->
+      <div class="dash-section" style="margin-bottom: 0;">
+        <h3 style="font-size: 17px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-key" style="color: #d97706;"></i> Direct Password Overwrite
+        </h3>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 14px;">
+          Instantly set a new password for this user without asking for their current password.
+        </p>
+
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="direct_password">
+
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 12px; font-weight: 700;">New Password</label>
+            {{ password_form.new_password }}
+          </div>
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 12px; font-weight: 700;">Confirm New Password</label>
+            {{ password_form.confirm_password }}
+          </div>
+
+          <button type="submit" class="btn outline small" style="width: 100%; border-color: #d97706; color: #b45309;">
+            <i class="fa-solid fa-lock-open"></i> OVERWRITE PASSWORD
+          </button>
+        </form>
+      </div>
+
+      <!-- Wallet & Coins Management -->
+      <div class="dash-section" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-coins" style="color: #b45309;"></i> Wallet Coin Balance
+          </h3>
+          <span style="font-size: 20px; font-weight: 900; color: #b45309; background: #fffdf5; padding: 4px 12px; border-radius: 8px; border: 1px solid #fde68a;">
+            <i class="fa-solid fa-coins"></i> {{ target_wallet.coins }}
+          </span>
+        </div>
+
+        <form method="POST" style="background: var(--soft); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="adjust_wallet">
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700;">Adjustment Type</label>
+              {{ wallet_form.action_type }}
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700;">Amount of Coins</label>
+              {{ wallet_form.coins }}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 11px; font-weight: 700;">Audit Reason / Description</label>
+            {{ wallet_form.description }}
+          </div>
+
+          <button type="submit" class="btn gold small" style="width: 100%;">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i> APPLY COIN ADJUSTMENT
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- PANEL 3: Study Pack Access & Academic Year Unlocks -->
+  <div class="dash-section" style="margin-top: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <h3 style="font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-book-bookmark" style="color: var(--blue);"></i> Unlocked Study Packs ({{ user_unlocks|length }})
+      </h3>
+      <span style="font-size: 12px; color: var(--muted);">
+        <i class="fa-solid fa-calendar-check"></i> Retained for full academic school year
+      </span>
+    </div>
+
+    <!-- Manual Grant Form -->
+    <form method="POST" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="grant_unlock">
+      <div style="flex-grow: 1; min-width: 280px;">
+        <label style="font-size: 12px; font-weight: 800; color: #166534; display: block; margin-bottom: 4px;">
+          <i class="fa-solid fa-gift"></i> Manually Grant Study Pack Access (Scholarship / Complimentary)
+        </label>
+        {{ grant_unlock_form.content_item }}
+      </div>
+      <button type="submit" class="btn primary small" style="background: #16a34a; white-space: nowrap;">
+        <i class="fa-solid fa-unlock"></i> GRANT ACCESS
+      </button>
+    </form>
+
+    <!-- Table of Current Unlocks -->
+    {% if user_unlocks %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--soft); color: var(--blue); border-bottom: 2px solid var(--line);">
+              <th style="padding: 10px 14px;">Study Pack Title</th>
+              <th style="padding: 10px 14px;">Grade & Subject</th>
+              <th style="padding: 10px 14px;">Unlocked Date</th>
+              <th style="padding: 10px 14px;">Expiry Date</th>
+              <th style="padding: 10px 14px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for unlock in user_unlocks %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 12px 14px; font-weight: 700;">
+                  {{ unlock.content_item.title }}
+                </td>
+                <td style="padding: 12px 14px; color: var(--muted);">
+                  {{ unlock.content_item.grade }} &bull; {{ unlock.content_item.subject.name }}
+                </td>
+                <td style="padding: 12px 14px; color: var(--muted); font-size: 12px;">
+                  {{ unlock.unlocked_at|date:"d M Y, H:i" }}
+                </td>
+                <td style="padding: 12px 14px; font-size: 12px;">
+                  {% if unlock.is_active %}
+                    <span style="color: #16a34a; font-weight: 700;">
+                      {{ unlock.expires_at|date:"d M Y" }} (Active)
+                    </span>
+                  {% else %}
+                    <span style="color: #b91c1c; font-weight: 700;">
+                      Expired ({{ unlock.expires_at|date:"d M Y" }})
+                    </span>
+                  {% endif %}
+                </td>
+                <td style="padding: 12px 14px; text-align: right;">
+                  <form method="POST" style="display: inline;" onsubmit="return confirm('Revoke student access to this study pack?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="revoke_unlock">
+                    <input type="hidden" name="unlock_id" value="{{ unlock.id }}">
+                    <button type="submit" class="btn outline small" style="color: #b91c1c; padding: 3px 8px; font-size: 11px;">
+                      <i class="fa-solid fa-trash-can"></i> Revoke
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 25px; background: var(--soft); border-radius: var(--radius-sm); color: var(--muted); font-size: 13px;">
+        This learner has not unlocked any study packs yet.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PANEL 4: Recent Wallet Coin Transactions History -->
+  <div class="dash-section" style="margin-top: 24px;">
+    <h3 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-receipt" style="color: #b45309;"></i> Coin Transaction Audit Log (Last 20)
+    </h3>
+    {% if user_transactions %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="background: var(--soft); color: var(--blue); border-bottom: 2px solid var(--line);">
+              <th style="padding: 10px 14px;">Date</th>
+              <th style="padding: 10px 14px;">Type</th>
+              <th style="padding: 10px 14px;">Coins</th>
+              <th style="padding: 10px 14px;">Description / Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in user_transactions %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 10px 14px; color: var(--muted);">{{ t.created_at|date:"d M Y, H:i" }}</td>
+                <td style="padding: 10px 14px; font-weight: 700;">{{ t.transaction_type }}</td>
+                <td style="padding: 10px 14px; font-weight: 800; color: {% if t.amount > 0 %}#15803d{% else %}#b91c1c{% endif %};">
+                  {% if t.amount > 0 %}+{{ t.amount }}{% else %}{{ t.amount }}{% endif %}
+                </td>
+                <td style="padding: 10px 14px; color: var(--text);">{{ t.description }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 20px; background: var(--soft); border-radius: var(--radius-sm); color: var(--muted); font-size: 13px;">
+        No transaction history recorded for this wallet.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PANEL 5: Danger Zone (Delete Account) -->
+  <div class="dash-section" style="margin-top: 24px; border: 1px solid #fecaca; background: #fffdfd;">
+    <h3 style="font-size: 16px; color: #b91c1c; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone
+    </h3>
+    <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px;">
+      Permanently delete this user account, their wallet, and associated records. This action cannot be undone.
+    </p>
+
+    <form method="POST" action="{% url 'accounts:admin_user_delete' target_user.id %}" onsubmit="return confirm('WARNING: Are you absolutely certain you want to permanently delete this user account?');">
+      {% csrf_token %}
+      <button type="submit" class="btn outline small" style="color: #b91c1c; border-color: #b91c1c;" {% if target_user == user %}disabled title="Cannot delete yourself"{% endif %}>
+        <i class="fa-solid fa-trash-can"></i> Permanently Delete Account
+      </button>
+      {% if target_user == user %}
+        <span style="font-size: 12px; color: #b91c1c; margin-left: 10px;">(Disabled: You are currently signed in as this admin)</span>
+      {% endif %}
+    </form>
+  </div>
+
+  <div style="margin-top: 25px;">
+    <a href="{% url 'accounts:admin_user_list' %}" class="btn outline small">
+      <i class="fa-solid fa-arrow-left"></i> Return to Accounts Directory
+    </a>
+  </div>
+
+</section>
+{% endblock %}

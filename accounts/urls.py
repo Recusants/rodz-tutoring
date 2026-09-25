@@ -9,7 +9,14 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('profile/', views.profile_view, name='profile'),
+    path('switch-mode/<str:mode>/', views.switch_mode_view, name='switch_mode'),
     path('system-settings/', views.admin_system_settings_view, name='system_settings'),
+
+    # Admin Total Account Control
+    path('admin/users/', views.admin_user_list_view, name='admin_user_list'),
+    path('admin/users/create/', views.admin_user_create_view, name='admin_user_create'),
+    path('admin/users/<int:user_id>/', views.admin_user_detail_view, name='admin_user_detail'),
+    path('admin/users/<int:user_id>/delete/', views.admin_user_delete_view, name='admin_user_delete'),
 
     # Password Recovery Flow
     path('password-reset/', views.RodzPasswordResetView.as_view(), name='password_reset'),

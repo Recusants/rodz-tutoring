@@ -169,3 +169,115 @@ class AdminSystemSettingsForm(forms.Form):
         help_text="e.g. +27 74 568 5212 (as shown to learners on the website)",
         widget=forms.TextInput(attrs={'class': 'form-input'})
     )
+
+
+from content_hub.models import ContentItem
+
+
+class AdminUserEditForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = [
+            'email', 'full_name', 'phone_number', 'grade', 'curriculum',
+            'is_student', 'is_tutor', 'is_admin_role', 'is_staff', 'is_active'
+        ]
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-input'}),
+            'full_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-input'}),
+            'grade': forms.Select(attrs={'class': 'form-input'}),
+            'curriculum': forms.Select(attrs={'class': 'form-input'}),
+            'is_student': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_tutor': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_admin_role': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }
+
+
+class AdminUserCreateForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Initial password'}),
+        help_text="Provide an initial password for the account."
+    )
+    initial_coins = forms.IntegerField(
+        required=False,
+        initial=50,
+        min_value=0,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+        help_text="Optional starting coins to credit to this student's wallet."
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'email', 'full_name', 'phone_number', 'grade', 'curriculum',
+            'is_student', 'is_tutor', 'is_admin_role', 'is_staff', 'is_active'
+        ]
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-input'}),
+            'full_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-input'}),
+            'grade': forms.Select(attrs={'class': 'form-input'}),
+            'curriculum': forms.Select(attrs={'class': 'form-input'}),
+            'is_student': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_tutor': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_admin_role': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password'])
+        if commit:
+            user.save()
+        return user
+
+
+class AdminDirectPasswordResetForm(forms.Form):
+    new_password = forms.CharField(
+        label="New Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Enter new password'}),
+        help_text="Minimum 6 characters. Overwrites user password immediately without requiring old password."
+    )
+    confirm_password = forms.CharField(
+        label="Confirm New Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Repeat new password'})
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get('new_password')
+        p2 = cleaned.get('confirm_password')
+        if p1 and p2 and p1 != p2:
+            self.add_error('confirm_password', 'Passwords do not match.')
+        return cleaned
+
+
+class AdminWalletAdjustForm(forms.Form):
+    ACTION_CHOICES = [
+        ('CREDIT', 'Credit (Add Coins)'),
+        ('DEBIT', 'Debit (Deduct Coins)'),
+    ]
+    action_type = forms.ChoiceField(
+        choices=ACTION_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-input'})
+    )
+    coins = forms.IntegerField(
+        min_value=1,
+        initial=50,
+        widget=forms.NumberInput(attrs={'class': 'form-input'})
+    )
+    description = forms.CharField(
+        label="Audit Reason / Note",
+        help_text="Explain why coins are being adjusted (visible in audit logs)",
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Scholarship reward, payment correction, manual gift'})
+    )
+
+
+class AdminGrantUnlockForm(forms.Form):
+    content_item = forms.ModelChoiceField(
+        queryset=ContentItem.objects.all().order_by('grade', 'subject__name', 'title'),
+        widget=forms.Select(attrs={'class': 'form-input'})
+    )
