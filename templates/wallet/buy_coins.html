@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buy Student Coins | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px;">
+  <div class="section-heading">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">COIN WALLET ECONOMY</div>
+    <h2>PURCHASE STUDENT COINS</h2>
+    <p>Select your coin package. Orders are verified and credited securely via WhatsApp.</p>
+    <div class="bar"></div>
+  </div>
+
+  <!-- How Coins Work Banner -->
+  <div style="background: var(--gold-bg); border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 20px 24px; max-width: 900px; margin: 0 auto 35px; display: flex; align-items: center; gap: 20px;">
+    <div style="font-size: 38px;">🪙</div>
+    <div style="font-size: 13px; color: #78350f; line-height: 1.6;">
+      <b>How It Works:</b> Click <b>"Order via WhatsApp"</b> on your preferred bundle. Send the pre-formatted message to our admin team. Once your payment/EFT is verified, your coins are instantly credited to your account so you can unlock study packs!
+    </div>
+  </div>
+
+  <!-- Packages Grid -->
+  <div class="packages-grid" style="max-width: 900px; margin: 0 auto;">
+    {% for pkg in packages %}
+      <div class="pkg-card {% if pkg.id == 'term' or pkg.id == 'exam' %}highlight{% endif %}">
+        <span class="badge {% if pkg.id == 'term' or pkg.id == 'exam' %}premium{% else %}curriculum{% endif %}">
+          {{ pkg.badge }}
+        </span>
+
+        <h3>{{ pkg.name }}</h3>
+        <div class="price">
+          R{{ pkg.price_zar }}
+          <span style="font-size: 14px; color: var(--muted); font-weight: 400;">/ {{ pkg.coins }} Coins</span>
+        </div>
+
+        <p>{{ pkg.description }}</p>
+
+        <a href="{{ pkg.wa_link }}" target="_blank" rel="noopener" class="btn primary" style="width: 100%;">
+          💬 ORDER VIA WHATSAPP &rarr;
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div style="text-align: center; margin-top: 40px;">
+    <p style="color: var(--muted); font-size: 13px;">
+      Current Coin Balance: <b>🪙 {{ wallet.coins }} Coins</b> &bull; Need support? WhatsApp us at <b>{{ WHATSAPP_DISPLAY_PHONE }}</b>
+    </p>
+    <a href="{% url 'accounts:dashboard' %}" class="btn outline small" style="margin-top: 10px;">Return to Dashboard</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Coin Credit Panel | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px;">
+  <div class="section-heading">
+    <span class="badge" style="background:#fee2e2; color:#991b1b; font-size: 11px;">ADMIN OPERATIONS</span>
+    <h2 style="margin-top: 8px;">MANUAL COIN CREDITING PANEL</h2>
+    <p>Credit student accounts directly after verifying WhatsApp proof of payment or EFT.</p>
+    <div class="bar"></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 30px; margin-top: 25px;">
+    
+    <!-- Top-Up Form -->
+    <div class="dash-section">
+      <h3 style="margin-bottom: 18px;">Issue Coins to Student</h3>
+
+      <form method="POST" action="{% url 'wallet:admin_credit_panel' %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Student Email</label>
+          <input type="email" name="student_email" id="targetEmailInput" required class="form-input" placeholder="e.g. student@gmail.com">
+          <small style="color: var(--muted); font-size: 11px;">Click 'Select' in the student list on the right to auto-fill.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Coins to Add</label>
+          <input type="number" name="coin_amount" required min="1" step="1" class="form-input" placeholder="e.g. 100">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Audit / Reference Note</label>
+          <input type="text" name="note" required class="form-input" placeholder="e.g. WhatsApp POP verified - R100 Pack - Ref #1043">
+        </div>
+
+        <button type="submit" class="btn primary" style="width: 100%; padding: 13px;">
+          ➕ CREDIT COINS NOW
+        </button>
+      </form>
+    </div>
+
+    <!-- Student Search & Quick Select List -->
+    <div class="dash-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3>Registered Students</h3>
+
+        <form method="GET" action="{% url 'wallet:admin_credit_panel' %}" style="display: flex; gap: 6px;">
+          <input type="text" name="q" value="{{ search_query }}" class="form-input" placeholder="Search email/name..." style="padding: 6px 10px; font-size: 12px;">
+          <button type="submit" class="btn outline small">Search</button>
+        </form>
+      </div>
+
+      <div style="max-height: 380px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line); text-align: left; color: var(--muted);">
+              <th style="padding: 8px;">Email / Name</th>
+              <th style="padding: 8px;">Grade</th>
+              <th style="padding: 8px;">Coins</th>
+              <th style="padding: 8px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 10px 8px;">
+                  <b>{{ u.email }}</b>
+                  <div style="color: var(--muted); font-size: 11px;">{{ u.full_name|default:"No name" }} &bull; {{ u.phone_number }}</div>
+                </td>
+                <td style="padding: 10px 8px;">{{ u.grade }}</td>
+                <td style="padding: 10px 8px; font-weight: 800; color: var(--gold-dark);">🪙 {{ u.wallet.coins }}</td>
+                <td style="padding: 10px 8px; text-align: right;">
+                  <button type="button" class="btn outline small" onclick="document.getElementById('targetEmailInput').value='{{ u.email }}'; document.getElementById('targetEmailInput').focus();">
+                    Select
+                  </button>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 25px; color: var(--muted);">No students found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Global Audit Log -->
+  <div class="dash-section" style="margin-top: 30px;">
+    <h3>Recent Coin Transactions Ledger</h3>
+    <div style="overflow-x: auto; margin-top: 14px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--line); text-align: left; color: var(--muted);">
+            <th style="padding: 10px 8px;">Timestamp</th>
+            <th style="padding: 10px 8px;">Student Account</th>
+            <th style="padding: 10px 8px;">Type</th>
+            <th style="padding: 10px 8px;">Note / Description</th>
+            <th style="padding: 10px 8px;">Issued By</th>
+            <th style="padding: 10px 8px; text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in recent_transactions %}
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 10px 8px; color: var(--muted);">{{ tx.created_at|date:"M d, H:i" }}</td>
+              <td style="padding: 10px 8px;"><b>{{ tx.wallet.user.email }}</b></td>
+              <td style="padding: 10px 8px;"><span class="badge curriculum" style="font-size: 10px;">{{ tx.get_transaction_type_display }}</span></td>
+              <td style="padding: 10px 8px;">{{ tx.description }}</td>
+              <td style="padding: 10px 8px; color: var(--muted);">{{ tx.created_by.email|default:"System" }}</td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 800; color: {% if tx.amount > 0 %}var(--green){% else %}var(--red){% endif %};">
+                {{ tx.amount:+d }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">No transactions recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+
+  <!-- Left Sidebar -->
+  <aside class="dash-sidebar">
+    <!-- User Profile Card -->
+    <div class="profile-card">
+      <div style="width: 52px; height: 52px; background: var(--blue); color: #fff; border-radius: 50%; display: grid; place-items: center; font-size: 22px; font-weight: 700; margin-bottom: 14px;">
+        {{ user.email|first|upper }}
+      </div>
+      <h3 style="font-size: 20px; margin-bottom: 4px;">{{ user.full_name|default:"Learner" }}</h3>
+      <p style="color: var(--muted); font-size: 12px; margin-bottom: 12px;">{{ user.email }}</p>
+
+      <div style="border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; line-height: 1.8;">
+        <div><b>Roles:</b> <span class="badge curriculum">{{ user.roles_display }}</span></div>
+        <div><b>Grade:</b> {{ user.grade }}</div>
+        <div><b>Curriculum:</b> {{ user.curriculum }}</div>
+        <div><b>WhatsApp:</b> {{ user.phone_number|default:"Not set" }}</div>
+      </div>
+    </div>
+
+    <!-- Student Coin Wallet Card -->
+    <div class="wallet-card">
+      <h3>Student Coin Wallet</h3>
+      <div class="coin-val">
+        <span>🪙</span> {{ wallet.coins }}
+      </div>
+      <p>Use your coins to unlock protected study packs, exam packs, and video walkthroughs.</p>
+      <a href="{% url 'wallet:buy_coins' %}" class="btn gold" style="width: 100%; text-align: center;">
+        + TOP UP COINS
+      </a>
+    </div>
+
+    <!-- Admin Shortcut (If Admin Role) -->
+    {% if user.is_admin_role or user.is_staff %}
+      <div class="dash-section" style="border: 2px solid var(--gold); padding: 18px;">
+        <h4 style="color: #b45309; font-size: 15px; margin-bottom: 8px;">Staff Admin Portal</h4>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
+          Credit student wallets manually or manage content.
+        </p>
+        <a href="{% url 'wallet:admin_credit_panel' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px;">
+          MANUAL COIN CREDITS
+        </a>
+        <a href="/admin/" class="btn outline small" style="width: 100%;" target="_blank">
+          DJANGO ADMIN &rarr;
+        </a>
+      </div>
+    {% endif %}
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="dash-main">
+
+    <!-- Tutor Special Section (If Tutor Role) -->
+    {% if user.is_tutor %}
+      <div class="dash-section" style="background: #f0fdf4; border-color: #bbf7d0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span class="badge" style="background: #dcfce7; color: #166534;">TUTOR PORTAL ACTIVE</span>
+            <h3 style="font-size: 22px; margin-top: 6px;">Tutor Teaching Hub</h3>
+            <p style="font-size: 13px; color: #15803d; margin: 4px 0 0;">
+              You have tutor privileges. You can view all {{ tutor_content_count }} learning items without coin deductions.
+            </p>
+          </div>
+          <div>
+            <a href="{% url 'content_hub:catalog' %}" class="btn primary small">VIEW ALL LESSONS</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Student Unlocked Materials -->
+    <div class="dash-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2>My Unlocked Library</h2>
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline small">+ Find New Materials</a>
+      </div>
+
+      {% if unlocked_records %}
+        <div class="resource-grid" style="grid-template-columns: repeat(3, 1fr); gap: 16px;">
+          {% for record in unlocked_records %}
+            <div class="resource-card" style="box-shadow: none;">
+              <div class="resource-card-cover" style="padding: 10px;">
+                {% if record.content_item.cover_svg_name %}
+                  <img src="{% static 'assets/resource-covers/' %}{{ record.content_item.cover_svg_name }}" alt="{{ record.content_item.title }}" style="aspect-ratio: 4/3;">
+                {% else %}
+                  <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ record.content_item.title }}" style="aspect-ratio: 4/3;">
+                {% endif %}
+                <span class="badge free" style="position: absolute; top: 15px; left: 15px;">UNLOCKED</span>
+              </div>
+              <div class="resource-card-body" style="padding: 12px;">
+                <div class="meta">{{ record.content_item.grade }} &bull; {{ record.content_item.subject.name }}</div>
+                <h4 style="font-size: 16px; margin: 4px 0 10px;">{{ record.content_item.title }}</h4>
+                <a href="{% url 'content_hub:view_content' record.content_item.slug %}" class="btn primary small" style="width: 100%;">
+                  OPEN IN-APP &rarr;
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 40px; background: var(--soft); border-radius: var(--radius-sm);">
+          <div style="font-size: 36px; margin-bottom: 10px;">📚</div>
+          <h4 style="font-size: 18px; margin-bottom: 6px;">Your library is empty</h4>
+          <p style="color: var(--muted); font-size: 13px; max-width: 420px; margin: 0 auto 16px;">
+            Explore our curriculum study packs and unlock premium resources using your coins.
+          </p>
+          <a href="{% url 'content_hub:catalog' %}" class="btn primary small">EXPLORE RESOURCES</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quiz Attempts History -->
+    {% if quiz_attempts %}
+      <div class="dash-section">
+        <h2>Recent Quiz Results</h2>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--line); text-align: left; color: var(--muted);">
+                <th style="padding: 10px 8px;">Quiz Title</th>
+                <th style="padding: 10px 8px;">Score</th>
+                <th style="padding: 10px 8px;">Outcome</th>
+                <th style="padding: 10px 8px;">Completed At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for attempt in quiz_attempts %}
+                <tr style="border-bottom: 1px solid var(--line);">
+                  <td style="padding: 12px 8px; font-weight: 600;">{{ attempt.quiz.title }}</td>
+                  <td style="padding: 12px 8px;"><b>{{ attempt.score_percent }}%</b> ({{ attempt.correct_answers }}/{{ attempt.total_questions }})</td>
+                  <td style="padding: 12px 8px;">
+                    {% if attempt.passed %}
+                      <span class="badge free">PASSED</span>
+                    {% else %}
+                      <span class="badge" style="background:#fee2e2; color:#991b1b;">RETRY</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 12px 8px; color: var(--muted);">{{ attempt.completed_at|date:"M d, Y - H:i" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Coin Transaction History -->
+    <div class="dash-section">
+      <h2>Coin Wallet Activity</h2>
+      {% if recent_transactions %}
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--line); text-align: left; color: var(--muted);">
+                <th style="padding: 10px 8px;">Date</th>
+                <th style="padding: 10px 8px;">Description</th>
+                <th style="padding: 10px 8px;">Type</th>
+                <th style="padding: 10px 8px; text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tx in recent_transactions %}
+                <tr style="border-bottom: 1px solid var(--line);">
+                  <td style="padding: 12px 8px; color: var(--muted);">{{ tx.created_at|date:"M d, Y" }}</td>
+                  <td style="padding: 12px 8px;">{{ tx.description }}</td>
+                  <td style="padding: 12px 8px;"><span class="badge curriculum" style="font-size: 10px;">{{ tx.get_transaction_type_display }}</span></td>
+                  <td style="padding: 12px 8px; text-align: right; font-weight: 800; color: {% if tx.amount > 0 %}var(--green){% else %}var(--red){% endif %};">
+                    {{ tx.amount:+d }} Coins
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--muted); font-size: 13px;">No coin transactions recorded yet.</p>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}

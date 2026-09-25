@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ subject.name }} Resources | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px;">
+  <div class="section-heading">
+    <span class="symbol" style="font-size: 40px; color: var(--blue);">{{ subject.icon_symbol }}</span>
+    <h2>{{ subject.name|upper }} STUDY MATERIALS</h2>
+    <p>{{ subject.description|default:"Browse comprehensive study packs, past exam papers, and video solutions." }}</p>
+    <div class="bar"></div>
+  </div>
+
+  <div class="resource-grid">
+    {% for item in items %}
+      <div class="resource-card">
+        <div class="resource-card-cover">
+          {% if item.cover_svg_name %}
+            <img src="{% static 'assets/resource-covers/' %}{{ item.cover_svg_name }}" alt="{{ item.title }}">
+          {% else %}
+            <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ item.title }}">
+          {% endif %}
+          <div class="top-badge">
+            {% if item.is_free %}
+              <span class="badge free">FREE</span>
+            {% else %}
+              <span class="badge premium">PREMIUM</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="resource-card-body">
+          <div class="meta">{{ item.grade }} &bull; {{ item.curriculum }}</div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description|truncatewords:16 }}</p>
+
+          <div class="resource-card-footer">
+            <span class="cost">{% if item.is_free %}Free{% else %}🪙 {{ item.coin_price }} Coins{% endif %}</span>
+            <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small">VIEW</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: var(--soft);">
+        <p>No resources published yet for this subject.</p>
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline small">View All Resources</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

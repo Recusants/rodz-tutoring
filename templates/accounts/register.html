@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create an Account | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<div class="form-card">
+  <div style="text-align: center; margin-bottom: 24px;">
+    <h2>CREATE YOUR ACCOUNT</h2>
+    <p style="color: var(--muted); font-size: 13px; margin-top: 6px;">
+      Join Rodz Tutoring to access curriculum study packs, lessons, and tests.
+    </p>
+  </div>
+
+  <form method="POST" action="{% url 'accounts:register' %}">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert error">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="form-label">Email Address (Login ID)</label>
+      {{ form.email }}
+      {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      {{ form.full_name }}
+      {% if form.full_name.errors %}<div class="form-error">{{ form.full_name.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">WhatsApp Number</label>
+      {{ form.phone_number }}
+      {% if form.phone_number.errors %}<div class="form-error">{{ form.phone_number.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+      <div class="form-group">
+        <label class="form-label">Current Grade</label>
+        {{ form.grade }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Curriculum</label>
+        {{ form.curriculum }}
+      </div>
+    </div>
+
+    <!-- Account Roles Section (Combination of Student and Tutor) -->
+    <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 18px;">
+      <label class="form-label" style="margin-bottom: 8px;">Select Account Roles</label>
+      <div style="display: flex; gap: 20px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+          {{ form.is_student }} <span>Student / Learner</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+          {{ form.is_tutor }} <span>Tutor / Instructor</span>
+        </label>
+      </div>
+      <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 6px;">
+        You can check both if you are a learner who also tutors other grades.
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      {{ form.password }}
+      {% if form.password.errors %}<div class="form-error">{{ form.password.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Confirm Password</label>
+      {{ form.password_confirm }}
+      {% if form.password_confirm.errors %}<div class="form-error">{{ form.password_confirm.errors.0 }}</div>{% endif %}
+    </div>
+
+    <button type="submit" class="btn primary" style="width: 100%; margin-top: 10px; padding: 13px;">
+      COMPLETE REGISTRATION &rarr;
+    </button>
+  </form>
+
+  <div style="text-align: center; margin-top: 20px; font-size: 13px;">
+    Already have an account? <a href="{% url 'accounts:login' %}" style="color: var(--blue); font-weight: 700;">Login here</a>
+  </div>
+</div>
+{% endblock %}

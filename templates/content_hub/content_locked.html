@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Unlock {{ item.title }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 720px; margin: 40px auto;">
+  <div class="dash-section" style="text-align: center; padding: 40px;">
+    
+    <div style="font-size: 54px; margin-bottom: 10px;">🔒</div>
+    <span class="badge premium" style="font-size: 13px; padding: 6px 14px; margin-bottom: 15px;">PREMIUM PROTECTED CONTENT</span>
+
+    <h2 style="font-size: 34px; margin: 15px 0 10px;">{{ item.title }}</h2>
+    <div style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">
+      {{ item.grade }} &bull; {{ item.curriculum }} &bull; {{ item.subject.name }} &bull; {{ item.get_content_type_display }}
+    </div>
+
+    <p style="color: var(--text); font-size: 15px; line-height: 1.7; max-width: 580px; margin: 0 auto 30px;">
+      {{ item.description|linebreaksbr }}
+    </p>
+
+    <!-- Pricing & Wallet Status Box -->
+    <div style="background: var(--soft); border: 2px dashed var(--line); border-radius: var(--radius-md); padding: 24px; margin-bottom: 30px;">
+      <div style="display: flex; justify-content: space-around; align-items: center;">
+        <div>
+          <small style="color: var(--muted); text-transform: uppercase; font-weight: 700;">Resource Cost</small>
+          <div style="font-size: 28px; font-weight: 800; color: var(--blue);">🪙 {{ item.coin_price }} Coins</div>
+        </div>
+
+        <div style="height: 40px; width: 1px; background: var(--line);"></div>
+
+        <div>
+          <small style="color: var(--muted); text-transform: uppercase; font-weight: 700;">Your Balance</small>
+          <div style="font-size: 28px; font-weight: 800; color: {% if wallet.coins >= item.coin_price %}var(--green){% else %}var(--red){% endif %};">
+            🪙 {{ wallet.coins }} Coins
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    {% if wallet.coins >= item.coin_price %}
+      <form method="POST" action="{% url 'wallet:unlock_item' item.slug %}">
+        {% csrf_token %}
+        <button type="submit" class="btn primary" style="font-size: 14px; padding: 14px 32px;">
+          🎉 UNLOCK NOW FOR {{ item.coin_price }} COINS
+        </button>
+      </form>
+      <small style="display: block; color: var(--muted); margin-top: 10px;">
+        Unlocking once gives you permanent access in your student library.
+      </small>
+    {% else %}
+      <div class="alert warning" style="text-align: left; margin-bottom: 20px;">
+        <span>⚠️ You need <b>{{ item.coin_price }}</b> coins to unlock this study pack, but your current balance is <b>{{ wallet.coins }}</b> coins. Please top up your coins via WhatsApp.</span>
+      </div>
+
+      <a href="{% url 'wallet:buy_coins' %}" class="btn gold" style="font-size: 14px; padding: 14px 30px;">
+        🪙 BUY COINS VIA WHATSAPP &rarr;
+      </a>
+    {% endif %}
+
+    <div style="margin-top: 25px;">
+      <a href="{% url 'content_hub:catalog' %}" style="color: var(--muted); font-size: 13px;">&larr; Back to Resource Hub</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

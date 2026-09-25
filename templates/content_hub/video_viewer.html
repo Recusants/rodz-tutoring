@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Stream Lesson: {{ item.title }} | Rodz Tutoring{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Suppress context menu on video player */
+  .video-container {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="viewer-container video-container">
+  <!-- Header Bar -->
+  <div class="viewer-header">
+    <div>
+      <span class="badge curriculum">{{ item.grade }} &bull; {{ item.subject.name }} &bull; VIDEO LESSON</span>
+      <h2 style="font-size: 26px; margin-top: 6px;">{{ item.title }}</h2>
+    </div>
+    <div>
+      <a href="{% url 'accounts:dashboard' %}" class="btn outline small">&larr; Back to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- In-App Stream Player -->
+  <div class="video-stream-box">
+    {% if item.youtube_embed_id %}
+      <iframe 
+        src="https://www.youtube-nocookie.com/embed/{{ item.youtube_embed_id }}?rel=0&modestbranding=1&enablejsapi=1" 
+        title="{{ item.title }}" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen>
+      </iframe>
+    {% else %}
+      <div style="color: #fff; display: grid; place-items: center; height: 100%;">
+        <p>Video streaming link is being updated by the tutor.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Lesson Notes / Summary -->
+  <div class="dash-section" style="margin-top: 25px;">
+    <h3>Lesson Overview</h3>
+    <p style="color: var(--text); font-size: 14px; line-height: 1.7; margin-top: 10px;">
+      {{ item.description|linebreaksbr }}
+    </p>
+
+    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+      <small style="color: var(--muted);">Streaming in-app via Rodz Tutoring Portal &bull; Download disabled</small>
+      <a href="{% url 'content_hub:catalog' %}" class="btn outline small">More Lessons</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Disable Right Click on video player container
+  document.querySelector('.video-container')?.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+{% endblock %}

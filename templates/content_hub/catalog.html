@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Study Resource Hub | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px;">
+  <div class="section-heading">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">DIGITAL LEARNING VAULT</div>
+    <h2>STUDY RESOURCE CATALOGUE</h2>
+    <p>Explore protected syllabus notes, exam solutions, video tutorials, and interactive quizzes.</p>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="GET" action="{% url 'content_hub:catalog' %}" style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 35px;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
+      <div>
+        <label class="form-label">Search</label>
+        <input type="text" name="q" value="{{ selected_query }}" class="form-input" placeholder="Search topic, paper, or subject...">
+      </div>
+
+      <div>
+        <label class="form-label">Curriculum</label>
+        <select name="curriculum" class="form-input">
+          <option value="">All Curricula</option>
+          <option value="CAPS" {% if selected_curriculum == 'CAPS' %}selected{% endif %}>CAPS</option>
+          <option value="IEB" {% if selected_curriculum == 'IEB' %}selected{% endif %}>IEB</option>
+          <option value="Cambridge" {% if selected_curriculum == 'Cambridge' %}selected{% endif %}>Cambridge</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Grade</label>
+        <select name="grade" class="form-input">
+          <option value="">All Grades</option>
+          <option value="Grade 7" {% if selected_grade == 'Grade 7' %}selected{% endif %}>Grade 7</option>
+          <option value="Grade 8" {% if selected_grade == 'Grade 8' %}selected{% endif %}>Grade 8</option>
+          <option value="Grade 9" {% if selected_grade == 'Grade 9' %}selected{% endif %}>Grade 9</option>
+          <option value="Grade 10" {% if selected_grade == 'Grade 10' %}selected{% endif %}>Grade 10</option>
+          <option value="Grade 11" {% if selected_grade == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+          <option value="Grade 12" {% if selected_grade == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Type</label>
+        <select name="type" class="form-input">
+          <option value="">All Types</option>
+          <option value="PDF" {% if selected_type == 'PDF' %}selected{% endif %}>PDF Notes / Pack</option>
+          <option value="VIDEO" {% if selected_type == 'VIDEO' %}selected{% endif %}>Video Lessons</option>
+          <option value="QUIZ" {% if selected_type == 'QUIZ' %}selected{% endif %}>Interactive Quiz</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Access</label>
+        <select name="pricing" class="form-input">
+          <option value="">All Access</option>
+          <option value="free" {% if selected_pricing == 'free' %}selected{% endif %}>Free Resources</option>
+          <option value="premium" {% if selected_pricing == 'premium' %}selected{% endif %}>Premium (Coins)</option>
+        </select>
+      </div>
+
+      <div>
+        <button type="submit" class="btn primary" style="padding: 12px 20px;">FILTER</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Content Results Grid -->
+  <div class="resource-grid">
+    {% for item in items %}
+      <div class="resource-card">
+        <div class="resource-card-cover">
+          {% if item.cover_svg_name %}
+            <img src="{% static 'assets/resource-covers/' %}{{ item.cover_svg_name }}" alt="{{ item.title }}">
+          {% else %}
+            <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ item.title }}">
+          {% endif %}
+
+          <div class="top-badge">
+            {% if item.content_type == 'PDF' %}
+              <span class="badge curriculum">PDF STUDY PACK</span>
+            {% elif item.content_type == 'VIDEO' %}
+              <span class="badge" style="background:#fce7f3; color:#9d174d; border: 1px solid #fbcfe8;">VIDEO STREAM</span>
+            {% elif item.content_type == 'QUIZ' %}
+              <span class="badge" style="background:#ede9fe; color:#5b21b6; border: 1px solid #ddd6fe;">QUIZ TEST</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="resource-card-body">
+          <div class="meta">{{ item.grade }} &bull; {{ item.curriculum }} &bull; {{ item.subject.name }}</div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description|truncatewords:18 }}</p>
+
+          <div class="resource-card-footer">
+            <div>
+              {% if item.is_free %}
+                <span class="cost" style="color: var(--green);">Free Access</span>
+              {% else %}
+                <span class="cost">🪙 {{ item.coin_price }} Coins</span>
+              {% endif %}
+            </div>
+
+            {% if item.id in user_unlocked_ids or item.is_free or user.is_tutor or user.is_admin_role %}
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small">
+                {% if item.content_type == 'QUIZ' %}TAKE QUIZ{% else %}VIEW IN-APP{% endif %}
+              </a>
+            {% else %}
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small">
+                UNLOCK FOR {{ item.coin_price }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; background: var(--soft); border-radius: var(--radius-md);">
+        <h3>No resources match your filter criteria.</h3>
+        <p style="color: var(--muted); margin-top: 8px;">Try clearing filters to see all available study packs.</p>
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="margin-top: 14px;">RESET FILTERS</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

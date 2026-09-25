@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Protected Reader: {{ item.title }} | Rodz Tutoring{% endblock %}
+
+{% block extra_head %}
+<!-- PDF.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  /* Strict anti-download & anti-selection CSS */
+  body, .pdf-canvas-container, canvas {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  @media print {
+    body { display: none !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="viewer-container">
+  <!-- Header Bar -->
+  <div class="viewer-header">
+    <div>
+      <span class="badge curriculum">{{ item.grade }} &bull; {{ item.subject.name }}</span>
+      <h2 style="font-size: 26px; margin-top: 6px;">{{ item.title }}</h2>
+    </div>
+    <div>
+      <a href="{% url 'accounts:dashboard' %}" class="btn outline small">&larr; Back to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Security Notice -->
+  <div class="security-notice">
+    <span>🛡️ <b>Anti-Piracy Protected Document:</b> Content is watermarked to <b>{{ user.email }}</b>. Direct downloading, printing, and file extraction are restricted.</span>
+  </div>
+
+  <!-- PDF Canvas Viewport -->
+  <div class="pdf-canvas-container" id="pdfContainer">
+    <div id="loadingStatus" style="color: #fff; padding: 40px; font-weight: 600;">
+      Loading protected study document, please wait...
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Set PDF.js worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const pdfUrl = "{% url 'content_hub:stream_pdf' item.slug %}";
+  const watermarkText = "{{ watermark_text|escapejs }}";
+  const container = document.getElementById('pdfContainer');
+  const loading = document.getElementById('loadingStatus');
+
+  // Disable Right-Click Context Menu
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    return false;
+  });
+
+  // Block Ctrl+S, Ctrl+P, Ctrl+U, F12
+  document.addEventListener('keydown', (e) => {
+    if (
+      (e.ctrlKey && (e.key === 's' || e.key === 'p' || e.key === 'u' || e.key === 'S' || e.key === 'P' || e.key === 'U')) ||
+      e.key === 'F12'
+    ) {
+      e.preventDefault();
+      alert("Downloading, printing, or inspecting source is disabled on protected materials.");
+      return false;
+    }
+  });
+
+  // Fetch and render document
+  const loadingTask = pdfjsLib.getDocument({
+    url: pdfUrl,
+    withCredentials: true
+  });
+
+  loadingTask.promise.then(function(pdf) {
+    if (loading) loading.style.display = 'none';
+
+    // Render all pages sequentially
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      renderPage(pdf, pageNum);
+    }
+  }).catch(function(error) {
+    if (loading) {
+      loading.textContent = "Unable to load document. Please refresh or verify your access.";
+      loading.style.color = "#f87171";
+    }
+  });
+
+  function renderPage(pdf, pageNum) {
+    pdf.getPage(pageNum).then(function(page) {
+      const scale = 1.5;
+      const viewport = page.getViewport({ scale: scale });
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'pdf-page-canvas';
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      container.appendChild(canvas);
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+
+      page.render(renderContext).promise.then(function() {
+        // Draw Dynamic Semi-Transparent Watermark Over Page
+        context.save();
+        context.font = "bold 18px 'Montserrat', sans-serif";
+        context.fillStyle = "rgba(24, 47, 104, 0.12)";
+        context.textAlign = "center";
+        
+        // Diagonal watermark across page
+        context.translate(canvas.width / 2, canvas.height / 2);
+        context.rotate(-35 * Math.PI / 180);
+        context.fillText(watermarkText, 0, -120);
+        context.fillText(watermarkText, 0, 0);
+        context.fillText(watermarkText, 0, 120);
+        context.restore();
+      });
+    });
+  }
+</script>
+{% endblock %}

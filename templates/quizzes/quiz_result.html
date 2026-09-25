@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quiz Results: {{ quiz.title }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<div class="quiz-box">
+  <!-- Score Summary Banner -->
+  <div style="text-align: center; padding: 25px; background: {% if passed %}var(--green-bg){% else %}#fef2f2{% endif %}; border: 1px solid {% if passed %}#a7f3d0{% else %}#fecaca{% endif %}; border-radius: var(--radius-md); margin-bottom: 30px;">
+    <div style="font-size: 44px; margin-bottom: 8px;">
+      {% if passed %}🏆{% else %}📝{% endif %}
+    </div>
+
+    <span class="badge {% if passed %}free{% else %}premium{% endif %}" style="font-size: 13px; padding: 6px 14px;">
+      {% if passed %}PASSED ({{ score_percent }}%){% else %}RETRY RECOMMENDED ({{ score_percent }}%){% endif %}
+    </span>
+
+    <h2 style="font-size: 32px; margin: 12px 0 6px;">{{ quiz.title }}</h2>
+    <p style="color: var(--text); font-size: 15px;">
+      You scored <b>{{ correct_count }}</b> out of <b>{{ total_questions }}</b> correct.
+      (Passing threshold: {{ quiz.pass_percentage }}%)
+    </p>
+
+    <div style="margin-top: 18px; display: flex; justify-content: center; gap: 14px;">
+      <a href="{% url 'quizzes:take_quiz' quiz.id %}" class="btn outline small">Retake Quiz</a>
+      <a href="{% url 'accounts:dashboard' %}" class="btn primary small">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Detailed Question-by-Question Review -->
+  <h3 style="font-size: 22px; margin-bottom: 20px;">Question Breakdown &amp; Explanations</h3>
+
+  {% for r in detailed_results %}
+    <div class="question-card" style="border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div style="font-weight: 700; font-size: 15px;">
+          Question {{ forloop.counter }}: {{ r.question.text }}
+        </div>
+        <div>
+          {% if r.is_correct %}
+            <span class="badge free">✓ CORRECT</span>
+          {% else %}
+            <span class="badge" style="background:#fee2e2; color:#991b1b;">✕ INCORRECT</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="font-size: 13px; line-height: 1.6; margin-bottom: 12px;">
+        <div><b>Your Answer:</b> {{ r.selected_choice.text|default:"No answer selected" }}</div>
+        {% if not r.is_correct and r.correct_choice %}
+          <div style="color: #065f46; margin-top: 4px;"><b>Correct Answer:</b> {{ r.correct_choice.text }}</div>
+        {% endif %}
+      </div>
+
+      {% if r.explanation %}
+        <div style="background: var(--soft); border-left: 3px solid var(--blue); padding: 10px 14px; font-size: 12px; color: var(--muted); border-radius: 0 4px 4px 0;">
+          <b>Solution Method:</b> {{ r.explanation }}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

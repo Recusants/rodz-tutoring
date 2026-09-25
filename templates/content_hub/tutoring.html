@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Online Tutoring | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 40px;">
+  <div class="section-heading">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">PERSONALISED LEARNING</div>
+    <h2>ONLINE TUTORING PROGRAMMES</h2>
+    <p>Choose the support that fits your learner's exact goals and schedule.</p>
+    <div class="bar"></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 30px;">
+    <div class="dash-section" style="display: flex; flex-direction: column;">
+      <span class="badge curriculum" style="align-self: flex-start; margin-bottom: 12px;">FOCUSED ATTENTION</span>
+      <h3>1-on-1 Private Tuition</h3>
+      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1;">
+        Individualised lessons tailored to the student's pacing. Ideal for tackling specific concept bottlenecks, closing gaps, and deep exam prep.
+      </p>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%201-on-1%20private%20tutoring." 
+         class="btn primary" target="_blank" rel="noopener">ENROL FOR 1-ON-1</a>
+    </div>
+
+    <div class="dash-section" style="display: flex; flex-direction: column; border-color: var(--blue);">
+      <span class="badge premium" style="align-self: flex-start; margin-bottom: 12px;">INTERACTIVE</span>
+      <h3>Small Group Classes</h3>
+      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1;">
+        Dynamic cohort learning with peers at the same grade level. Highly motivating, cost-effective, and covers syllabus topics systematically.
+      </p>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%20Small%20Group%20classes." 
+         class="btn primary" target="_blank" rel="noopener">JOIN A GROUP</a>
+    </div>
+
+    <div class="dash-section" style="display: flex; flex-direction: column;">
+      <span class="badge free" style="align-self: flex-start; margin-bottom: 12px;">INTENSIVE CRASH COURSES</span>
+      <h3>Exam Revision Bootcamps</h3>
+      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1;">
+        Term-end and final matric exam preparation sessions covering high-yield past exam papers, examiner rubrics, and time management strategies.
+      </p>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%20Exam%20Bootcamps." 
+         class="btn primary" target="_blank" rel="noopener">BOOK EXAM CRASH COURSE</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

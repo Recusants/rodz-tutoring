@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: rodz_tutoring_web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - rodz_media:/app/media
+      - rodz_db:/app
+
+volumes:
+  rodz_media:
+  rodz_db:

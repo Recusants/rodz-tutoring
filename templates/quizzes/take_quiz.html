@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ quiz.title }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<div class="quiz-box">
+  <div class="quiz-header">
+    <div>
+      <span class="badge curriculum">{{ quiz.content_item.grade }} &bull; {{ quiz.content_item.subject.name }}</span>
+      <h2 style="font-size: 26px; margin-top: 6px;">{{ quiz.title }}</h2>
+      <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">{{ quiz.instructions }}</p>
+    </div>
+
+    {% if quiz.time_limit_minutes > 0 %}
+      <div class="quiz-timer" id="timerBox">
+        ⏱️ <span id="timeLeft">{{ quiz.time_limit_minutes }}:00</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <form method="POST" id="quizForm">
+    {% csrf_token %}
+
+    {% for question in questions %}
+      <div class="question-card">
+        <div class="question-prompt">
+          <span style="color: var(--blue);">Question {{ forloop.counter }}:</span> {{ question.text }}
+        </div>
+
+        {% for choice in question.choices.all %}
+          <label class="choice-label">
+            <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}">
+            <span>{{ choice.text }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--line);">
+      <a href="{% url 'accounts:dashboard' %}" class="btn outline small">Cancel &amp; Exit</a>
+      <button type="submit" class="btn primary" onclick="return confirm('Ready to submit your quiz answers?');">
+        SUBMIT ASSESSMENT &rarr;
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if quiz.time_limit_minutes > 0 %}
+<script>
+  let totalSeconds = {{ quiz.time_limit_minutes }} * 60;
+  const timerDisplay = document.getElementById('timeLeft');
+  const quizForm = document.getElementById('quizForm');
+
+  const interval = setInterval(() => {
+    totalSeconds--;
+    if (totalSeconds <= 0) {
+      clearInterval(interval);
+      alert("Time is up! Your quiz is being submitted automatically.");
+      quizForm.submit();
+      return;
+    }
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    timerDisplay.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }, 1000);
+</script>
+{% endif %}
+{% endblock %}

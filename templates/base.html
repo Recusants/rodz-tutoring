@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Rodz Tutoring — premier online tutoring and study resources for Grades 7–12 across CAPS, IEB, and Cambridge.">
+  <title>{% block title %}Rodz Tutoring | Empower Your Future{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>☎ {{ WHATSAPP_DISPLAY_PHONE }} &nbsp;&bull;&nbsp; ✉ {{ INFO_EMAIL }}</div>
+    <div>
+      Follow us:
+      <a href="https://bit.ly/4h8HAtr" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://bit.ly/4xyxuIz" target="_blank" rel="noopener">TikTok</a>
+      <a href="https://bit.ly/4xBMiX1" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}" target="_blank" rel="noopener">WhatsApp</a>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="header">
+    <a class="brand" href="{% url 'home' %}">
+      <img src="{% static 'assets/rodz-logo.png' %}" alt="Rodz Tutoring">
+    </a>
+
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle Navigation">☰</button>
+
+    <nav class="nav" id="mainNav">
+      <a href="{% url 'home' %}">HOME</a>
+      <a href="{% url 'about' %}">ABOUT US</a>
+      <a href="{% url 'tutoring' %}">TUTORING</a>
+      <a href="{% url 'content_hub:catalog' %}">RESOURCE HUB</a>
+
+      {% if user.is_authenticated %}
+        <!-- User Wallet Balance -->
+        <a href="{% url 'wallet:buy_coins' %}" class="coin-pill" title="Click to buy more coins">
+          <span>🪙</span> <b>{{ user_coins }} Coins</b>
+        </a>
+
+        <a href="{% url 'accounts:dashboard' %}">DASHBOARD</a>
+
+        {% if user.is_staff or user.is_admin_role %}
+          <a href="{% url 'wallet:admin_credit_panel' %}" style="color: #b45309;">COIN ADMIN</a>
+        {% endif %}
+
+        <a href="{% url 'accounts:logout' %}" class="btn outline small">LOGOUT</a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}">LOGIN</a>
+        <a href="{% url 'accounts:register' %}" class="btn primary small">ENROL NOW</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <!-- Flash Messages -->
+  {% if messages %}
+    <div class="messages-container">
+      {% for message in messages %}
+        <div class="alert {{ message.tags }}">
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Main Content Block -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <img src="{% static 'assets/rodz-logo.png' %}" class="footer-logo" alt="Rodz Tutoring">
+        <p>Empowering learners from Grades 7–12 with expert tutoring, structured revision notes, and exam readiness across CAPS, IEB, and Cambridge.</p>
+      </div>
+
+      <div>
+        <h4>Quick Links</h4>
+        <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'about' %}">About Us</a>
+        <a href="{% url 'tutoring' %}">Tutoring Options</a>
+        <a href="{% url 'content_hub:catalog' %}">Study Materials</a>
+        <a href="{% url 'wallet:buy_coins' %}">Buy Coins</a>
+      </div>
+
+      <div>
+        <h4>Curricula</h4>
+        <a href="{% url 'content_hub:catalog' %}?curriculum=CAPS">CAPS Programme</a>
+        <a href="{% url 'content_hub:catalog' %}?curriculum=IEB">IEB Excellence</a>
+        <a href="{% url 'content_hub:catalog' %}?curriculum=Cambridge">Cambridge IGCSE & A-Levels</a>
+      </div>
+
+      <div>
+        <h4>Contact Us</h4>
+        <p>☎ {{ WHATSAPP_DISPLAY_PHONE }}</p>
+        <p>✉ {{ INFO_EMAIL }}</p>
+        <p>◷ Mon – Sun: 07:00 – 21:00</p>
+        <p>⌖ South Africa & Worldwide</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>© 2026 Rodz Tutoring. All rights reserved. Non-downloadable digital content engine.</div>
+      <div>Strictly for enrolled learner access &bull; Digital protection enabled</div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile navigation toggle
+    const toggle = document.getElementById('menuToggle');
+    const nav = document.getElementById('mainNav');
+    if (toggle && nav) {
+      toggle.addEventListener('click', () => {
+        nav.classList.toggle('open');
+      });
+    }
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

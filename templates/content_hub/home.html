@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rodz Tutoring | Empower Your Future{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow">CAPS &bull; IEB &bull; CAMBRIDGE</div>
+    <h1>EMPOWER<br>YOUR FUTURE</h1>
+    <p>Expert online tutoring and non-downloadable study resources for Grades 7–12 in Pure Maths, Physical Sciences, Accounting, Economics, and more.</p>
+    
+    <div class="hero-buttons">
+      <a class="btn primary" href="{% url 'accounts:register' %}">ENROL NOW</a>
+      <a class="btn outline" href="{% url 'content_hub:catalog' %}">EXPLORE STUDY PACKS</a>
+    </div>
+
+    <div class="trust-row">
+      <div class="trust-item"><span class="icon">♙</span><div><b>Experienced</b><small>Tutors</small></div></div>
+      <div class="trust-item"><span class="icon">♕</span><div><b>Exam</b><small>Focused</small></div></div>
+      <div class="trust-item"><span class="icon">⌁</span><div><b>Proven</b><small>Results</small></div></div>
+      <div class="trust-item"><span class="icon">♧</span><div><b>Protected</b><small>Content</small></div></div>
+    </div>
+  </div>
+
+  <div class="hero-art">
+    <img src="{% static 'assets/hero-student.png' %}" alt="Student studying with Rodz Tutoring">
+  </div>
+</section>
+
+<!-- Stats Banner -->
+<section class="stats-banner">
+  <div class="stat-box"><b>500+</b><span>Students Taught</span></div>
+  <div class="stat-box"><b>95%</b><span>Pass Rate</span></div>
+  <div class="stat-box"><b>1000+</b><span>Exam Papers & Packs</span></div>
+  <div class="stat-box"><b>2000+</b><span>Lesson Hours Delivered</span></div>
+  <div class="stat-box"><b>100%</b><span>Dedication to Success</span></div>
+</section>
+
+<!-- Subjects Grid -->
+<section class="section">
+  <div class="section-heading">
+    <h2>SUBJECTS WE TUTOR</h2>
+    <p>Targeted tuition and comprehensive syllabus notes across senior and junior phases</p>
+    <div class="bar"></div>
+  </div>
+
+  <div class="subject-grid">
+    {% for subject in subjects %}
+      <a href="{% url 'content_hub:catalog' %}?subject={{ subject.slug }}" class="subject-card">
+        <span class="symbol">{{ subject.icon_symbol }}</span>
+        <h3>{{ subject.name }}</h3>
+        <small>Grades 7 – 12</small>
+      </a>
+    {% empty %}
+      <div class="subject-card"><span class="symbol">√x</span><h3>Pure Mathematics</h3><small>Grades 7–12</small></div>
+      <div class="subject-card"><span class="symbol">⚛</span><h3>Physical Sciences</h3><small>Grades 10–12</small></div>
+      <div class="subject-card"><span class="symbol">▣</span><h3>Accounting</h3><small>Grades 10–12</small></div>
+      <div class="subject-card"><span class="symbol">↗</span><h3>Economics</h3><small>Grades 10–12</small></div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Featured Study Materials -->
+<section class="section" style="background: var(--soft); border-radius: var(--radius-lg); margin-top: 20px;">
+  <div class="section-heading">
+    <h2>FEATURED STUDY PACKS & LESSONS</h2>
+    <p>Unlock structured notes, streaming video walkthroughs, and timed quizzes</p>
+    <div class="bar"></div>
+  </div>
+
+  <div class="resource-grid">
+    {% for item in featured_resources %}
+      <div class="resource-card">
+        <div class="resource-card-cover">
+          {% if item.cover_svg_name %}
+            <img src="{% static 'assets/resource-covers/' %}{{ item.cover_svg_name }}" alt="{{ item.title }}">
+          {% else %}
+            <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ item.title }}">
+          {% endif %}
+          
+          <div class="top-badge">
+            {% if item.is_free %}
+              <span class="badge free">FREE</span>
+            {% else %}
+              <span class="badge premium">PREMIUM</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="resource-card-body">
+          <div class="meta">{{ item.grade }} &bull; {{ item.curriculum }}</div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description|truncatewords:15 }}</p>
+
+          <div class="resource-card-footer">
+            <div>
+              {% if item.is_free %}
+                <span class="cost" style="color: var(--green);">Free Access</span>
+              {% else %}
+                <span class="cost">🪙 {{ item.coin_price }} Coins</span>
+              {% endif %}
+            </div>
+
+            {% if item.id in user_unlocked_ids or item.is_free or user.is_tutor or user.is_admin_role %}
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small">VIEW NOW</a>
+            {% else %}
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small">UNLOCK</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div style="text-align: center; margin-top: 35px;">
+    <a href="{% url 'content_hub:catalog' %}" class="btn primary">BROWSE FULL RESOURCE CATALOGUE &rarr;</a>
+  </div>
+</section>
+
+<!-- WhatsApp Community Banner -->
+<section class="section">
+  <div class="whatsapp-banner">
+    <div>
+      <h2>JOIN OUR FREE<br>WHATSAPP COMMUNITY</h2>
+      <p>Get study tips, free revision guides, announcements, and peer motivation directly on your phone.</p>
+    </div>
+    <div>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20Please%20add%20me%20to%20the%20community." 
+         class="btn gold" target="_blank" rel="noopener">
+        JOIN ON WHATSAPP &rarr;
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

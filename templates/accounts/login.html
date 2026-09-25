@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<div class="form-card">
+  <div style="text-align: center; margin-bottom: 24px;">
+    <h2>SIGN IN TO RODZ</h2>
+    <p style="color: var(--muted); font-size: 13px; margin-top: 6px;">
+      Enter your registered email and password to access your dashboard.
+    </p>
+  </div>
+
+  <form method="POST" action="{% url 'accounts:login' %}">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert error">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="form-label">Registered Email</label>
+      {{ form.email }}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      {{ form.password }}
+    </div>
+
+    <button type="submit" class="btn primary" style="width: 100%; margin-top: 10px; padding: 13px;">
+      SIGN IN &rarr;
+    </button>
+  </form>
+
+  <div style="text-align: center; margin-top: 20px; font-size: 13px;">
+    Don't have an account yet? <a href="{% url 'accounts:register' %}" style="color: var(--blue); font-weight: 700;">Create one here</a>
+  </div>
+</div>
+{% endblock %}
