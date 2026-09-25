@@ -62,11 +62,11 @@ class ContentSecurityTestCase(TestCase):
         post_response = self.client.post(unlock_url)
         self.assertEqual(post_response.status_code, 302)
 
-        # Now stream the PDF
+        # Now stream the PDF - served as protected octet-stream to prevent downloads
         stream_url = reverse('content_hub:stream_pdf', kwargs={'item_slug': self.item.slug})
         stream_response = self.client.get(stream_url)
         self.assertEqual(stream_response.status_code, 200)
-        self.assertEqual(stream_response['Content-Type'], 'application/pdf')
+        self.assertEqual(stream_response['Content-Type'], 'application/octet-stream')
         self.assertIn('inline', stream_response['Content-Disposition'])
 
     def test_dynamic_curriculum(self):
@@ -79,4 +79,31 @@ class ContentSecurityTestCase(TestCase):
         resp = self.client.get(reverse('content_hub:catalog'), {'curriculum': 'CAMBRIDGE'})
         self.assertEqual(resp.status_code, 200)
         self.assertIn(self.item, resp.context['items'])
+
+    def test_grade_prioritization(self):
+        # Create Grade 10 and Grade 12 items
+        g10_item = ContentItem.objects.create(
+            title='Grade 10 Basics',
+            slug='g10-basics',
+            subject=self.subject,
+            grade='Grade 10',
+            curriculum='CAPS',
+            content_type='PDF'
+        )
+
+        student_g12 = CustomUser.objects.create_user(
+            email='g12student@example.com',
+            password='Password123!',
+            grade='Grade 12',
+            is_student=True
+        )
+
+        self.client.login(username='g12student@example.com', password='Password123!')
+        resp = self.client.get(reverse('content_hub:catalog'))
+        self.assertEqual(resp.status_code, 200)
+
+        # Grade 12 item should appear before Grade 10 item for Grade 12 student
+        items = list(resp.context['items'])
+        self.assertEqual(items[0].grade, 'Grade 12')
+
 

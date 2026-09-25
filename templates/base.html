@@ -7,19 +7,21 @@
   <meta name="description" content="Rodz Tutoring — premier online tutoring and study resources for Grades 7–12 across CAPS, IEB, and Cambridge.">
   <title>{% block title %}Rodz Tutoring | Empower Your Future{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <!-- FontAwesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
   <!-- Topbar -->
   <div class="topbar">
-    <div>☎ {{ WHATSAPP_DISPLAY_PHONE }} &nbsp;&bull;&nbsp; ✉ {{ INFO_EMAIL }}</div>
+    <div><i class="fa-solid fa-phone"></i> {{ WHATSAPP_DISPLAY_PHONE }} &nbsp;&bull;&nbsp; <i class="fa-solid fa-envelope"></i> {{ INFO_EMAIL }}</div>
     <div>
       Follow us:
-      <a href="https://bit.ly/4h8HAtr" target="_blank" rel="noopener">YouTube</a>
-      <a href="https://bit.ly/4xyxuIz" target="_blank" rel="noopener">TikTok</a>
-      <a href="https://bit.ly/4xBMiX1" target="_blank" rel="noopener">Facebook</a>
-      <a href="https://wa.me/{{ WHATSAPP_PHONE }}" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="https://bit.ly/4h8HAtr" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i> YouTube</a>
+      <a href="https://bit.ly/4xyxuIz" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i> TikTok</a>
+      <a href="https://bit.ly/4xBMiX1" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i> Facebook</a>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
     </div>
   </div>
 
@@ -29,7 +31,9 @@
       <img src="{% static 'assets/rodz-logo.png' %}" alt="Rodz Tutoring">
     </a>
 
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle Navigation">☰</button>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle Navigation">
+      <i class="fa-solid fa-bars"></i>
+    </button>
 
     <nav class="nav" id="mainNav">
       <a href="{% url 'home' %}">HOME</a>
@@ -40,7 +44,7 @@
       {% if user.is_authenticated %}
         <!-- Quick Coins Pill -->
         <a href="{% url 'wallet:buy_coins' %}" class="coin-pill" title="Click to buy or activate coins">
-          <span>🪙</span> <b>{{ user_coins }} Coins</b>
+          <span><i class="fa-solid fa-coins"></i></span> <b>{{ user_coins }} Coins</b>
         </a>
 
         <!-- Profile Dropdown (Logout, Icon, Coins, etc.) -->
@@ -54,7 +58,7 @@
               {% endif %}
             </span>
             <span>{{ user.full_name|default:user.email|truncatechars:18 }}</span>
-            <span style="font-size: 9px; color: var(--muted); margin-left: 2px;">▼</span>
+            <i class="fa-solid fa-chevron-down" style="font-size: 9px; color: var(--muted); margin-left: 2px;"></i>
           </button>
 
           <div class="dropdown-menu dropdown-right">
@@ -77,24 +81,26 @@
 
             <!-- Coin Balance / Top Up Link -->
             <a href="{% url 'wallet:buy_coins' %}" style="display: flex; justify-content: space-between; align-items: center; background: #fffdf5; border: 1px solid #fde68a; margin: 4px 0 8px; border-radius: var(--radius-sm); font-weight: 700; color: #b45309;">
-              <span>🪙 Top Up / Activate</span>
+              <span><i class="fa-solid fa-coins"></i> Top Up / Activate</span>
               <span style="font-size: 11px; background: #fbbf24; color: #78350f; padding: 2px 7px; border-radius: 10px;">{{ user_coins }} Coins</span>
             </a>
 
-            <a href="{% url 'accounts:dashboard' %}">📊 Learner Dashboard</a>
-            <a href="{% url 'accounts:profile' %}">👤 My Profile & Account</a>
+            <a href="{% url 'accounts:dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Learner Dashboard</a>
+            <a href="{% url 'accounts:profile' %}"><i class="fa-solid fa-user"></i> My Profile & Account</a>
 
             {% if user.is_staff or user.is_admin_role %}
               <div class="dropdown-divider"></div>
               <div style="font-size: 10px; font-weight: 800; color: #b45309; text-transform: uppercase; padding: 4px 12px; letter-spacing: 0.05em;">Admin Portal</div>
-              <a href="{% url 'wallet:admin_payment_requests' %}">📋 Payment Proof Requests</a>
-              <a href="{% url 'wallet:admin_credit_panel' %}">🪙 Manual Coin Credits</a>
-              <a href="{% url 'accounts:system_settings' %}">⚙️ System .env Settings</a>
-              <a href="/admin/" target="_blank">🛠️ Django Admin &rarr;</a>
+              <a href="{% url 'wallet:admin_payment_requests' %}"><i class="fa-solid fa-receipt"></i> Payment Proof Requests</a>
+              <a href="{% url 'wallet:admin_credit_panel' %}"><i class="fa-solid fa-coins"></i> Manual Coin Credits</a>
+              <a href="{% url 'accounts:system_settings' %}"><i class="fa-solid fa-gear"></i> System .env Settings</a>
+              <a href="/admin/" target="_blank"><i class="fa-solid fa-screwdriver-wrench"></i> Django Admin &rarr;</a>
             {% endif %}
 
             <div class="dropdown-divider"></div>
-            <a href="{% url 'accounts:logout' %}" style="color: #dc2626; font-weight: 700;">🚪 Log Out</a>
+            <a href="{% url 'accounts:logout' %}" style="color: #dc2626; font-weight: 700;">
+              <i class="fa-solid fa-right-from-bracket"></i> Log Out
+            </a>
           </div>
         </div>
       {% else %}
@@ -146,10 +152,10 @@
 
       <div>
         <h4>Contact Us</h4>
-        <p>☎ {{ WHATSAPP_DISPLAY_PHONE }}</p>
-        <p>✉ {{ INFO_EMAIL }}</p>
-        <p>◷ Mon – Sun: 07:00 – 21:00</p>
-        <p>⌖ South Africa & Worldwide</p>
+        <p><i class="fa-solid fa-phone"></i> {{ WHATSAPP_DISPLAY_PHONE }}</p>
+        <p><i class="fa-solid fa-envelope"></i> {{ INFO_EMAIL }}</p>
+        <p><i class="fa-solid fa-clock"></i> Mon – Sun: 07:00 – 21:00</p>
+        <p><i class="fa-solid fa-location-dot"></i> South Africa & Worldwide</p>
       </div>
     </div>
 

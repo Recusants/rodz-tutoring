@@ -72,7 +72,7 @@
                   <div style="color: var(--muted); font-size: 11px;">{{ u.full_name|default:"No name" }} &bull; {{ u.phone_number }}</div>
                 </td>
                 <td style="padding: 10px 8px;">{{ u.grade }}</td>
-                <td style="padding: 10px 8px; font-weight: 800; color: var(--gold-dark);">🪙 {{ u.wallet.coins }}</td>
+                <td style="padding: 10px 8px; font-weight: 800; color: var(--gold-dark);"><i class="fa-solid fa-coins"></i> {{ u.wallet.coins }}</td>
                 <td style="padding: 10px 8px; text-align: right;">
                   <button type="button" class="btn outline small" onclick="document.getElementById('targetEmailInput').value='{{ u.email }}'; document.getElementById('targetEmailInput').focus();">
                     Select

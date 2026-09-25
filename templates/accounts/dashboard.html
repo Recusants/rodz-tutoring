@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Dashboard | Rodz Tutoring{% endblock %}
+{% block title %}Learner Dashboard | Rodz Tutoring{% endblock %}
 
 {% block content %}
 <div class="dashboard-grid">
@@ -10,44 +10,55 @@
   <aside class="dash-sidebar">
     <!-- User Profile Card -->
     <div class="profile-card">
-      <div style="width: 52px; height: 52px; background: var(--blue); color: #fff; border-radius: 50%; display: grid; place-items: center; font-size: 22px; font-weight: 700; margin-bottom: 14px;">
+      <div style="width: 52px; height: 52px; background: var(--blue); color: #fff; border-radius: 50%; display: grid; place-items: center; font-size: 20px; font-weight: 700; margin-bottom: 14px;">
         {{ user.email|first|upper }}
       </div>
-      <h3 style="font-size: 20px; margin-bottom: 4px;">{{ user.full_name|default:"Learner" }}</h3>
+      <h3 style="font-size: 18px; margin-bottom: 4px;">{{ user.full_name|default:"Learner" }}</h3>
       <p style="color: var(--muted); font-size: 12px; margin-bottom: 12px;">{{ user.email }}</p>
 
       <div style="border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; line-height: 1.8;">
         <div><b>Roles:</b> <span class="badge curriculum">{{ user.roles_display }}</span></div>
-        <div><b>Grade:</b> {{ user.grade }}</div>
-        <div><b>Curriculum:</b> {{ user.curriculum }}</div>
+        <div><b>Enrolled Grade:</b> {{ user.grade|default:"Not specified" }}</div>
+        <div><b>Curriculum:</b> {{ user.curriculum|default:"Standard" }}</div>
         <div><b>WhatsApp:</b> {{ user.phone_number|default:"Not set" }}</div>
       </div>
+      <a href="{% url 'accounts:profile' %}" class="btn outline small" style="width: 100%; margin-top: 12px; text-align: center;">
+        <i class="fa-solid fa-user-pen"></i> Edit Profile
+      </a>
     </div>
 
     <!-- Student Coin Wallet Card -->
     <div class="wallet-card">
       <h3>Student Coin Wallet</h3>
       <div class="coin-val">
-        <span>🪙</span> {{ wallet.coins }}
+        <span><i class="fa-solid fa-coins"></i></span> {{ wallet.coins }}
       </div>
-      <p>Use your coins to unlock protected study packs, exam packs, and video walkthroughs.</p>
-      <a href="{% url 'wallet:buy_coins' %}" class="btn gold" style="width: 100%; text-align: center;">
-        + TOP UP COINS
+      <p>Your coin balance unlocks full exam study packs, revision notes, and video walkthroughs.</p>
+      <a href="{% url 'wallet:buy_coins' %}" class="btn gold" style="width: 100%; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fa-solid fa-plus"></i> BUY / ACTIVATE COINS
       </a>
     </div>
 
     <!-- Admin Shortcut (If Admin Role) -->
-    {% if user.is_admin_role or user.is_staff %}
-      <div class="dash-section" style="border: 2px solid var(--gold); padding: 18px;">
-        <h4 style="color: #b45309; font-size: 15px; margin-bottom: 8px;">Staff Admin Portal</h4>
+    {% if user.is_admin_role or user.is_staff or user.is_superuser %}
+      <div class="dash-section" style="border: 2px solid #f59e0b; padding: 18px; background: #fffdf5;">
+        <h4 style="color: #b45309; font-size: 14px; font-weight: 800; margin-bottom: 8px;">
+          <i class="fa-solid fa-shield-halved"></i> Staff Admin Portal
+        </h4>
         <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
-          Credit student wallets manually or manage content.
+          Review payment proofs, credit student wallets, or adjust system settings.
         </p>
-        <a href="{% url 'wallet:admin_credit_panel' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px;">
-          MANUAL COIN CREDITS
+        <a href="{% url 'wallet:admin_payment_requests' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-receipt"></i> PAYMENT PROOFS
         </a>
-        <a href="/admin/" class="btn outline small" style="width: 100%;" target="_blank">
-          DJANGO ADMIN &rarr;
+        <a href="{% url 'wallet:admin_credit_panel' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-coins"></i> MANUAL CREDITS
+        </a>
+        <a href="{% url 'accounts:system_settings' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-gear"></i> SYSTEM .ENV SETTINGS
+        </a>
+        <a href="/admin/" class="btn outline small" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" target="_blank">
+          <i class="fa-solid fa-screwdriver-wrench"></i> DJANGO ADMIN &rarr;
         </a>
       </div>
     {% endif %}
@@ -59,66 +70,116 @@
     <!-- Tutor Special Section (If Tutor Role) -->
     {% if user.is_tutor %}
       <div class="dash-section" style="background: #f0fdf4; border-color: #bbf7d0;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <span class="badge" style="background: #dcfce7; color: #166534;">TUTOR PORTAL ACTIVE</span>
-            <h3 style="font-size: 22px; margin-top: 6px;">Tutor Teaching Hub</h3>
+            <span class="badge" style="background: #dcfce7; color: #166534;"><i class="fa-solid fa-chalkboard-user"></i> TUTOR ACTIVE</span>
+            <h3 style="font-size: 20px; margin-top: 6px;">Tutor Teaching Vault</h3>
             <p style="font-size: 13px; color: #15803d; margin: 4px 0 0;">
-              You have tutor privileges. You can view all {{ tutor_content_count }} learning items without coin deductions.
+              You have educator privileges. You can view all {{ tutor_content_count }} learning items across all curricula without coin deductions.
             </p>
           </div>
           <div>
-            <a href="{% url 'content_hub:catalog' %}" class="btn primary small">VIEW ALL LESSONS</a>
+            <a href="{% url 'content_hub:catalog' %}" class="btn primary small">
+              <i class="fa-solid fa-book-open"></i> BROWSE ALL LESSONS
+            </a>
           </div>
         </div>
       </div>
     {% endif %}
 
-    <!-- Student Unlocked Materials -->
-    <div class="dash-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h2>My Unlocked Library</h2>
-        <a href="{% url 'content_hub:catalog' %}" class="btn outline small">+ Find New Materials</a>
+    <!-- 1. PRIORITY SECTION: STUDENT UNLOCKED MATERIALS -->
+    <div class="dash-section" style="border-top: 4px solid var(--blue);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-box-open" style="font-size: 22px; color: var(--blue);"></i>
+          <h2 style="margin: 0; font-size: 20px;">My Unlocked Study Packs</h2>
+          <span style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+            {{ unlocked_records|length }} Unlocked
+          </span>
+        </div>
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline small">
+          <i class="fa-solid fa-magnifying-glass"></i> Explore More
+        </a>
       </div>
 
       {% if unlocked_records %}
-        <div class="resource-grid" style="grid-template-columns: repeat(3, 1fr); gap: 16px;">
+        <div class="resource-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px;">
           {% for record in unlocked_records %}
-            <div class="resource-card" style="box-shadow: none;">
-              <div class="resource-card-cover" style="padding: 10px;">
+            <div class="resource-card" style="box-shadow: var(--shadow-sm); border: 1px solid var(--line);">
+              <div class="resource-card-cover" style="padding: 10px; height: 135px;">
                 {% if record.content_item.cover_svg_name %}
-                  <img src="{% static 'assets/resource-covers/' %}{{ record.content_item.cover_svg_name }}" alt="{{ record.content_item.title }}" style="aspect-ratio: 4/3;">
+                  <img src="{% static 'assets/resource-covers/' %}{{ record.content_item.cover_svg_name }}" alt="{{ record.content_item.title }}" style="max-height: 115px; width: auto; object-fit: contain;">
                 {% else %}
-                  <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ record.content_item.title }}" style="aspect-ratio: 4/3;">
+                  <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ record.content_item.title }}" style="max-height: 115px; width: auto; object-fit: contain;">
                 {% endif %}
-                <span class="badge free" style="position: absolute; top: 15px; left: 15px;">UNLOCKED</span>
+                <span class="badge free" style="position: absolute; top: 12px; left: 12px; font-size: 10px; padding: 2px 7px;">
+                  <i class="fa-solid fa-circle-check"></i> UNLOCKED
+                </span>
               </div>
-              <div class="resource-card-body" style="padding: 12px;">
-                <div class="meta">{{ record.content_item.grade }} &bull; {{ record.content_item.subject.name }}</div>
-                <h4 style="font-size: 16px; margin: 4px 0 10px;">{{ record.content_item.title }}</h4>
-                <a href="{% url 'content_hub:view_content' record.content_item.slug %}" class="btn primary small" style="width: 100%;">
-                  OPEN IN-APP &rarr;
+              <div class="resource-card-body" style="padding: 14px;">
+                <div class="meta" style="font-size: 11px;">{{ record.content_item.grade }} &bull; {{ record.content_item.subject.name }}</div>
+                <h4 style="font-size: 14px; margin: 4px 0 10px; line-height: 1.3;">{{ record.content_item.title }}</h4>
+                <a href="{% url 'content_hub:view_content' record.content_item.slug %}" class="btn primary small" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                  <i class="fa-solid fa-book-open-reader"></i> VIEW IN-APP
                 </a>
               </div>
             </div>
           {% endfor %}
         </div>
       {% else %}
-        <div style="text-align: center; padding: 40px; background: var(--soft); border-radius: var(--radius-sm);">
-          <div style="font-size: 36px; margin-bottom: 10px;">📚</div>
-          <h4 style="font-size: 18px; margin-bottom: 6px;">Your library is empty</h4>
-          <p style="color: var(--muted); font-size: 13px; max-width: 420px; margin: 0 auto 16px;">
-            Explore our curriculum study packs and unlock premium resources using your coins.
+        <div style="text-align: center; padding: 40px 20px; background: var(--soft); border-radius: var(--radius-sm);">
+          <i class="fa-solid fa-book-bookmark" style="font-size: 38px; color: var(--muted); margin-bottom: 10px; display: block;"></i>
+          <h4 style="font-size: 17px; margin-bottom: 6px;">Your unlocked library is currently empty</h4>
+          <p style="color: var(--muted); font-size: 13px; max-width: 440px; margin: 0 auto 16px;">
+            Get started by unlocking curriculum revision notes, past exam papers, and assessments using your study coins.
           </p>
-          <a href="{% url 'content_hub:catalog' %}" class="btn primary small">EXPLORE RESOURCES</a>
+          <a href="{% url 'content_hub:catalog' %}" class="btn primary small">
+            <i class="fa-solid fa-book-open"></i> EXPLORE CATALOGUE
+          </a>
         </div>
       {% endif %}
     </div>
 
-    <!-- Quiz Attempts History -->
+    <!-- 2. RECOMMENDED FOR YOUR GRADE -->
+    {% if recommended_items %}
+      <div class="dash-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 style="font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-star" style="color: #eab308;"></i> Recommended for {{ user.grade }}
+            </h3>
+            <p style="font-size: 12px; color: var(--muted); margin: 2px 0 0;">Top study packs and past papers tailored to your enrolled grade</p>
+          </div>
+          <a href="{% url 'content_hub:catalog' %}?grade={{ user.grade }}" class="btn outline small">View All {{ user.grade }} &rarr;</a>
+        </div>
+
+        <div class="resource-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
+          {% for r_item in recommended_items %}
+            <div class="resource-card" style="box-shadow: none; border: 1px solid var(--line);">
+              <div class="resource-card-body" style="padding: 14px;">
+                <div class="meta" style="font-size: 11px;">{{ r_item.subject.name }} &bull; {{ r_item.category }}</div>
+                <h4 style="font-size: 13px; margin: 4px 0 8px; line-height: 1.3;">{{ r_item.title }}</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #b45309;">
+                    <i class="fa-solid fa-coins"></i> {{ r_item.coin_price }}
+                  </span>
+                  <a href="{% url 'content_hub:view_content' r_item.slug %}" class="btn gold small" style="padding: 4px 10px; font-size: 11px;">
+                    Unlock &rarr;
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- 3. Quiz Attempts History -->
     {% if quiz_attempts %}
       <div class="dash-section">
-        <h2>Recent Quiz Results</h2>
+        <h3 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-list-check" style="color: var(--blue);"></i> Recent Quiz Results
+        </h3>
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
@@ -136,12 +197,12 @@
                   <td style="padding: 12px 8px;"><b>{{ attempt.score_percent }}%</b> ({{ attempt.correct_answers }}/{{ attempt.total_questions }})</td>
                   <td style="padding: 12px 8px;">
                     {% if attempt.passed %}
-                      <span class="badge free">PASSED</span>
+                      <span class="badge free"><i class="fa-solid fa-check"></i> PASSED</span>
                     {% else %}
-                      <span class="badge" style="background:#fee2e2; color:#991b1b;">RETRY</span>
+                      <span class="badge premium"><i class="fa-solid fa-xmark"></i> NEEDS PRACTICE</span>
                     {% endif %}
                   </td>
-                  <td style="padding: 12px 8px; color: var(--muted);">{{ attempt.completed_at|date:"M d, Y - H:i" }}</td>
+                  <td style="padding: 12px 8px; color: var(--muted);">{{ attempt.completed_at|date:"d M Y, H:i" }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -150,9 +211,11 @@
       </div>
     {% endif %}
 
-    <!-- Coin Transaction History -->
+    <!-- 4. Coin Transactions Audit -->
     <div class="dash-section">
-      <h2>Coin Wallet Activity</h2>
+      <h3 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-receipt" style="color: var(--blue);"></i> Recent Wallet Activity
+      </h3>
       {% if recent_transactions %}
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
@@ -167,10 +230,12 @@
             <tbody>
               {% for tx in recent_transactions %}
                 <tr style="border-bottom: 1px solid var(--line);">
-                  <td style="padding: 12px 8px; color: var(--muted);">{{ tx.created_at|date:"M d, Y" }}</td>
-                  <td style="padding: 12px 8px;">{{ tx.description }}</td>
-                  <td style="padding: 12px 8px;"><span class="badge curriculum" style="font-size: 10px;">{{ tx.get_transaction_type_display }}</span></td>
-                  <td style="padding: 12px 8px; text-align: right; font-weight: 800; color: {% if tx.amount > 0 %}var(--green){% else %}var(--red){% endif %};">
+                  <td style="padding: 12px 8px; color: var(--muted);">{{ tx.created_at|date:"d M Y, H:i" }}</td>
+                  <td style="padding: 12px 8px; font-weight: 600;">{{ tx.description }}</td>
+                  <td style="padding: 12px 8px;">
+                    <span class="badge curriculum" style="font-size: 10px;">{{ tx.get_transaction_type_display }}</span>
+                  </td>
+                  <td style="padding: 12px 8px; text-align: right; font-weight: 800; {% if tx.amount > 0 %}color: var(--green);{% else %}color: var(--blue);{% endif %}">
                     {% if tx.amount > 0 %}+{{ tx.amount }}{% else %}{{ tx.amount }}{% endif %} Coins
                   </td>
                 </tr>
@@ -179,7 +244,7 @@
           </table>
         </div>
       {% else %}
-        <p style="color: var(--muted); font-size: 13px;">No coin transactions recorded yet.</p>
+        <p style="color: var(--muted); font-size: 13px;">No transactions recorded yet.</p>
       {% endif %}
     </div>
 

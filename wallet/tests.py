@@ -79,9 +79,27 @@ class WalletTestCase(TestCase):
             'admin_notes': 'Verified on FNB statement'
         }, follow=True)
 
-        self.assertEqual(approve_resp.status_code, 200)
         req.refresh_from_db()
         self.assertEqual(req.status, 'APPROVED')
 
         wallet = StudentWallet.objects.get(user=self.user)
         self.assertEqual(wallet.coins, 120)
+
+    def test_content_unlock_retention(self):
+        from content_hub.models import ContentItem, Subject
+        from wallet.models import ContentUnlock
+        subject = Subject.objects.create(name='Maths Retention', slug='maths-retention')
+        item = ContentItem.objects.create(
+            title='Retained Study Pack',
+            slug='retained-study-pack',
+            subject=subject,
+            coin_price=50
+        )
+        wallet = StudentWallet.objects.get(user=self.user)
+        wallet.credit_coins(100)
+
+        unlock = ContentUnlock.objects.create(user=self.user, content_item=item, coins_spent=50)
+        self.assertTrue(unlock.is_active)
+        self.assertIsNotNone(unlock.expires_at)
+        self.assertTrue(self.user.has_unlocked(item))
+

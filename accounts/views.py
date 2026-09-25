@@ -55,7 +55,20 @@ def dashboard_view(request):
     wallet, _ = StudentWallet.objects.get_or_create(user=user)
 
     # Student Data
-    unlocked_records = ContentUnlock.objects.filter(user=user).select_related('content_item', 'content_item__subject')
+    # Active Unlocked Records (Retained for the academic year)
+    from django.db.models import Q
+    from django.utils import timezone
+    unlocked_records = ContentUnlock.objects.filter(user=user).filter(
+        Q(expires_at__isnull=True) | Q(expires_at__gte=timezone.now())
+    ).select_related('content_item', 'content_item__subject')
+
+    unlocked_ids = {u.content_item_id for u in unlocked_records}
+    recommended_items = []
+    if user.grade:
+        recommended_items = ContentItem.objects.filter(
+            grade=user.grade
+        ).exclude(id__in=unlocked_ids).select_related('subject')[:6]
+
     recent_transactions = CoinTransaction.objects.filter(wallet=wallet)[:8]
     quiz_attempts = QuizAttempt.objects.filter(student=user).select_related('quiz', 'quiz__content_item')[:6]
 
@@ -68,6 +81,7 @@ def dashboard_view(request):
         'user': user,
         'wallet': wallet,
         'unlocked_records': unlocked_records,
+        'recommended_items': recommended_items,
         'recent_transactions': recent_transactions,
         'quiz_attempts': quiz_attempts,
         'tutor_content_count': tutor_content_count,

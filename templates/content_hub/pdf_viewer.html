@@ -19,31 +19,55 @@
   @media print {
     body { display: none !important; }
   }
+  .pdf-page-wrapper {
+    position: relative;
+    margin: 20px auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+    background: #fff;
+    display: block;
+    max-width: 100%;
+  }
+  .pdf-page-canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="viewer-container">
+<div class="viewer-container" style="background: #0f172a; min-height: 90vh; padding: 20px 5%;">
   <!-- Header Bar -->
-  <div class="viewer-header">
+  <div class="viewer-header" style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(8px); border: 1px solid #334155; border-radius: var(--radius-md); padding: 15px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 20px;">
     <div>
-      <span class="badge curriculum">{{ item.grade }} &bull; {{ item.subject.name }}</span>
-      <h2 style="font-size: 26px; margin-top: 6px;">{{ item.title }}</h2>
+      <span class="badge curriculum" style="background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6;">
+        <i class="fa-solid fa-graduation-cap"></i> {{ item.grade }} &bull; {{ item.subject.name }}
+      </span>
+      <h2 style="font-size: 22px; color: #fff; margin-top: 8px;">{{ item.title }}</h2>
     </div>
-    <div>
-      <a href="{% url 'accounts:dashboard' %}" class="btn outline small">&larr; Back to Dashboard</a>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="color: #cbd5e1; border-color: #475569;">
+        <i class="fa-solid fa-book-open"></i> Resource Hub
+      </a>
+      <a href="{% url 'accounts:dashboard' %}" class="btn primary small">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
     </div>
   </div>
 
   <!-- Security Notice -->
-  <div class="security-notice">
-    <span>🛡️ <b>Anti-Piracy Protected Document:</b> Content is watermarked to <b>{{ user.email }}</b>. Direct downloading, printing, and file extraction are restricted.</span>
+  <div class="security-notice" style="background: #1e293b; border: 1px solid #334155; border-radius: var(--radius-md); padding: 12px 20px; font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
+    <i class="fa-solid fa-shield-halved" style="color: #3b82f6; font-size: 18px;"></i>
+    <span><b>Anti-Piracy Protected Reader:</b> Licensed to <b>{{ user.email }}</b>. Direct downloading, printing, and file extraction are restricted.</span>
   </div>
 
   <!-- PDF Canvas Viewport -->
-  <div class="pdf-canvas-container" id="pdfContainer">
-    <div id="loadingStatus" style="color: #fff; padding: 40px; font-weight: 600;">
-      Loading protected study document, please wait...
+  <div class="pdf-canvas-container" id="pdfContainer" style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
+    <div id="loadingStatus" style="color: #cbd5e1; padding: 60px 20px; font-weight: 600; text-align: center;">
+      <div style="font-size: 32px; margin-bottom: 12px; color: #3b82f6;">
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+      </div>
+      <div>Loading protected study document, please wait...</div>
     </div>
   </div>
 </div>
@@ -77,30 +101,41 @@
     }
   });
 
-  // Fetch and render document
-  const loadingTask = pdfjsLib.getDocument({
-    url: pdfUrl,
-    withCredentials: true
-  });
+  // Fetch as ArrayBuffer to prevent browser download handlers / IDM from hijacking the file
+  fetch(pdfUrl, { credentials: 'same-origin' })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+      }
+      return response.arrayBuffer();
+    })
+    .then(arrayBuffer => {
+      const uint8 = new Uint8Array(arrayBuffer);
+      return pdfjsLib.getDocument({ data: uint8 }).promise;
+    })
+    .then(pdf => {
+      if (loading) loading.style.display = 'none';
 
-  loadingTask.promise.then(function(pdf) {
-    if (loading) loading.style.display = 'none';
-
-    // Render all pages sequentially
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      renderPage(pdf, pageNum);
-    }
-  }).catch(function(error) {
-    if (loading) {
-      loading.textContent = "Unable to load document. Please refresh or verify your access.";
-      loading.style.color = "#f87171";
-    }
-  });
+      // Render all pages sequentially in canvas
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        renderPage(pdf, pageNum);
+      }
+    })
+    .catch(error => {
+      console.error("PDF Load Error:", error);
+      if (loading) {
+        loading.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:28px; margin-bottom:10px; display:block;"></i> Unable to load document. Please refresh or verify your login access.';
+        loading.style.color = "#f87171";
+      }
+    });
 
   function renderPage(pdf, pageNum) {
     pdf.getPage(pageNum).then(function(page) {
       const scale = 1.5;
       const viewport = page.getViewport({ scale: scale });
+
+      const pageWrapper = document.createElement('div');
+      pageWrapper.className = 'pdf-page-wrapper';
 
       const canvas = document.createElement('canvas');
       canvas.className = 'pdf-page-canvas';
@@ -108,7 +143,8 @@
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
-      container.appendChild(canvas);
+      pageWrapper.appendChild(canvas);
+      container.appendChild(pageWrapper);
 
       const renderContext = {
         canvasContext: context,
@@ -119,15 +155,15 @@
         // Draw Dynamic Semi-Transparent Watermark Over Page
         context.save();
         context.font = "bold 18px 'Montserrat', sans-serif";
-        context.fillStyle = "rgba(24, 47, 104, 0.12)";
+        context.fillStyle = "rgba(15, 23, 42, 0.13)";
         context.textAlign = "center";
         
         // Diagonal watermark across page
         context.translate(canvas.width / 2, canvas.height / 2);
         context.rotate(-35 * Math.PI / 180);
-        context.fillText(watermarkText, 0, -120);
+        context.fillText(watermarkText, 0, -140);
         context.fillText(watermarkText, 0, 0);
-        context.fillText(watermarkText, 0, 120);
+        context.fillText(watermarkText, 0, 140);
         context.restore();
       });
     });

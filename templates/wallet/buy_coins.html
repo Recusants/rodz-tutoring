@@ -15,14 +15,16 @@
   <!-- Wallet Overview Bar -->
   <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: #fff; border-radius: var(--radius-lg); padding: 22px 28px; margin-bottom: 35px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; box-shadow: var(--shadow-md);">
     <div style="display: flex; align-items: center; gap: 18px;">
-      <div style="font-size: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">🪙</div>
+      <div style="font-size: 32px; background: rgba(255,255,255,0.1); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: #fbbf24;">
+        <i class="fa-solid fa-coins"></i>
+      </div>
       <div>
         <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #93c5fd;">Current Balance</div>
-        <div style="font-size: 28px; font-weight: 900; color: #fbbf24;">{{ wallet.coins }} Coins</div>
+        <div style="font-size: 28px; font-weight: 900; color: #fbbf24;"><i class="fa-solid fa-coins" style="font-size: 22px;"></i> {{ wallet.coins }} Coins</div>
       </div>
     </div>
     <div style="font-size: 13px; color: #cbd5e1; max-width: 500px; line-height: 1.5;">
-      Coins allow you to permanently unlock Grade 7–12 exam packs, revision notes, videos, and quizzes. Once unlocked, items are accessible anytime.
+      Coins allow you to unlock Grade 7–12 exam packs, revision notes, videos, and quizzes. Once unlocked, materials remain accessible for your entire academic year.
     </div>
   </div>
 
@@ -72,7 +74,7 @@
           
           {% if b.badge %}
             <span class="badge {% if 'POPULAR' in b.badge %}premium{% else %}curriculum{% endif %}">
-              {{ b.badge }}
+              {% if 'POPULAR' in b.badge %}<i class="fa-solid fa-fire"></i>{% elif 'BEST' in b.badge %}<i class="fa-solid fa-star"></i>{% elif 'PRO' in b.badge %}<i class="fa-solid fa-trophy"></i>{% endif %} {{ b.badge }}
             </span>
           {% endif %}
 
@@ -80,7 +82,7 @@
           <div class="price" style="font-size: 32px; font-weight: 900; color: var(--blue);">
             R{{ b.price_zar }}
             <div style="font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 4px;">
-              🪙 {{ b.coins }} Coins Total
+              <i class="fa-solid fa-coins" style="color: #b45309;"></i> {{ b.coins }} Coins Total
             </div>
           </div>
 
@@ -88,7 +90,7 @@
             {{ b.description|default:"Instant coin pack for accessing study packs and assessments." }}
           </p>
 
-          <button type="button" class="btn primary bundle-choose-btn" style="width: 100%;" onclick="selectBundle('{{ b.id }}', '{{ b.name }}', '{{ b.price_zar }}', '{{ b.coins }}')">
+          <button type="button" class="btn primary bundle-choose-btn" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="selectBundle('{{ b.id }}', '{{ b.name }}', '{{ b.price_zar }}', '{{ b.coins }}')">
             Select This Pack &rarr;
           </button>
         </div>
@@ -111,7 +113,9 @@
         <div class="pm-card" style="background: var(--white); border: 2px solid var(--line); border-radius: var(--radius-lg); padding: 22px; position: relative;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
             <div>
-              <div style="font-weight: 800; font-size: 16px; color: var(--blue);">{{ pm.title }}</div>
+              <div style="font-weight: 800; font-size: 16px; color: var(--blue); display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-building-columns"></i> {{ pm.title }}
+              </div>
               {% if pm.bank_name %}<div style="font-size: 12px; color: var(--muted);">{{ pm.bank_name }}</div>{% endif %}
             </div>
             <span style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px;">{{ pm.account_type }}</span>
@@ -131,7 +135,7 @@
                 </div>
               </div>
               <button type="button" class="btn outline small" onclick="copyToClipboard('{{ pm.account_number }}', this)" style="padding: 4px 8px; font-size: 11px;">
-                Copy
+                <i class="fa-solid fa-copy"></i> Copy
               </button>
             </div>
 
@@ -156,7 +160,7 @@
           </div>
 
           <div style="margin-top: 16px;">
-            <button type="button" class="btn outline small" style="width: 100%;" onclick="selectPaymentMethod('{{ pm.id }}')">
+            <button type="button" class="btn outline small" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="selectPaymentMethod('{{ pm.id }}')">
               Select This Method for Activation &darr;
             </button>
           </div>
@@ -174,7 +178,7 @@
           Activate Coins (Submit Payment Reference & POP)
         </h3>
         <span style="font-size: 12px; background: #dcfce7; color: #15803d; font-weight: 700; padding: 4px 10px; border-radius: 20px;">
-          Fast Admin Verification
+          <i class="fa-solid fa-bolt"></i> Fast Admin Verification
         </span>
       </div>
 
@@ -255,10 +259,10 @@
 
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px; border-top: 1px solid var(--line); padding-top: 20px;">
           <div style="font-size: 12px; color: var(--muted);">
-            🔒 All uploads are securely stored and verified directly by the Rodz Tutoring administration.
+            <i class="fa-solid fa-lock"></i> All uploads are securely stored and verified directly by the Rodz Tutoring administration.
           </div>
-          <button type="submit" class="btn primary" style="padding: 12px 30px; font-size: 14px; font-weight: 800;">
-            🚀 SUBMIT & ACTIVATE COINS &rarr;
+          <button type="submit" class="btn primary" style="padding: 12px 30px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-bolt"></i> SUBMIT & ACTIVATE COINS &rarr;
           </button>
         </div>
       </form>
@@ -267,8 +271,8 @@
 
   <!-- MY ACTIVATION REQUESTS HISTORY -->
   <div style="margin-bottom: 40px;">
-    <h3 style="font-size: 18px; font-weight: 800; color: var(--blue); margin-bottom: 16px;">
-      My Coin Activation History
+    <h3 style="font-size: 18px; font-weight: 800; color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-receipt"></i> My Coin Activation History
     </h3>
 
     {% if my_requests %}
@@ -295,7 +299,7 @@
                   {{ req.bundle.name|default:"Coin Pack" }}
                 </td>
                 <td style="padding: 12px 16px; font-weight: 800; color: #b45309;">
-                  🪙 {{ req.coins_to_credit }}
+                  <i class="fa-solid fa-coins"></i> {{ req.coins_to_credit }}
                 </td>
                 <td style="padding: 12px 16px;">
                   R{{ req.amount_paid }}
@@ -305,8 +309,8 @@
                 </td>
                 <td style="padding: 12px 16px;">
                   {% if req.proof_of_payment %}
-                    <a href="{{ req.proof_of_payment.url }}" target="_blank" rel="noopener" style="color: var(--blue); text-decoration: underline; font-weight: 600;">
-                      View Receipt &rarr;
+                    <a href="{{ req.proof_of_payment.url }}" target="_blank" rel="noopener" style="color: var(--blue); text-decoration: underline; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-file-lines"></i> View Receipt &rarr;
                     </a>
                   {% else %}
                     <span style="color: var(--muted);">&mdash;</span>
@@ -315,15 +319,15 @@
                 <td style="padding: 12px 16px;">
                   {% if req.status == 'PENDING' %}
                     <span style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                      ⏳ Pending Verification
+                      <i class="fa-solid fa-clock"></i> Pending Verification
                     </span>
                   {% elif req.status == 'APPROVED' %}
                     <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                      ✓ Activated & Credited
+                      <i class="fa-solid fa-check"></i> Activated & Credited
                     </span>
                   {% else %}
                     <span style="background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;" title="{{ req.admin_notes }}">
-                      ✕ Declined
+                      <i class="fa-solid fa-xmark"></i> Declined
                     </span>
                   {% endif %}
                 </td>
@@ -344,8 +348,8 @@
     <p style="font-size: 13px; color: var(--text); margin-bottom: 10px;">
       Need immediate assistance or prefer manual help via WhatsApp?
     </p>
-    <a href="{{ wa_link }}" target="_blank" rel="noopener" class="btn outline small">
-      💬 Chat with Rodz Admin on WhatsApp ({{ WHATSAPP_DISPLAY_PHONE }})
+    <a href="{{ wa_link }}" target="_blank" rel="noopener" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px;">
+      <i class="fa-brands fa-whatsapp" style="color: #16a34a; font-size: 16px;"></i> Chat with Rodz Admin on WhatsApp ({{ WHATSAPP_DISPLAY_PHONE }})
     </a>
   </div>
 </section>

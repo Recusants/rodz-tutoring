@@ -12,16 +12,48 @@
     <div class="bar"></div>
   </div>
 
+  <!-- MY UNLOCKED RESOURCES (QUICK ACCESS TRAY) -->
+  {% if my_unlocked_items %}
+    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border-radius: var(--radius-lg); padding: 22px 28px; margin-bottom: 35px; color: #fff; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-box-open" style="font-size: 20px; color: #fbbf24;"></i>
+          <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin: 0;">My Unlocked Study Packs</h3>
+          <span style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 12px;">
+            {{ my_unlocked_items|length }} Ready
+          </span>
+        </div>
+        <a href="{% url 'accounts:dashboard' %}" style="font-size: 12px; color: #93c5fd; text-decoration: underline; font-weight: 600;">
+          View in Dashboard &rarr;
+        </a>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+        {% for u_item in my_unlocked_items %}
+          <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-md); padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <div>
+              <div style="font-size: 11px; color: #93c5fd; font-weight: 700;">{{ u_item.grade }} &bull; {{ u_item.subject.name }}</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff; margin-top: 2px; line-height: 1.3;">{{ u_item.title|truncatechars:34 }}</div>
+            </div>
+            <a href="{% url 'content_hub:view_content' u_item.slug %}" class="btn primary small" style="white-space: nowrap; padding: 6px 12px; font-size: 11px; background: #fbbf24; color: #78350f; border-color: #fbbf24; font-weight: 800;">
+              <i class="fa-solid fa-book-open-reader"></i> READ
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <!-- Filter Bar -->
   <form method="GET" action="{% url 'content_hub:catalog' %}" style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 35px;">
     <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
       <div>
-        <label class="form-label">Search</label>
+        <label class="form-label"><i class="fa-solid fa-magnifying-glass"></i> Search</label>
         <input type="text" name="q" value="{{ selected_query }}" class="form-input" placeholder="Search topic, paper, or subject...">
       </div>
 
       <div>
-        <label class="form-label">Curriculum</label>
+        <label class="form-label"><i class="fa-solid fa-graduation-cap"></i> Curriculum</label>
         <select name="curriculum" class="form-input">
           <option value="">All Curricula</option>
           {% for cur in curricula %}
@@ -37,7 +69,7 @@
       </div>
 
       <div>
-        <label class="form-label">Grade</label>
+        <label class="form-label"><i class="fa-solid fa-school"></i> Grade</label>
         <select name="grade" class="form-input">
           <option value="">All Grades</option>
           <option value="Grade 7" {% if selected_grade == 'Grade 7' %}selected{% endif %}>Grade 7</option>
@@ -45,12 +77,12 @@
           <option value="Grade 9" {% if selected_grade == 'Grade 9' %}selected{% endif %}>Grade 9</option>
           <option value="Grade 10" {% if selected_grade == 'Grade 10' %}selected{% endif %}>Grade 10</option>
           <option value="Grade 11" {% if selected_grade == 'Grade 11' %}selected{% endif %}>Grade 11</option>
-          <option value="Grade 12" {% if selected_grade == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+          <option value="Grade 12" {% if selected_grade == 'Grade 12' or not selected_grade and student_grade == 'Grade 12' %}selected{% endif %}>Grade 12</option>
         </select>
       </div>
 
       <div>
-        <label class="form-label">Type</label>
+        <label class="form-label"><i class="fa-solid fa-layer-group"></i> Type</label>
         <select name="type" class="form-input">
           <option value="">All Types</option>
           <option value="PDF" {% if selected_type == 'PDF' %}selected{% endif %}>PDF Notes / Pack</option>
@@ -60,7 +92,7 @@
       </div>
 
       <div>
-        <label class="form-label">Access</label>
+        <label class="form-label"><i class="fa-solid fa-coins"></i> Access</label>
         <select name="pricing" class="form-input">
           <option value="">All Access</option>
           <option value="free" {% if selected_pricing == 'free' %}selected{% endif %}>Free Resources</option>
@@ -69,10 +101,20 @@
       </div>
 
       <div>
-        <button type="submit" class="btn primary" style="padding: 12px 20px;">FILTER</button>
+        <button type="submit" class="btn primary" style="padding: 12px 20px;">
+          <i class="fa-solid fa-filter"></i> FILTER
+        </button>
       </div>
     </div>
   </form>
+
+  <!-- Student Grade Prioritization Header Notice -->
+  {% if student_grade and not selected_grade %}
+    <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--blue); background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 16px; border-radius: var(--radius-sm);">
+      <i class="fa-solid fa-star" style="color: #3b82f6;"></i>
+      <span>Showing resources prioritized for your enrolled grade: <b>{{ student_grade }}</b>. Use the filter bar to browse other grades.</span>
+    </div>
+  {% endif %}
 
   <!-- Content Results Grid -->
   <div class="resource-grid">
@@ -87,36 +129,57 @@
 
           <div class="top-badge">
             {% if item.content_type == 'PDF' %}
-              <span class="badge curriculum">PDF STUDY PACK</span>
+              <span class="badge curriculum"><i class="fa-solid fa-file-pdf"></i> PDF STUDY PACK</span>
             {% elif item.content_type == 'VIDEO' %}
-              <span class="badge" style="background:#fce7f3; color:#9d174d; border: 1px solid #fbcfe8;">VIDEO STREAM</span>
+              <span class="badge" style="background:#fce7f3; color:#9d174d; border: 1px solid #fbcfe8;"><i class="fa-solid fa-video"></i> VIDEO STREAM</span>
             {% elif item.content_type == 'QUIZ' %}
-              <span class="badge" style="background:#ede9fe; color:#5b21b6; border: 1px solid #ddd6fe;">QUIZ TEST</span>
+              <span class="badge" style="background:#ede9fe; color:#5b21b6; border: 1px solid #ddd6fe;"><i class="fa-solid fa-list-check"></i> QUIZ ASSESSMENT</span>
             {% endif %}
           </div>
         </div>
 
         <div class="resource-card-body">
-          <div class="meta">{{ item.grade }} &bull; {{ item.curriculum }} &bull; {{ item.subject.name }}</div>
+          <div class="meta">
+            {{ item.grade }} &bull; {{ item.curriculum }} &bull; {{ item.subject.name }}
+          </div>
+
+          {% if student_grade and item.grade == student_grade %}
+            <span style="background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 6px;">
+              <i class="fa-solid fa-star"></i> In Your Grade ({{ student_grade }})
+            </span>
+          {% endif %}
+
           <h3>{{ item.title }}</h3>
           <p>{{ item.description|truncatewords:18 }}</p>
 
           <div class="resource-card-footer">
             <div>
-              {% if item.is_free %}
-                <span class="cost" style="color: var(--green);">Free Access</span>
+              {% if item.id in user_unlocked_ids %}
+                <span class="cost" style="color: #16a34a; font-weight: 800; font-size: 12px;">
+                  <i class="fa-solid fa-circle-check"></i> Unlocked
+                </span>
+              {% elif item.is_free %}
+                <span class="cost" style="color: var(--green); font-weight: 800; font-size: 12px;">
+                  <i class="fa-solid fa-gift"></i> Free
+                </span>
               {% else %}
-                <span class="cost">🪙 {{ item.coin_price }} Coins</span>
+                <span class="cost">
+                  <i class="fa-solid fa-coins"></i> {{ item.coin_price }} Coins
+                </span>
               {% endif %}
             </div>
 
             {% if item.id in user_unlocked_ids or item.is_free or user.is_tutor or user.is_admin_role %}
-              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small">
-                {% if item.content_type == 'QUIZ' %}TAKE QUIZ{% else %}VIEW IN-APP{% endif %}
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 6px;">
+                {% if item.content_type == 'QUIZ' %}
+                  <i class="fa-solid fa-play"></i> TAKE QUIZ
+                {% else %}
+                  <i class="fa-solid fa-book-open-reader"></i> VIEW IN-APP
+                {% endif %}
               </a>
             {% else %}
-              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small">
-                UNLOCK FOR {{ item.coin_price }}
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small" style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-lock"></i> UNLOCK ({{ item.coin_price }})
               </a>
             {% endif %}
           </div>
@@ -124,6 +187,7 @@
       </div>
     {% empty %}
       <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; background: var(--soft); border-radius: var(--radius-md);">
+        <i class="fa-solid fa-folder-open" style="font-size: 32px; color: var(--muted); margin-bottom: 12px;"></i>
         <h3>No resources match your filter criteria.</h3>
         <p style="color: var(--muted); margin-top: 8px;">Try clearing filters to see all available study packs.</p>
         <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="margin-top: 14px;">RESET FILTERS</a>

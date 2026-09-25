@@ -82,3 +82,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if self.is_student:
             roles.append('Student')
         return ", ".join(roles) if roles else "Standard User"
+
+    def has_unlocked(self, content_item):
+        if not self.is_authenticated:
+            return False
+        if content_item.is_free or self.is_tutor or self.is_admin_role or self.is_staff or self.is_superuser:
+            return True
+        from wallet.models import ContentUnlock
+        unlock = ContentUnlock.objects.filter(user=self, content_item=content_item).first()
+        if unlock and unlock.is_active:
+            return True
+        return False

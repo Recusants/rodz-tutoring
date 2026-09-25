@@ -6,7 +6,9 @@
 {% block content %}
 <section class="section" style="padding-top: 30px;">
   <div class="section-heading">
-    <span class="symbol" style="font-size: 40px; color: var(--blue);">{{ subject.icon_symbol }}</span>
+    <div style="font-size: 32px; color: var(--blue); margin-bottom: 8px;">
+      <i class="fa-solid fa-graduation-cap"></i>
+    </div>
     <h2>{{ subject.name|upper }} STUDY MATERIALS</h2>
     <p>{{ subject.description|default:"Browse comprehensive study packs, past exam papers, and video solutions." }}</p>
     <div class="bar"></div>
@@ -22,7 +24,9 @@
             <img src="{% static 'assets/resource-covers/caps-g12-maths.svg' %}" alt="{{ item.title }}">
           {% endif %}
           <div class="top-badge">
-            {% if item.is_free %}
+            {% if item.id in user_unlocked_ids %}
+              <span class="badge free"><i class="fa-solid fa-check"></i> UNLOCKED</span>
+            {% elif item.is_free %}
               <span class="badge free">FREE</span>
             {% else %}
               <span class="badge premium">PREMIUM</span>
@@ -36,13 +40,27 @@
           <p>{{ item.description|truncatewords:16 }}</p>
 
           <div class="resource-card-footer">
-            <span class="cost">{% if item.is_free %}Free{% else %}🪙 {{ item.coin_price }} Coins{% endif %}</span>
-            <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small">VIEW</a>
+            <span class="cost">
+              {% if item.id in user_unlocked_ids %}
+                <span style="color: #16a34a; font-weight: 800;"><i class="fa-solid fa-circle-check"></i> Ready</span>
+              {% elif item.is_free %}
+                <span style="color: var(--green); font-weight: 800;"><i class="fa-solid fa-gift"></i> Free</span>
+              {% else %}
+                <i class="fa-solid fa-coins"></i> {{ item.coin_price }} Coins
+              {% endif %}
+            </span>
+            <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 4px;">
+              {% if item.id in user_unlocked_ids or item.is_free %}
+                <i class="fa-solid fa-book-open-reader"></i> VIEW
+              {% else %}
+                <i class="fa-solid fa-lock"></i> UNLOCK
+              {% endif %}
+            </a>
           </div>
         </div>
       </div>
     {% empty %}
-      <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: var(--soft);">
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: var(--soft); border-radius: var(--radius-md);">
         <p>No resources published yet for this subject.</p>
         <a href="{% url 'content_hub:catalog' %}" class="btn outline small">View All Resources</a>
       </div>

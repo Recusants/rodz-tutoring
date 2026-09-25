@@ -17,19 +17,19 @@
     <!-- Filter Pills -->
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
       <a href="?status=PENDING" class="btn {% if status_filter == 'PENDING' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
-        ⏳ Pending Verification
+        <i class="fa-solid fa-clock"></i> Pending Verification
         {% if pending_count > 0 %}
           <span style="background: #ef4444; color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 12px;">{{ pending_count }}</span>
         {% endif %}
       </a>
-      <a href="?status=APPROVED" class="btn {% if status_filter == 'APPROVED' %}primary{% else %}outline{% endif %} small">
-        ✓ Approved & Credited
+      <a href="?status=APPROVED" class="btn {% if status_filter == 'APPROVED' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-check"></i> Approved & Credited
       </a>
-      <a href="?status=REJECTED" class="btn {% if status_filter == 'REJECTED' %}primary{% else %}outline{% endif %} small">
-        ✕ Declined
+      <a href="?status=REJECTED" class="btn {% if status_filter == 'REJECTED' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-xmark"></i> Declined
       </a>
-      <a href="?status=ALL" class="btn {% if status_filter == 'ALL' %}primary{% else %}outline{% endif %} small">
-        All Submissions
+      <a href="?status=ALL" class="btn {% if status_filter == 'ALL' %}primary{% else %}outline{% endif %} small" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-list"></i> All Submissions
       </a>
     </div>
 
@@ -75,7 +75,9 @@
                   <div style="font-weight: 700; color: var(--text);">{{ req.student.full_name|default:req.student.email }}</div>
                   <div style="font-size: 12px; color: var(--muted);">{{ req.student.email }}</div>
                   {% if req.student.phone_number %}
-                    <div style="font-size: 11px; color: #16a34a;">📱 {{ req.student.phone_number }}</div>
+                    <div style="font-size: 11px; color: #16a34a; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-mobile-screen"></i> {{ req.student.phone_number }}
+                    </div>
                   {% endif %}
                 </td>
 
@@ -83,7 +85,7 @@
                 <td style="padding: 14px 16px;">
                   <div style="font-weight: 700;">{{ req.bundle.name|default:"Custom Pack" }}</div>
                   <div style="font-size: 14px; font-weight: 900; color: #b45309; margin-top: 2px;">
-                    🪙 {{ req.coins_to_credit }} Coins
+                    <i class="fa-solid fa-coins"></i> {{ req.coins_to_credit }} Coins
                   </div>
                 </td>
 
@@ -100,7 +102,7 @@
                   </div>
                   {% if req.student_notes %}
                     <div style="font-size: 11px; color: var(--muted); margin-top: 4px; max-width: 220px; line-height: 1.3;">
-                      💬 <i>"{{ req.student_notes }}"</i>
+                      <i class="fa-solid fa-comment-dots"></i> <i>"{{ req.student_notes }}"</i>
                     </div>
                   {% endif %}
                 </td>
@@ -109,7 +111,7 @@
                 <td style="padding: 14px 16px; white-space: nowrap;">
                   {% if req.proof_of_payment %}
                     <a href="{{ req.proof_of_payment.url }}" target="_blank" rel="noopener" class="btn outline small" style="padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-                      📄 Open POP &rarr;
+                      <i class="fa-solid fa-file-invoice"></i> Open POP &rarr;
                     </a>
                   {% else %}
                     <span style="color: var(--muted); font-size: 12px;">No file</span>
@@ -119,19 +121,19 @@
                 <!-- Status -->
                 <td style="padding: 14px 16px;">
                   {% if req.status == 'PENDING' %}
-                    <span style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">
-                      ⏳ Pending
+                    <span style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-clock"></i> Pending
                     </span>
                   {% elif req.status == 'APPROVED' %}
-                    <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">
-                      ✓ Credited
+                    <span style="background: #dcfce7; color: #15803d; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-check"></i> Credited
                     </span>
                     <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">
                       by {{ req.reviewed_by.email|default:"Admin" }}
                     </div>
                   {% else %}
-                    <span style="background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">
-                      ✕ Declined
+                    <span style="background: #fee2e2; color: #b91c1c; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-xmark"></i> Declined
                     </span>
                     {% if req.admin_notes %}
                       <div style="font-size: 10px; color: #b91c1c; margin-top: 3px;">
@@ -150,14 +152,14 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="approve">
                         <input type="hidden" name="request_id" value="{{ req.id }}">
-                        <button type="submit" class="btn primary small" style="background: #16a34a; border-color: #16a34a; padding: 5px 12px; font-size: 12px; font-weight: 800;">
-                          ✓ Approve
+                        <button type="submit" class="btn primary small" style="background: #16a34a; border-color: #16a34a; padding: 5px 12px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                          <i class="fa-solid fa-check"></i> Approve
                         </button>
                       </form>
 
                       <!-- Decline Modal / Form -->
-                      <button type="button" class="btn outline small" style="color: #dc2626; border-color: #fca5a5; padding: 5px 10px; font-size: 12px;" onclick="promptDecline('{{ req.id }}', '{{ req.student.email }}')">
-                        ✕ Decline
+                      <button type="button" class="btn outline small" style="color: #dc2626; border-color: #fca5a5; padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" onclick="promptDecline('{{ req.id }}', '{{ req.student.email }}')">
+                        <i class="fa-solid fa-xmark"></i> Decline
                       </button>
                     </div>
                   {% else %}
@@ -171,7 +173,7 @@
       </div>
     {% else %}
       <div style="padding: 40px; text-align: center; color: var(--muted);">
-        <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
+        <i class="fa-solid fa-inbox" style="font-size: 32px; margin-bottom: 8px; display: block; color: var(--muted);"></i>
         <p style="font-size: 14px;">No payment requests found for the selected filter.</p>
         {% if status_filter != 'ALL' %}
           <a href="?status=ALL" class="btn outline small" style="margin-top: 10px;">View All Requests</a>

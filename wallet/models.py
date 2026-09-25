@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+import datetime
 
 
 class StudentWallet(models.Model):
@@ -92,13 +94,36 @@ class ContentUnlock(models.Model):
     )
     coins_spent = models.PositiveIntegerField(default=0)
     unlocked_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        null=True, 
+        blank=True, 
+        help_text="Expiry date for content retention (defaults to end of academic school year)"
+    )
 
     class Meta:
         unique_together = ('user', 'content_item')
         ordering = ['-unlocked_at']
 
+    @property
+    def is_active(self):
+        if not self.expires_at:
+            return True
+        return timezone.now() <= self.expires_at
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            now = timezone.now()
+            # Academic school year ends Dec 31
+            # If unlocked in Q4 (Oct-Dec), extend to Dec 31 of next year so student gets at least a full academic year
+            target_year = now.year if now.month < 10 else now.year + 1
+            self.expires_at = timezone.make_aware(
+                datetime.datetime(target_year, 12, 31, 23, 59, 59)
+            )
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.user.email} unlocked '{self.content_item.title}' ({self.coins_spent} coins)"
+        status = "Active" if self.is_active else "Expired"
+        return f"{self.user.email} unlocked '{self.content_item.title}' ({self.coins_spent} coins) [{status}]"
 
 
 class PaymentMethod(models.Model):

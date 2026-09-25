@@ -17,10 +17,10 @@
     </div>
 
     <div class="trust-row">
-      <div class="trust-item"><span class="icon">♙</span><div><b>Experienced</b><small>Tutors</small></div></div>
-      <div class="trust-item"><span class="icon">♕</span><div><b>Exam</b><small>Focused</small></div></div>
-      <div class="trust-item"><span class="icon">⌁</span><div><b>Proven</b><small>Results</small></div></div>
-      <div class="trust-item"><span class="icon">♧</span><div><b>Protected</b><small>Content</small></div></div>
+      <div class="trust-item"><span class="icon"><i class="fa-solid fa-user-graduate"></i></span><div><b>Experienced</b><small>Tutors</small></div></div>
+      <div class="trust-item"><span class="icon"><i class="fa-solid fa-bullseye"></i></span><div><b>Exam</b><small>Focused</small></div></div>
+      <div class="trust-item"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><div><b>Proven</b><small>Results</small></div></div>
+      <div class="trust-item"><span class="icon"><i class="fa-solid fa-shield-halved"></i></span><div><b>Protected</b><small>Content</small></div></div>
     </div>
   </div>
 
@@ -81,7 +81,9 @@
           {% endif %}
           
           <div class="top-badge">
-            {% if item.is_free %}
+            {% if item.id in user_unlocked_ids %}
+              <span class="badge free"><i class="fa-solid fa-check"></i> UNLOCKED</span>
+            {% elif item.is_free %}
               <span class="badge free">FREE</span>
             {% else %}
               <span class="badge premium">PREMIUM</span>
@@ -96,17 +98,23 @@
 
           <div class="resource-card-footer">
             <div>
-              {% if item.is_free %}
+              {% if item.id in user_unlocked_ids %}
+                <span class="cost" style="color: #16a34a; font-weight: 800;"><i class="fa-solid fa-circle-check"></i> Ready</span>
+              {% elif item.is_free %}
                 <span class="cost" style="color: var(--green);">Free Access</span>
               {% else %}
-                <span class="cost">🪙 {{ item.coin_price }} Coins</span>
+                <span class="cost"><i class="fa-solid fa-coins"></i> {{ item.coin_price }} Coins</span>
               {% endif %}
             </div>
 
             {% if item.id in user_unlocked_ids or item.is_free or user.is_tutor or user.is_admin_role %}
-              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small">VIEW NOW</a>
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-book-open-reader"></i> VIEW NOW
+              </a>
             {% else %}
-              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small">UNLOCK</a>
+              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small" style="display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-lock"></i> UNLOCK
+              </a>
             {% endif %}
           </div>
         </div>
@@ -115,7 +123,9 @@
   </div>
 
   <div style="text-align: center; margin-top: 35px;">
-    <a href="{% url 'content_hub:catalog' %}" class="btn primary">BROWSE FULL RESOURCE CATALOGUE &rarr;</a>
+    <a href="{% url 'content_hub:catalog' %}" class="btn primary">
+      <i class="fa-solid fa-layer-group"></i> BROWSE FULL RESOURCE CATALOGUE &rarr;
+    </a>
   </div>
 </section>
 
@@ -128,8 +138,8 @@
     </div>
     <div>
       <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20Please%20add%20me%20to%20the%20community." 
-         class="btn gold" target="_blank" rel="noopener">
-        JOIN ON WHATSAPP &rarr;
+         class="btn whatsapp" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i> JOIN COMMUNITY &rarr;
       </a>
     </div>
   </div>
