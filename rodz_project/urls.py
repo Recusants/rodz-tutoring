@@ -13,6 +13,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('wallet/', include('wallet.urls')),
     path('quizzes/', include('quizzes.urls')),
+    path('media/protected_pdfs/<path:filename>', content_views.protected_pdf_guard_view, name='protected_pdf_guard'),
 ]
 
 if settings.DEBUG:

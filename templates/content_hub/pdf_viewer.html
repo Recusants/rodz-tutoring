@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Protected Reader: {{ item.title }} | Rodz Tutoring{% endblock %}
+{% block title %}Reader: {{ item.title }} | Rodz Tutoring{% endblock %}
 
 {% block extra_head %}
-<!-- PDF.js CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-  /* Strict anti-download & anti-selection CSS */
-  body, .pdf-canvas-container, canvas {
+  /* Strict Anti-Copy & Anti-Download Protection */
+  body, .viewer-stage, .pdf-page-card, .pdf-page-image {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
@@ -19,70 +17,177 @@
   @media print {
     body { display: none !important; }
   }
-  .pdf-page-wrapper {
-    position: relative;
-    margin: 20px auto;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
-    background: #fff;
-    display: block;
-    max-width: 100%;
+  .viewer-wrapper {
+    background: #0b1120;
+    min-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
   }
-  .pdf-page-canvas {
-    display: block;
-    max-width: 100%;
+  .viewer-toolbar {
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 12px 5%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    position: sticky;
+    top: 84px;
+    z-index: 90;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  .viewer-stage {
+    flex-grow: 1;
+    padding: 30px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+    overflow-x: auto;
+  }
+  .pdf-page-card {
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    border-radius: 4px;
+    position: relative;
+    max-width: 900px;
+    width: 100%;
+    transition: transform 0.2s ease;
+    transform-origin: top center;
+  }
+  .page-number-tag {
+    position: absolute;
+    top: -12px;
+    right: 15px;
+    background: #1e3a8a;
+    color: #93c5fd;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid #3b82f6;
+  }
+  .pdf-page-image {
+    width: 100%;
     height: auto;
+    display: block;
+    border-radius: 4px;
+    pointer-events: none; /* Prevents dragging or saving image directly */
+  }
+  .tool-btn {
+    background: #334155;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .tool-btn:hover {
+    background: #475569;
+    color: #fff;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="viewer-container" style="background: #0f172a; min-height: 90vh; padding: 20px 5%;">
-  <!-- Header Bar -->
-  <div class="viewer-header" style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(8px); border: 1px solid #334155; border-radius: var(--radius-md); padding: 15px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 20px;">
-    <div>
-      <span class="badge curriculum" style="background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6;">
-        <i class="fa-solid fa-graduation-cap"></i> {{ item.grade }} &bull; {{ item.subject.name }}
-      </span>
-      <h2 style="font-size: 22px; color: #fff; margin-top: 8px;">{{ item.title }}</h2>
-    </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="color: #cbd5e1; border-color: #475569;">
-        <i class="fa-solid fa-book-open"></i> Resource Hub
-      </a>
-      <a href="{% url 'accounts:dashboard' %}" class="btn primary small">
-        <i class="fa-solid fa-chart-line"></i> Dashboard
-      </a>
-    </div>
-  </div>
+<div class="viewer-wrapper" id="viewerWrapper">
 
-  <!-- Security Notice -->
-  <div class="security-notice" style="background: #1e293b; border: 1px solid #334155; border-radius: var(--radius-md); padding: 12px 20px; font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
-    <i class="fa-solid fa-shield-halved" style="color: #3b82f6; font-size: 18px;"></i>
-    <span><b>Anti-Piracy Protected Reader:</b> Licensed to <b>{{ user.email }}</b>. Direct downloading, printing, and file extraction are restricted.</span>
-  </div>
-
-  <!-- PDF Canvas Viewport -->
-  <div class="pdf-canvas-container" id="pdfContainer" style="display: flex; flex-direction: column; align-items: center; min-height: 400px;">
-    <div id="loadingStatus" style="color: #cbd5e1; padding: 60px 20px; font-weight: 600; text-align: center;">
-      <div style="font-size: 32px; margin-bottom: 12px; color: #3b82f6;">
-        <i class="fa-solid fa-circle-notch fa-spin"></i>
+  <!-- Floating Sticky Toolbar -->
+  <div class="viewer-toolbar">
+    <!-- Left: Title & Subject -->
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <a href="{% url 'content_hub:catalog' %}" class="tool-btn" title="Back to Resources">
+        <i class="fa-solid fa-arrow-left"></i> Catalog
+      </a>
+      <div>
+        <div style="color: #93c5fd; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+          <i class="fa-solid fa-graduation-cap"></i> {{ item.grade }} &bull; {{ item.subject.name }}
+        </div>
+        <div style="color: #fff; font-size: 15px; font-weight: 800; line-height: 1.2;">
+          {{ item.title|truncatechars:45 }}
+        </div>
       </div>
-      <div>Loading protected study document, please wait...</div>
+    </div>
+
+    <!-- Center: Zoom & Controls -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button type="button" class="tool-btn" id="btnZoomOut" title="Zoom Out">
+        <i class="fa-solid fa-magnifying-glass-minus"></i>
+      </button>
+      <span style="color: #cbd5e1; font-size: 12px; font-weight: 800; min-width: 46px; text-align: center;" id="zoomLabel">
+        100%
+      </span>
+      <button type="button" class="tool-btn" id="btnZoomIn" title="Zoom In">
+        <i class="fa-solid fa-magnifying-glass-plus"></i>
+      </button>
+      <button type="button" class="tool-btn" id="btnZoomReset" title="Reset Zoom">
+        <i class="fa-solid fa-rotate-left"></i> Reset
+      </button>
+    </div>
+
+    <!-- Right: Page Indicator & Dashboard link -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="color: #94a3b8; font-size: 12px; font-weight: 700;">
+        <i class="fa-solid fa-file-lines" style="color: #3b82f6;"></i> {{ total_pages }} Pages Total
+      </div>
+      <button type="button" class="tool-btn" id="btnFullscreen" title="Toggle Fullscreen">
+        <i class="fa-solid fa-expand"></i> Fullscreen
+      </button>
+      <a href="{% url 'accounts:dashboard' %}" class="btn primary small" style="padding: 6px 14px; font-size: 12px;">
+        <i class="fa-solid fa-gauge-high"></i> Dashboard
+      </a>
     </div>
   </div>
+
+  <!-- Security Banner -->
+  <div style="background: #111827; border-bottom: 1px solid #1f2937; padding: 10px 5%; font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-shield-halved" style="color: #3b82f6;"></i>
+      <span><b>Secure In-App Viewer:</b> Non-downloadable study pack licensed exclusively to <b>{{ user.email }}</b>.</span>
+    </div>
+    <div style="color: #16a34a; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+      <i class="fa-solid fa-circle-check"></i> Academic Access Active
+    </div>
+  </div>
+
+  <!-- Main Viewer Stage: High-Resolution Server-Rendered Canvas/Pages -->
+  <div class="viewer-stage" id="viewerStage">
+    {% for page_num in pages_list %}
+      <div class="pdf-page-card" data-page="{{ page_num }}">
+        <div class="page-number-tag">Page {{ page_num }} / {{ total_pages }}</div>
+        <img src="{% url 'content_hub:render_pdf_page' item.slug page_num %}" 
+             alt="Study Pack Page {{ page_num }}" 
+             loading="{% if page_num == 1 %}eager{% else %}lazy{% endif %}"
+             class="pdf-page-image" 
+             draggable="false" 
+             oncontextmenu="return false;">
+      </div>
+    {% endfor %}
+
+    <!-- End of Document Notice -->
+    <div style="text-align: center; color: #64748b; font-size: 13px; margin: 30px 0 50px;">
+      <i class="fa-solid fa-circle-check" style="color: #16a34a; font-size: 20px; display: block; margin-bottom: 8px;"></i>
+      You have reached the end of <b>{{ item.title }}</b>.
+      <div style="margin-top: 10px;">
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="color: #cbd5e1; border-color: #475569;">
+          &larr; Return to Resource Hub
+        </a>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Set PDF.js worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-  const pdfUrl = "{% url 'content_hub:stream_pdf' item.slug %}";
-  const watermarkText = "{{ watermark_text|escapejs }}";
-  const container = document.getElementById('pdfContainer');
-  const loading = document.getElementById('loadingStatus');
-
   // Disable Right-Click Context Menu
   document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
@@ -96,77 +201,59 @@
       e.key === 'F12'
     ) {
       e.preventDefault();
-      alert("Downloading, printing, or inspecting source is disabled on protected materials.");
+      alert("Saving or printing protected study materials is disabled.");
       return false;
     }
   });
 
-  // Fetch as ArrayBuffer to prevent browser download handlers / IDM from hijacking the file
-  fetch(pdfUrl, { credentials: 'same-origin' })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("HTTP error " + response.status);
-      }
-      return response.arrayBuffer();
-    })
-    .then(arrayBuffer => {
-      const uint8 = new Uint8Array(arrayBuffer);
-      return pdfjsLib.getDocument({ data: uint8 }).promise;
-    })
-    .then(pdf => {
-      if (loading) loading.style.display = 'none';
+  // Zoom Handling
+  let currentZoom = 1.0;
+  const zoomStep = 0.15;
+  const minZoom = 0.6;
+  const maxZoom = 2.0;
 
-      // Render all pages sequentially in canvas
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        renderPage(pdf, pageNum);
-      }
-    })
-    .catch(error => {
-      console.error("PDF Load Error:", error);
-      if (loading) {
-        loading.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:28px; margin-bottom:10px; display:block;"></i> Unable to load document. Please refresh or verify your login access.';
-        loading.style.color = "#f87171";
-      }
-    });
+  const cards = document.querySelectorAll('.pdf-page-card');
+  const zoomLabel = document.getElementById('zoomLabel');
 
-  function renderPage(pdf, pageNum) {
-    pdf.getPage(pageNum).then(function(page) {
-      const scale = 1.5;
-      const viewport = page.getViewport({ scale: scale });
-
-      const pageWrapper = document.createElement('div');
-      pageWrapper.className = 'pdf-page-wrapper';
-
-      const canvas = document.createElement('canvas');
-      canvas.className = 'pdf-page-canvas';
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      pageWrapper.appendChild(canvas);
-      container.appendChild(pageWrapper);
-
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
-
-      page.render(renderContext).promise.then(function() {
-        // Draw Dynamic Semi-Transparent Watermark Over Page
-        context.save();
-        context.font = "bold 18px 'Montserrat', sans-serif";
-        context.fillStyle = "rgba(15, 23, 42, 0.13)";
-        context.textAlign = "center";
-        
-        // Diagonal watermark across page
-        context.translate(canvas.width / 2, canvas.height / 2);
-        context.rotate(-35 * Math.PI / 180);
-        context.fillText(watermarkText, 0, -140);
-        context.fillText(watermarkText, 0, 0);
-        context.fillText(watermarkText, 0, 140);
-        context.restore();
-      });
+  function applyZoom(zoom) {
+    currentZoom = Math.min(Math.max(zoom, minZoom), maxZoom);
+    zoomLabel.textContent = Math.round(currentZoom * 100) + '%';
+    cards.forEach(card => {
+      card.style.transform = `scale(${currentZoom})`;
     });
   }
+
+  document.getElementById('btnZoomIn').addEventListener('click', () => {
+    applyZoom(currentZoom + zoomStep);
+  });
+
+  document.getElementById('btnZoomOut').addEventListener('click', () => {
+    applyZoom(currentZoom - zoomStep);
+  });
+
+  document.getElementById('btnZoomReset').addEventListener('click', () => {
+    applyZoom(1.0);
+  });
+
+  // Fullscreen Toggle
+  const wrapper = document.getElementById('viewerWrapper');
+  const btnFs = document.getElementById('btnFullscreen');
+  btnFs.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      wrapper.requestFullscreen().catch(err => {
+        alert("Error enabling fullscreen: " + err.message);
+      });
+      btnFs.innerHTML = '<i class="fa-solid fa-compress"></i> Exit';
+    } else {
+      document.exitFullscreen();
+      btnFs.innerHTML = '<i class="fa-solid fa-expand"></i> Fullscreen';
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      btnFs.innerHTML = '<i class="fa-solid fa-expand"></i> Fullscreen';
+    }
+  });
 </script>
 {% endblock %}

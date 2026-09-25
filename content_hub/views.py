@@ -150,8 +150,21 @@ def view_content_view(request, item_slug):
 
     # User has access - route to appropriate protected viewer
     if item.content_type == 'PDF':
+        import pypdfium2 as pdfium
+        total_pages = 1
+        if item.pdf_file and os.path.exists(item.pdf_file.path):
+            try:
+                pdf = pdfium.PdfDocument(item.pdf_file.path)
+                total_pages = len(pdf)
+                pdf.close()
+            except Exception:
+                total_pages = 1
+
+        pages_list = list(range(1, total_pages + 1))
         return render(request, 'content_hub/pdf_viewer.html', {
             'item': item,
+            'total_pages': total_pages,
+            'pages_list': pages_list,
             'watermark_text': f"LICENSED TO: {user.email} • RODZ TUTORING • STRICTLY CONFIDENTIAL",
         })
     elif item.content_type == 'VIDEO':
@@ -169,6 +182,61 @@ def view_content_view(request, item_slug):
 
 
 @login_required
+def render_pdf_page_view(request, item_slug, page_number):
+    """
+    Renders an individual PDF page as a high-resolution, watermarked image.
+    This eliminates any raw PDF transmission to the client browser, completely
+    preventing browser download prompts or download managers (IDM) from downloading PDFs.
+    """
+    item = get_object_or_404(ContentItem, slug=item_slug)
+    user = request.user
+
+    if not user.has_unlocked(item):
+        return HttpResponseForbidden("Access Denied: You must unlock this content with coins before viewing.")
+
+    if not item.pdf_file or not os.path.exists(item.pdf_file.path):
+        raise Http404("Document page is currently unavailable.")
+
+    import pypdfium2 as pdfium
+    from PIL import Image, ImageDraw
+    import io
+
+    try:
+        pdf = pdfium.PdfDocument(item.pdf_file.path)
+        total_pages = len(pdf)
+        if page_number < 1 or page_number > total_pages:
+            pdf.close()
+            raise Http404("Page not found.")
+
+        # Render page at 2x scale for sharp retina reading
+        page = pdf[page_number - 1]
+        pil_image = page.render(scale=2).to_pil()
+        pdf.close()
+        width, height = pil_image.size
+
+        # Burn in dynamic security watermark
+        overlay = Image.new('RGBA', (width, height), (255, 255, 255, 0))
+        draw = ImageDraw.Draw(overlay)
+        watermark_text = f"LICENSED TO: {user.email} • RODZ TUTORING • UNAUTHORIZED SHARING PROHIBITED"
+        
+        # Diagonal watermarks across the page
+        draw.text((width // 6, height // 4), watermark_text, fill=(30, 58, 138, 35))
+        draw.text((width // 6, height // 2), watermark_text, fill=(30, 58, 138, 42))
+        draw.text((width // 6, 3 * height // 4), watermark_text, fill=(30, 58, 138, 35))
+
+        final_image = Image.alpha_composite(pil_image.convert('RGBA'), overlay).convert('RGB')
+
+        buf = io.BytesIO()
+        final_image.save(buf, format='JPEG', quality=88, optimize=True)
+
+        response = HttpResponse(buf.getvalue(), content_type='image/jpeg')
+        response['Cache-Control'] = 'private, max-age=86400'
+        return response
+    except Exception as e:
+        raise Http404(f"Failed to render page: {e}")
+
+
+@login_required
 def stream_pdf_view(request, item_slug):
     item = get_object_or_404(ContentItem, slug=item_slug)
     user = request.user
@@ -179,15 +247,19 @@ def stream_pdf_view(request, item_slug):
     if not item.pdf_file or not os.path.exists(item.pdf_file.path):
         raise Http404("PDF document is currently unavailable.")
 
-    # Read binary bytes directly and stream as protected octet-stream
-    # This prevents download managers and browser download prompts from hijacking the in-app view
-    with open(item.pdf_file.path, 'rb') as f:
-        pdf_bytes = f.read()
+    # Redirect to in-app viewer to prevent any accidental direct browser download
+    return redirect('content_hub:view_content', item_slug=item.slug)
 
-    response = HttpResponse(pdf_bytes, content_type='application/octet-stream')
-    response['Content-Disposition'] = 'inline'
-    response['Cache-Control'] = 'private, no-cache, no-store, must-revalidate'
-    response['Pragma'] = 'no-cache'
-    response['Expires'] = '0'
-    response['X-Content-Type-Options'] = 'nosniff'
-    return response
+
+@login_required
+def protected_pdf_guard_view(request, filename):
+    """
+    Prevents any direct file downloading of PDF files under media/protected_pdfs/.
+    If the file belongs to a ContentItem, redirects to the in-app viewer.
+    Otherwise returns 403 Forbidden.
+    """
+    item = ContentItem.objects.filter(pdf_file__icontains=filename).first()
+    if item:
+        return redirect('content_hub:view_content', item_slug=item.slug)
+    return HttpResponseForbidden("Access Denied: Direct PDF downloads are disabled.")
+
