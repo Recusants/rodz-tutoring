@@ -167,16 +167,29 @@ jobs:
               cp -f docker-compose.prod.yml docker-compose.yml
             fi
 
+            # Auto-configure .env.prod with the authenticated Docker Hub username
+            if [ -f ".env.prod" ]; then
+              sed -i "s/yourdockerhubusername/$DOCKER_USER/g" .env.prod
+              if grep -q "DOCKER_REGISTRY=" .env.prod; then
+                sed -i "s/^DOCKER_REGISTRY=.*/DOCKER_REGISTRY=$DOCKER_USER/" .env.prod
+              else
+                echo "DOCKER_REGISTRY=$DOCKER_USER" >> .env.prod
+              fi
+            fi
+
+            export DOCKER_REGISTRY="$DOCKER_USER"
+            export TAG="latest"
+
             echo "[1/4] Authenticating with Docker Hub if credentials provided..."
             if [ -n "$DOCKER_USER" ] && [ -n "$DOCKER_PASS" ]; then
               echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
             fi
 
-            echo "[2/4] Pulling latest production container image..."
-            docker compose pull web
+            echo "[2/4] Pulling latest production container image ($DOCKER_REGISTRY/rodz-tutoring:latest)..."
+            DOCKER_REGISTRY="$DOCKER_USER" docker compose pull web
 
             echo "[3/4] Recreating and updating application container..."
-            docker compose up -d --remove-orphans web
+            DOCKER_REGISTRY="$DOCKER_USER" docker compose up -d --remove-orphans web
 
             echo "[4/4] Pruning obsolete dangling images..."
             docker image prune -f

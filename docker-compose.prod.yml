@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     image: ${DOCKER_REGISTRY:-yourdockerhubusername}/rodz-tutoring:${TAG:-latest}
