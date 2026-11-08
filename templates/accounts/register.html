@@ -12,7 +12,7 @@
     </p>
   </div>
 
-  <form method="POST" action="{% url 'accounts:register' %}">
+  <form method="POST" action="{% url 'accounts:register' %}" enctype="multipart/form-data">
     {% csrf_token %}
 
     {% if form.non_field_errors %}
@@ -24,21 +24,22 @@
     {% endif %}
 
     <div class="form-group">
-      <label class="form-label">Email Address (Login ID)</label>
+      <label class="form-label">Email Address (Login ID) *</label>
       {{ form.email }}
       {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
     </div>
 
     <div class="form-group">
-      <label class="form-label">Full Name</label>
+      <label class="form-label">Full Name *</label>
       {{ form.full_name }}
       {% if form.full_name.errors %}<div class="form-error">{{ form.full_name.errors.0 }}</div>{% endif %}
     </div>
 
     <div class="form-group">
-      <label class="form-label">WhatsApp Number</label>
+      <label class="form-label">WhatsApp / Contact Phone Number *</label>
       {{ form.phone_number }}
       {% if form.phone_number.errors %}<div class="form-error">{{ form.phone_number.errors.0 }}</div>{% endif %}
+      <small style="color: var(--muted); font-size: 11px;">Required for student communications and tutor verification.</small>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -54,19 +55,40 @@
     </div>
 
     <!-- Account Roles Section (Combination of Student and Tutor) -->
-    <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 18px;">
+    <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 18px;">
       <label class="form-label" style="margin-bottom: 8px;">Select Account Roles</label>
       <div style="display: flex; gap: 20px;">
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; font-weight: 600;">
           {{ form.is_student }} <span>Student / Learner</span>
         </label>
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; font-weight: 600;">
           {{ form.is_tutor }} <span>Tutor / Instructor</span>
         </label>
       </div>
       <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 6px;">
         You can check both if you are a learner who also tutors other grades.
       </small>
+
+      <!-- Tutor Application Verification Box -->
+      <div id="tutorFieldsWrapper" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px; font-size: 12px; color: #1e40af; line-height: 1.5;">
+          <i class="fa-solid fa-shield-halved" style="color: #2563eb;"></i> <b>Tutor Verification Notice:</b>
+          Tutor registrations undergo a manual review by site administrators. Please provide a clear headshot photo. While your application is pending review, you will have full student access to browse and practice.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Profile Picture *</label>
+          {{ form.profile_picture }}
+          {% if form.profile_picture.errors %}<div class="form-error">{{ form.profile_picture.errors.0 }}</div>{% endif %}
+          <small style="color: var(--muted); font-size: 11px;">Upload a clear headshot or formal photo for admin review and student confidence.</small>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Tutor Qualifications & Subjects Taught</label>
+          {{ form.bio }}
+          {% if form.bio.errors %}<div class="form-error">{{ form.bio.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
     </div>
 
     <div class="form-group">
@@ -90,4 +112,24 @@
     Already have an account? <a href="{% url 'accounts:login' %}" style="color: var(--blue); font-weight: 700;">Login here</a>
   </div>
 </div>
+
+<script>
+  const tutorCheckbox = document.getElementById('id_is_tutor');
+  const tutorWrapper = document.getElementById('tutorFieldsWrapper');
+
+  function updateTutorFieldsVisibility() {
+    if (tutorCheckbox && tutorWrapper) {
+      if (tutorCheckbox.checked) {
+        tutorWrapper.style.display = 'block';
+      } else {
+        tutorWrapper.style.display = 'none';
+      }
+    }
+  }
+
+  if (tutorCheckbox) {
+    tutorCheckbox.addEventListener('change', updateTutorFieldsVisibility);
+    updateTutorFieldsVisibility();
+  }
+</script>
 {% endblock %}

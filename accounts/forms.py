@@ -10,18 +10,28 @@ class RegistrationForm(forms.ModelForm):
     password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={
         'class': 'form-input', 'placeholder': 'Confirm your password'
     }))
+    profile_picture = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}),
+        help_text="Required for tutor applicants. Upload a clear portrait headshot."
+    )
+    bio = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': 'Tell us about your teaching experience and subjects you tutor...'}),
+        help_text="Provide details of your teaching qualifications or subjects taught."
+    )
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'full_name', 'phone_number', 'grade', 'curriculum', 'is_student', 'is_tutor']
+        fields = ['email', 'full_name', 'phone_number', 'grade', 'curriculum', 'is_student', 'is_tutor', 'profile_picture', 'bio']
         widgets = {
             'email': forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'student@example.com'}),
             'full_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full Name'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'WhatsApp Phone Number (e.g. +27 74 123 4567)'}),
             'grade': forms.Select(attrs={'class': 'form-input'}),
             'curriculum': forms.Select(attrs={'class': 'form-input'}),
-            'is_student': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
-            'is_tutor': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'is_student': forms.CheckboxInput(attrs={'class': 'form-checkbox', 'id': 'id_is_student'}),
+            'is_tutor': forms.CheckboxInput(attrs={'class': 'form-checkbox', 'id': 'id_is_tutor'}),
         }
 
     def clean(self):
@@ -35,17 +45,62 @@ class RegistrationForm(forms.ModelForm):
         is_student = cleaned_data.get('is_student')
         is_tutor = cleaned_data.get('is_tutor')
         if not is_student and not is_tutor:
-            # Default to student if neither was checked
             cleaned_data['is_student'] = True
+
+        # If applying for tutor, validate photo and contact details
+        if is_tutor:
+            email = cleaned_data.get('email')
+            phone = cleaned_data.get('phone_number')
+            pic = cleaned_data.get('profile_picture')
+            if not email:
+                self.add_error('email', 'Email address is required for tutor application.')
+            if not phone:
+                self.add_error('phone_number', 'A WhatsApp / phone number is required for tutor verification.')
+            if not pic:
+                self.add_error('profile_picture', 'Please upload a profile photo for admin verification.')
 
         return cleaned_data
 
     def save(self, commit=True):
+        from django.utils import timezone
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
+
+        is_tutor_applied = self.cleaned_data.get('is_tutor')
+        if is_tutor_applied:
+            # Tutors require admin manual review before is_tutor is enabled
+            user.is_tutor = False
+            user.tutor_status = 'PENDING'
+            user.tutor_applied_at = timezone.now()
+            user.is_student = True
+        else:
+            user.tutor_status = 'NONE'
+
         if commit:
             user.save()
         return user
+
+
+class TutorApplicationForm(forms.ModelForm):
+    profile_picture = forms.ImageField(
+        required=True,
+        widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}),
+        help_text="Upload a clear headshot photo for your tutor profile."
+    )
+    phone_number = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. +27 74 123 4567'}),
+        help_text="Active WhatsApp phone number for student & admin communications."
+    )
+    bio = forms.CharField(
+        required=True,
+        widget=forms.Textarea(attrs={'class': 'form-input', 'rows': 4, 'placeholder': 'Detail your teaching credentials, subject expertise, and curriculum background...'}),
+        help_text="Explain which subjects and grades you can teach."
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['profile_picture', 'phone_number', 'bio']
 
 
 class LoginForm(forms.Form):
@@ -175,11 +230,18 @@ from content_hub.models import ContentItem
 
 
 class AdminUserEditForm(forms.ModelForm):
+    tutor_status = forms.ChoiceField(
+        choices=CustomUser.TUTOR_STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-input'})
+    )
+
     class Meta:
         model = CustomUser
         fields = [
             'email', 'full_name', 'phone_number', 'grade', 'curriculum',
-            'is_student', 'is_tutor', 'is_admin_role', 'is_staff', 'is_active'
+            'is_student', 'is_tutor', 'tutor_status', 'is_admin_role', 'is_staff', 'is_active',
+            'profile_picture', 'bio'
         ]
         widgets = {
             'email': forms.EmailInput(attrs={'class': 'form-input'}),
@@ -187,11 +249,13 @@ class AdminUserEditForm(forms.ModelForm):
             'phone_number': forms.TextInput(attrs={'class': 'form-input'}),
             'grade': forms.Select(attrs={'class': 'form-input'}),
             'curriculum': forms.Select(attrs={'class': 'form-input'}),
+            'tutor_status': forms.Select(attrs={'class': 'form-input'}),
             'is_student': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'is_tutor': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'is_admin_role': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'is_staff': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'bio': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
         }
 
 

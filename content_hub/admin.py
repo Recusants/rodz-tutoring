@@ -18,8 +18,9 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(ContentItem)
 class ContentItemAdmin(admin.ModelAdmin):
-    list_display = ('title', 'subject', 'grade', 'curriculum', 'content_type', 'category', 'is_free', 'coin_price', 'created_at')
-    list_filter = ('curriculum', 'subject', 'grade', 'content_type', 'category', 'is_free')
+    list_display = ('title', 'subject', 'grade', 'curriculum', 'content_type', 'category', 'is_free', 'allow_download', 'coin_price', 'created_at')
+    list_filter = ('curriculum', 'subject', 'grade', 'content_type', 'category', 'is_free', 'allow_download')
+    list_editable = ('is_free', 'allow_download')
     search_fields = ('title', 'description')
     prepopulated_fields = {'slug': ('title',)}
 

@@ -9,6 +9,16 @@
     <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">DIGITAL LEARNING VAULT</div>
     <h2>STUDY RESOURCE CATALOGUE</h2>
     <p>Explore protected syllabus notes, exam solutions, video tutorials, and interactive quizzes.</p>
+    {% if user.is_authenticated and user.is_tutor or user.is_admin_role or user.is_staff or user.is_superuser %}
+      <div style="display: flex; justify-content: center; gap: 10px; margin-top: 14px;">
+        <a href="{% url 'content_hub:upload_resource' %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Study Resource
+        </a>
+        <a href="{% url 'content_hub:tutor_course_create' %}" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-layer-group"></i> Create Course Bundle
+        </a>
+      </div>
+    {% endif %}
     <div class="bar"></div>
   </div>
 
@@ -46,7 +56,7 @@
 
   <!-- Filter Bar -->
   <form method="GET" action="{% url 'content_hub:catalog' %}" style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 35px;">
-    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
+    <div class="catalog-filter-grid">
       <div>
         <label class="form-label"><i class="fa-solid fa-magnifying-glass"></i> Search</label>
         <input type="text" name="q" value="{{ selected_query }}" class="form-input" placeholder="Search topic, paper, or subject...">
@@ -237,6 +247,11 @@
                 <span class="cost" style="color: var(--green); font-weight: 800; font-size: 12px;">
                   <i class="fa-solid fa-gift"></i> Free
                 </span>
+                {% if item.allow_download %}
+                  <span style="display: block; font-size: 10px; color: #0284c7; font-weight: 700; margin-top: 2px;">
+                    <i class="fa-solid fa-circle-down"></i> Downloadable
+                  </span>
+                {% endif %}
               {% else %}
                 <span class="cost">
                   <i class="fa-solid fa-coins"></i> {{ item.coin_price }} Coins
@@ -244,19 +259,27 @@
               {% endif %}
             </div>
 
-            {% if item.id in user_unlocked_ids or item.is_free or user.is_tutor or user.is_admin_role %}
-              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 6px;">
-                {% if item.content_type == 'QUIZ' %}
-                  <i class="fa-solid fa-play"></i> TAKE QUIZ
-                {% else %}
-                  <i class="fa-solid fa-book-open-reader"></i> VIEW IN-APP
-                {% endif %}
-              </a>
-            {% else %}
-              <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small" style="display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-lock"></i> UNLOCK ({{ item.coin_price }})
-              </a>
-            {% endif %}
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+              {% if item.can_download %}
+                <a href="{% url 'content_hub:download_content' item.slug %}" class="btn outline small" style="display: inline-flex; align-items: center; gap: 5px; border-color: #0284c7; color: #0284c7; font-size: 11px; padding: 6px 10px;" title="Download Free File to Device">
+                  <i class="fa-solid fa-download"></i> Download
+                </a>
+              {% endif %}
+
+              {% if item.id in user_unlocked_ids or item.is_free or user.is_tutor or user.is_admin_role %}
+                <a href="{% url 'content_hub:view_content' item.slug %}" class="btn primary small" style="display: inline-flex; align-items: center; gap: 6px;">
+                  {% if item.content_type == 'QUIZ' %}
+                    <i class="fa-solid fa-play"></i> TAKE QUIZ
+                  {% else %}
+                    <i class="fa-solid fa-book-open-reader"></i> VIEW IN-APP
+                  {% endif %}
+                </a>
+              {% else %}
+                <a href="{% url 'content_hub:view_content' item.slug %}" class="btn gold small" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-lock"></i> UNLOCK ({{ item.coin_price }})
+                </a>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>

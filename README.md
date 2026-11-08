@@ -47,35 +47,34 @@ push_to_github.bat
 1. Verifies git initialization and sets branch to `main`.
 2. Prompts for remote repository URL if not yet configured.
 3. Prompts for commit message (defaults to auto-timestamped message if left blank).
-4. Stages all changes (`git add -A`), commits, and pushes to `origin main`.
-5. Triggers the automated GitHub Actions Docker Hub workflow!
+4. Runs the automated test suite to prevent breaking production.
+5. Creates a semantic version release tag (`v1.0.x`).
+6. Stages all changes (`git add -A`), commits, and pushes to `origin main`.
+7. Triggers the automated GitHub Actions CI/CD workflow (Docker Hub build + AWS EC2 deployment)!
 
 ---
 
-## 🐳 Docker Hub CI/CD Workflow
+## 🐳 Docker Hub & AWS CI/CD Workflow
 
-The repository includes [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml).
+The repository includes [`.github/workflows/build-and-push.yml`](.github/workflows/build-and-push.yml) matching the production pipeline architecture from `clarity-retail-lan`.
 
-### Setting up Docker Hub Automated Push:
-1. In your GitHub repository, navigate to **Settings > Secrets and variables > Actions**.
-2. Add the following repository secrets:
-   - `DOCKERHUB_USERNAME`: Your Docker Hub account username.
-   - `DOCKERHUB_TOKEN`: Your Docker Hub Personal Access Token (PAT).
-3. Whenever you run `push_to_github.bat`, GitHub Actions will build the production image and push it to:
-   `yourdockerhubusername/rodz-tutoring:latest` and `yourdockerhubusername/rodz-tutoring:<sha>`
+### 1-Click Pipeline:
+1. **Developer Workstation**: Run `push.bat` (or `push_to_github.bat`).
+2. **GitHub Actions**:
+   - Runs automated Django tests.
+   - Builds production Docker image with Buildx caching.
+   - Publishes `:latest` and `:vX.Y.Z` immutable release tags to Docker Hub.
+   - Deploys automatically to AWS EC2 via SSH and updates containers.
+3. For full AWS EC2 setup and GitHub Secrets configuration, see **[AWS_DEPLOYMENT_GUIDE.md](AWS_DEPLOYMENT_GUIDE.md)**.
 
 ---
 
 ## 🚢 Production Docker Deployment
 
-To test or deploy using Docker locally or on a production VPS:
+To deploy or test locally:
 
 ```bash
-# 1. Build and launch with docker-compose
-docker-compose up --build -d
-
-# 2. Check container status
-docker-compose ps
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ---

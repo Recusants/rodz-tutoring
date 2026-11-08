@@ -137,20 +137,39 @@
       <div style="color: #94a3b8; font-size: 12px; font-weight: 700;">
         <i class="fa-solid fa-file-lines" style="color: #3b82f6;"></i> {{ total_pages }} Pages Total
       </div>
+      {% if item.can_download %}
+        <a href="{% url 'content_hub:download_content' item.slug %}" class="btn primary small" style="padding: 6px 14px; font-size: 12px; background: #0284c7; border-color: #0284c7; display: inline-flex; align-items: center; gap: 6px;" title="Download Free PDF Document">
+          <i class="fa-solid fa-download"></i> Download PDF
+        </a>
+      {% endif %}
       <button type="button" class="tool-btn" id="btnFullscreen" title="Toggle Fullscreen">
         <i class="fa-solid fa-expand"></i> Fullscreen
       </button>
-      <a href="{% url 'accounts:dashboard' %}" class="btn primary small" style="padding: 6px 14px; font-size: 12px;">
-        <i class="fa-solid fa-gauge-high"></i> Dashboard
-      </a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'accounts:dashboard' %}" class="btn primary small" style="padding: 6px 14px; font-size: 12px;">
+          <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn primary small" style="padding: 6px 14px; font-size: 12px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Login / Register
+        </a>
+      {% endif %}
     </div>
   </div>
 
   <!-- Security Banner -->
   <div style="background: #111827; border-bottom: 1px solid #1f2937; padding: 10px 5%; font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
     <div style="display: flex; align-items: center; gap: 8px;">
-      <i class="fa-solid fa-shield-halved" style="color: #3b82f6;"></i>
-      <span><b>Secure In-App Viewer:</b> Non-downloadable study pack licensed exclusively to <b>{{ user.email }}</b>.</span>
+      {% if item.can_download %}
+        <i class="fa-solid fa-circle-down" style="color: #38bdf8;"></i>
+        <span><b>Free Educational Resource:</b> Direct PDF download is permitted by the educator for offline study.</span>
+      {% elif item.is_free %}
+        <i class="fa-solid fa-gift" style="color: #4ade80;"></i>
+        <span><b>Free Educational Resource:</b> Open academic access provided by Rodz Tutoring.</span>
+      {% else %}
+        <i class="fa-solid fa-shield-halved" style="color: #3b82f6;"></i>
+        <span><b>Secure In-App Viewer:</b> Non-downloadable study pack licensed exclusively to <b>{{ user.email|default:"Registered Student" }}</b>.</span>
+      {% endif %}
     </div>
     <div style="color: #16a34a; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
       <i class="fa-solid fa-circle-check"></i> Academic Access Active

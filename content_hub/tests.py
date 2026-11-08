@@ -3,7 +3,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.conf import settings
 from accounts.models import CustomUser
-from content_hub.models import Subject, ContentItem, Course
+from content_hub.models import Subject, ContentItem, Course, TermsContent
 from wallet.models import StudentWallet, ContentUnlock
 
 
@@ -790,6 +790,239 @@ class CourseBundleBreakdownTestCase(TestCase):
         self.assertContains(res_detail, '3 Question Papers')
         self.assertContains(res_detail, '5 Quizzes')
         self.assertContains(res_detail, '3 Reading PDFs')
+
+
+class TermsAndConditionsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = CustomUser.objects.create_superuser(
+            email='admin_terms@example.com',
+            password='AdminPassword123!'
+        )
+
+    def test_public_terms_page(self):
+        url = reverse('content_hub:terms')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Terms of Service')
+        self.assertContains(response, 'Section 1: Nature of Rodz Study Coins')
+        self.assertContains(response, 'Section 2: Dynamic Pricing')
+        self.assertContains(response, 'Section 3: Peer Transfers')
+        self.assertContains(response, 'Section 4: Course Creator Revenue')
+
+    def test_admin_update_terms_content(self):
+        self.client.login(email='admin_terms@example.com', password='AdminPassword123!')
+        url = reverse('accounts:admin_site_content')
+
+        resp = self.client.post(url, {
+            'action': 'save_terms',
+            'title': 'Rodz Tutoring Updated Global Terms 2026',
+            'intro_notice': 'Notice of updated fee and treasury structure.',
+            'coin_policy': 'Coins are non-refundable utility tokens.',
+            'pricing_policy': 'Prices can be adjusted by admins at any time.',
+            'transfer_charges_policy': 'Transfer charges support system stability.',
+            'creator_earnings_policy': 'Course creators earn when courses unlock.',
+            'content_licensing_policy': 'Digital rights strictly protected.',
+            'refund_policy': 'Refunds subject to admin review.',
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['success'])
+
+        terms = TermsContent.get_solo()
+        self.assertEqual(terms.title, 'Rodz Tutoring Updated Global Terms 2026')
+        self.assertEqual(terms.intro_notice, 'Notice of updated fee and treasury structure.')
+        self.assertEqual(terms.pricing_policy, 'Prices can be adjusted by admins at any time.')
+
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+class FreeResourcesAndDownloadsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.subject = Subject.objects.create(name='Mathematics', slug='maths')
+        self.user = CustomUser.objects.create_user(
+            email='student_free@example.com',
+            password='TestPassword123!'
+        )
+        self.tutor = CustomUser.objects.create_user(
+            email='tutor_upload@example.com',
+            password='TestPassword123!',
+            is_tutor=True,
+            tutor_status='APPROVED'
+        )
+
+        dummy_pdf_content = b"""%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 50 >>
+stream
+BT
+/F1 18 Tf
+72 700 Td
+(Test Document) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000060 00000 n 
+0000000118 00000 n 
+0000000236 00000 n 
+0000000336 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+434
+%%EOF"""
+        self.uploaded_pdf = SimpleUploadedFile("sample_notes.pdf", dummy_pdf_content, content_type="application/pdf")
+
+        # Free and downloadable
+        self.free_downloadable = ContentItem.objects.create(
+            title='Free Downloadable Past Paper',
+            slug='free-downloadable-past-paper',
+            subject=self.subject,
+            grade='Grade 12',
+            content_type='PDF',
+            category='Question Paper',
+            is_free=True,
+            allow_download=True,
+            pdf_file=self.uploaded_pdf,
+            coin_price=0
+        )
+
+        # Free but not downloadable
+        self.free_view_only = ContentItem.objects.create(
+            title='Free View Only Guide',
+            slug='free-view-only-guide',
+            subject=self.subject,
+            grade='Grade 12',
+            content_type='PDF',
+            category='Notes',
+            is_free=True,
+            allow_download=False,
+            pdf_file=self.uploaded_pdf,
+            coin_price=0
+        )
+
+        # Paid item
+        self.paid_item = ContentItem.objects.create(
+            title='Paid Exam Solution',
+            slug='paid-exam-solution',
+            subject=self.subject,
+            grade='Grade 12',
+            content_type='PDF',
+            category='Notes',
+            is_free=False,
+            allow_download=False,
+            pdf_file=self.uploaded_pdf,
+            coin_price=50
+        )
+
+    def test_how_to_page_shows_free_resources_information(self):
+        url = reverse('content_hub:how_to')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Free Study Resources Available')
+        self.assertContains(response, 'Start Learning Right Now Without Buying Coins')
+        self.assertContains(response, 'BROWSE FREE STUDY RESOURCES')
+
+    def test_tutoring_page_copy_and_welcoming_hero(self):
+        url = reverse('content_hub:tutoring')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Check welcoming hero and scroll prompt
+        self.assertContains(response, 'Welcome to Rodz Tutoring')
+        self.assertContains(response, 'Scroll Down to Check Tutoring Options')
+        # Check that courses is replaced with tutoring
+        self.assertContains(response, 'INTENSIVE REVISION TUTORING')
+        self.assertContains(response, 'BOOK EXAM REVISION TUTORING')
+        # Ensure no old crash course button text
+        self.assertNotContains(response, 'BOOK EXAM CRASH COURSE')
+
+    def test_download_free_allowed_item(self):
+        url = reverse('content_hub:download_content', kwargs={'item_slug': self.free_downloadable.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment', response.get('Content-Disposition', ''))
+
+    def test_download_free_disallowed_item_is_forbidden(self):
+        url = reverse('content_hub:download_content', kwargs={'item_slug': self.free_view_only.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_download_paid_item_is_strictly_forbidden(self):
+        url = reverse('content_hub:download_content', kwargs={'item_slug': self.paid_item.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_upload_resource_view_student_forbidden(self):
+        self.client.login(email='student_free@example.com', password='TestPassword123!')
+        url = reverse('content_hub:upload_resource')
+        response = self.client.get(url)
+        # Students redirected to dashboard
+        self.assertEqual(response.status_code, 302)
+
+    def test_upload_resource_view_tutor_allowed(self):
+        self.client.login(email='tutor_upload@example.com', password='TestPassword123!')
+        url = reverse('content_hub:upload_resource')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'UPLOAD STUDY RESOURCE')
+        self.assertContains(response, 'Allow learners to download this file directly')
+
+    def test_anonymous_user_can_view_free_content_without_login(self):
+        self.client.logout()
+        url = reverse('content_hub:view_content', kwargs={'item_slug': self.free_view_only.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Free Educational Resource')
+        self.assertContains(response, self.free_view_only.title)
+
+    def test_anonymous_user_can_render_free_pdf_page_without_login(self):
+        self.client.logout()
+        url = reverse('content_hub:render_pdf_page', kwargs={'item_slug': self.free_view_only.slug, 'page_number': 1})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+    def test_anonymous_user_can_download_free_item_without_login(self):
+        self.client.logout()
+        url = reverse('content_hub:download_content', kwargs={'item_slug': self.free_downloadable.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment', response.get('Content-Disposition', ''))
+
+    def test_anonymous_user_viewing_paid_content_redirects_to_login(self):
+        self.client.logout()
+        url = reverse('content_hub:view_content', kwargs={'item_slug': self.paid_item.slug})
+        response = self.client.get(url)
+        # Should redirect anonymous user to login
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_anonymous_user_rendering_paid_content_is_forbidden(self):
+        self.client.logout()
+        url = reverse('content_hub:render_pdf_page', kwargs={'item_slug': self.paid_item.slug, 'page_number': 1})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+
+
 
 
 

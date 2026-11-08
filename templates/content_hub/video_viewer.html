@@ -155,9 +155,20 @@
     </div>
 
     <div style="display: flex; gap: 10px; align-items: center;">
-      <a href="{% url 'accounts:dashboard' %}" class="btn outline small" style="color: #cbd5e1; border-color: #475569;">
-        <i class="fa-solid fa-gauge-high"></i> Dashboard
-      </a>
+      {% if item.can_download %}
+        <a href="{% url 'content_hub:download_content' item.slug %}" class="btn primary small" style="background: #0284c7; border-color: #0284c7; color: #fff;">
+          <i class="fa-solid fa-download"></i> Download Video
+        </a>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <a href="{% url 'accounts:dashboard' %}" class="btn outline small" style="color: #cbd5e1; border-color: #475569;">
+          <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn outline small" style="color: #cbd5e1; border-color: #475569;">
+          <i class="fa-solid fa-right-to-bracket"></i> Login / Register
+        </a>
+      {% endif %}
     </div>
   </div>
 

@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from accounts.models import CustomUser
 
 
@@ -270,4 +270,152 @@ class AccountsTestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         # User should no longer be authenticated
         self.assertFalse(res.context['user'].is_authenticated)
+
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+class TutorApprovalWorkflowTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = CustomUser.objects.create_superuser(
+            email='super_tutor_admin@example.com',
+            password='AdminPassword123!'
+        )
+        self.dummy_image = SimpleUploadedFile(
+            "tutor_pic.jpg",
+            b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.' \",#\x1c\x1c(7),01444\x1f'9=82<.342\xff\xc0\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xc4\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xbf\x00\xff\xd9",
+            content_type="image/jpeg"
+        )
+
+    def test_registration_as_tutor_without_photo_fails(self):
+        res = self.client.post('/accounts/register/', {
+            'email': 'tutor_nophoto@example.com',
+            'full_name': 'No Photo Applicant',
+            'phone_number': '+27 72 000 1111',
+            'password': 'SecurePass123!',
+            'password_confirm': 'SecurePass123!',
+            'is_student': True,
+            'is_tutor': True,
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Please upload a profile photo for admin verification.')
+
+    def test_registration_as_tutor_with_photo_sets_pending_status(self):
+        res = self.client.post('/accounts/register/', {
+            'email': 'tutor_pending@example.com',
+            'full_name': 'Pending Tutor',
+            'phone_number': '+27 72 123 4567',
+            'grade': 'Grade 12',
+            'curriculum': 'CAPS',
+            'password': 'SecurePass123!',
+            'password_confirm': 'SecurePass123!',
+            'is_student': True,
+            'is_tutor': True,
+            'profile_picture': self.dummy_image,
+            'bio': 'Passionate Mathematics tutor with 5 years experience.',
+        }, follow=True)
+
+        self.assertEqual(res.status_code, 200)
+        user = CustomUser.objects.get(email='tutor_pending@example.com')
+        # Crucial requirement: Tutor privileges are NOT granted immediately!
+        self.assertFalse(user.is_tutor)
+        self.assertEqual(user.tutor_status, 'PENDING')
+        self.assertIsNotNone(user.tutor_applied_at)
+        self.assertTrue(user.is_student)
+        self.assertTrue(bool(user.profile_picture))
+
+    def test_student_applies_via_tutor_apply_view(self):
+        student = CustomUser.objects.create_user(
+            email='existing_student@example.com',
+            password='Password123!',
+            is_student=True,
+            is_tutor=False
+        )
+        self.client.login(email='existing_student@example.com', password='Password123!')
+
+        get_res = self.client.get('/accounts/tutor-apply/')
+        self.assertEqual(get_res.status_code, 200)
+
+        post_res = self.client.post('/accounts/tutor-apply/', {
+            'phone_number': '+27 82 987 6543',
+            'bio': 'Degree in Applied Physics, tutoring Grade 11 & 12 Physical Sciences.',
+            'profile_picture': self.dummy_image
+        }, follow=True)
+        self.assertEqual(post_res.status_code, 200)
+
+        student.refresh_from_db()
+        self.assertEqual(student.tutor_status, 'PENDING')
+        self.assertFalse(student.is_tutor)
+        self.assertEqual(student.phone_number, '+27 82 987 6543')
+
+    def test_admin_approves_tutor(self):
+        applicant = CustomUser.objects.create_user(
+            email='applicant_for_approval@example.com',
+            password='Password123!',
+            tutor_status='PENDING',
+            is_tutor=False
+        )
+        self.client.login(email='super_tutor_admin@example.com', password='AdminPassword123!')
+
+        resp = self.client.post('/accounts/admin/tutor-approvals/', {
+            'action': 'approve',
+            'user_id': applicant.id
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+        applicant.refresh_from_db()
+        self.assertTrue(applicant.is_tutor)
+        self.assertEqual(applicant.tutor_status, 'APPROVED')
+        self.assertIsNotNone(applicant.tutor_approved_at)
+        self.assertEqual(applicant.tutor_reviewed_by, self.admin)
+
+    def test_admin_rejects_tutor(self):
+        applicant = CustomUser.objects.create_user(
+            email='applicant_for_rejection@example.com',
+            password='Password123!',
+            tutor_status='PENDING',
+            is_tutor=False
+        )
+        self.client.login(email='super_tutor_admin@example.com', password='AdminPassword123!')
+
+        resp = self.client.post('/accounts/admin/tutor-approvals/', {
+            'action': 'reject',
+            'user_id': applicant.id,
+            'rejection_reason': 'Photo was unclear. Please upload a clear headshot.'
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+        applicant.refresh_from_db()
+        self.assertFalse(applicant.is_tutor)
+        self.assertEqual(applicant.tutor_status, 'REJECTED')
+        self.assertEqual(applicant.tutor_rejection_reason, 'Photo was unclear. Please upload a clear headshot.')
+
+    def test_admin_user_detail_quick_approval_and_rejection(self):
+        applicant = CustomUser.objects.create_user(
+            email='detail_applicant@example.com',
+            password='Password123!',
+            tutor_status='PENDING',
+            is_tutor=False
+        )
+        self.client.login(email='super_tutor_admin@example.com', password='AdminPassword123!')
+
+        # Approve via user detail view
+        app_res = self.client.post(f'/accounts/admin/users/{applicant.id}/', {
+            'action': 'approve_tutor'
+        }, follow=True)
+        self.assertEqual(app_res.status_code, 200)
+        applicant.refresh_from_db()
+        self.assertTrue(applicant.is_tutor)
+        self.assertEqual(applicant.tutor_status, 'APPROVED')
+
+        # Reject via user detail view
+        rej_res = self.client.post(f'/accounts/admin/users/{applicant.id}/', {
+            'action': 'reject_tutor',
+            'rejection_reason': 'Credentials expired.'
+        }, follow=True)
+        self.assertEqual(rej_res.status_code, 200)
+        applicant.refresh_from_db()
+        self.assertFalse(applicant.is_tutor)
+        self.assertEqual(applicant.tutor_status, 'REJECTED')
+
 

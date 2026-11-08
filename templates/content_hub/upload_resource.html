@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload Study Resource | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 800px; margin: 0 auto;">
+  <div class="section-heading" style="margin-bottom: 25px;">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      EDUCATOR VAULT
+    </div>
+    <h2>UPLOAD STUDY RESOURCE</h2>
+    <p>Upload a new PDF past paper, worksheet, lesson notes, or video for students.</p>
+    <div class="bar"></div>
+  </div>
+
+  <div class="form-card" style="max-width: 100%; padding: 32px; box-shadow: var(--shadow-md);">
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert error" style="margin-bottom: 20px;">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label">Resource Title *</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-error">{{ form.title.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label class="form-label">Subject *</label>
+          {{ form.subject }}
+          {% if form.subject.errors %}<div class="form-error">{{ form.subject.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Grade *</label>
+          {{ form.grade }}
+          {% if form.grade.errors %}<div class="form-error">{{ form.grade.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label class="form-label">Curriculum</label>
+          {{ form.curriculum }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Content Type *</label>
+          {{ form.content_type }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category *</label>
+          {{ form.category }}
+        </div>
+      </div>
+
+      <!-- Pricing & Download Permissions Box -->
+      <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius-sm); padding: 20px; margin: 20px 0;">
+        <h4 style="color: var(--blue); margin: 0 0 12px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-hand-holding-dollar"></i> Pricing & Download Access
+        </h4>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            {{ form.is_free }}
+            <div>
+              <strong style="color: #15803d; font-size: 14px;">Make this a 100% Free Resource</strong>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
+                Learners can view this resource immediately without needing coins.
+              </div>
+            </div>
+          </label>
+
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding-left: 24px; border-left: 3px solid #60a5fa;" id="downloadToggleWrapper">
+            {{ form.allow_download }}
+            <div>
+              <strong style="color: #0369a1; font-size: 14px;">Allow learners to download this file directly</strong>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
+                Direct file download will be available to all students. <b style="color: #b45309;">Note:</b> Only available when the resource is marked Free.
+              </div>
+            </div>
+          </label>
+
+          <div class="form-group" style="margin-top: 6px;" id="priceWrapper">
+            <label class="form-label">Coin Price (if not free)</label>
+            {{ form.coin_price }}
+            <small style="font-size: 11px; color: var(--muted);">Amount of coins students spend to permanently unlock this material.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Uploads -->
+      <div class="form-group">
+        <label class="form-label">PDF File (for PDF documents)</label>
+        {{ form.pdf_file }}
+        {% if form.pdf_file.errors %}<div class="form-error">{{ form.pdf_file.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label class="form-label">Video File (MP4/WebM)</label>
+          {{ form.video_file }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Or Video URL (YouTube / Vimeo)</label>
+          {{ form.youtube_url }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Card Cover Illustration Style</label>
+        {{ form.cover_svg_name }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description & Syllabus Notes</label>
+        {{ form.description }}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px;">
+        <a href="{% url 'content_hub:catalog' %}" class="btn outline">Cancel</a>
+        <button type="submit" class="btn primary" style="padding: 12px 28px;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> UPLOAD & PUBLISH &rarr;
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  // Dynamic UI toggling
+  const isFreeCheckbox = document.getElementById('id_is_free');
+  const allowDownloadCheckbox = document.getElementById('id_allow_download');
+  const priceWrapper = document.getElementById('priceWrapper');
+
+  function syncPricingUI() {
+    if (isFreeCheckbox && isFreeCheckbox.checked) {
+      if (priceWrapper) priceWrapper.style.opacity = '0.4';
+    } else {
+      if (priceWrapper) priceWrapper.style.opacity = '1';
+      if (allowDownloadCheckbox) allowDownloadCheckbox.checked = false;
+    }
+  }
+
+  if (isFreeCheckbox) {
+    isFreeCheckbox.addEventListener('change', syncPricingUI);
+    syncPricingUI();
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,497 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transfer Coins Instantly | Rodz Tutoring{% endblock %}
+
+{% block extra_head %}
+<style>
+  .transfer-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+  }
+  .amount-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .amount-chip:hover, .amount-chip.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+  .balance-display-box {
+    background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+    color: #fff;
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 1100px; margin: 0 auto;">
+
+  <!-- Breadcrumbs -->
+  <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">
+    <a href="{% url 'home' %}">Home</a> &rsaquo; 
+    <a href="{% url 'wallet:coin_history' %}">Coin Wallet</a> &rsaquo; 
+    <span style="color: var(--text);">Transfer Coins</span>
+  </div>
+
+  <!-- Heading -->
+  <div class="section-heading" style="text-align: left; margin-bottom: 28px;">
+    <div class="eyebrow" style="color: #0284c7; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      <i class="fa-solid fa-bolt" style="color: #eab308;"></i> INSTANT PEER-TO-PEER TRANSFER
+    </div>
+    <h2 style="font-size: 26px; margin: 0 0 8px; color: var(--blue);">
+      SEND COINS TO ANOTHER LEARNER OR TUTOR
+    </h2>
+    <p style="margin: 0; color: var(--muted); font-size: 14px;">
+      Coins are transferred immediately to the recipient's wallet with no admin approval required.
+    </p>
+    <div class="bar" style="margin: 12px 0 0;"></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 30px; align-items: start;">
+
+    <!-- Left Column: Transfer Form -->
+    <div class="transfer-card">
+      
+      <!-- Current Balance Banner -->
+      <div class="balance-display-box">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.08em; opacity: 0.85;">Your Current Balance</div>
+          <div style="font-size: 28px; font-weight: 900; margin-top: 4px; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-coins" style="color: #facc15;"></i>
+            <span id="displayUserBalance">{{ wallet.coins }}</span> Coins
+          </div>
+        </div>
+        <a href="{% url 'wallet:buy_coins' %}" class="btn outline small" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); color: #fff; font-size: 11px;">
+          + Top Up Coins
+        </a>
+      </div>
+
+      <form id="transferForm" method="POST" action="{% url 'wallet:transfer_coins' %}">
+        {% csrf_token %}
+        <input type="hidden" name="is_ajax" value="1">
+
+        <!-- Recipient Email -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Recipient Account Email <span style="color: #dc2626;">*</span>
+          </label>
+          <div style="position: relative;">
+            <input 
+              type="email" 
+              name="recipient" 
+              id="recipientInput" 
+              required 
+              value="{{ prefilled_to }}" 
+              class="input-control" 
+              placeholder="e.g. classmate@example.com"
+              style="padding-left: 38px;"
+            >
+            <i class="fa-solid fa-user-check" style="position: absolute; left: 14px; top: 13px; color: var(--muted);"></i>
+          </div>
+          <small style="color: var(--muted); font-size: 11px; margin-top: 4px; display: block;">
+            Must be the email address of a registered student, tutor, or user on Rodz Tutoring.
+          </small>
+        </div>
+
+        <!-- Coin Amount -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+            <label class="form-label" style="font-weight: 700; font-size: 13px; color: var(--blue); margin: 0;">
+              Number of Coins to Send <span style="color: #dc2626;">*</span>
+            </label>
+            <span style="font-size: 11px; color: var(--muted);">Max: <b>{{ wallet.coins }} Coins</b></span>
+          </div>
+
+          <div style="position: relative; margin-bottom: 10px;">
+            <input 
+              type="number" 
+              name="amount" 
+              id="amountInput" 
+              required 
+              min="1" 
+              max="{{ wallet.coins }}" 
+              class="input-control" 
+              placeholder="Enter amount (e.g. 50)"
+              style="padding-left: 38px; font-weight: 800; font-size: 16px;"
+            >
+            <i class="fa-solid fa-coins" style="position: absolute; left: 14px; top: 13px; color: var(--gold);"></i>
+          </div>
+
+          <!-- Quick Amount Chips -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="amount-chip" onclick="setTransferAmount(10)">+10</span>
+            <span class="amount-chip" onclick="setTransferAmount(25)">+25</span>
+            <span class="amount-chip" onclick="setTransferAmount(50)">+50</span>
+            <span class="amount-chip" onclick="setTransferAmount(100)">+100</span>
+            <span class="amount-chip" onclick="setTransferAmount({{ wallet.coins }})">Send All ({{ wallet.coins }})</span>
+          </div>
+        </div>
+
+        <!-- Optional Note -->
+        <div class="form-group" style="margin-bottom: 22px;">
+          <label class="form-label" style="font-weight: 700; font-size: 13px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Memo / Transfer Note <span style="color: var(--muted); font-weight: 400;">(Optional)</span>
+          </label>
+          <input 
+            type="text" 
+            name="note" 
+            id="noteInput" 
+            maxlength="150" 
+            class="input-control" 
+            placeholder="e.g. For Grade 12 Math past paper pack"
+          >
+          <small style="color: var(--muted); font-size: 11px; margin-top: 4px; display: block;">
+            Note is visible to the recipient in their transaction history.
+          </small>
+        </div>
+
+        <!-- Pre-Transaction Disclosure & Breakdown -->
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 22px;">
+          <div style="font-size: 11px; font-weight: 800; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Pre-Transaction Disclosure & Breakdown
+          </div>
+
+          <!-- What is Taken -->
+          <div style="font-size: 11px; font-weight: 700; color: #c2410c; margin-bottom: 4px; text-transform: uppercase;">
+            <i class="fa-solid fa-arrow-down-long"></i> What is Taken from You
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: var(--muted);">Transfer Amount:</span>
+            <span id="previewSendAmount" style="font-weight: 700; color: #dc2626;">0 Coins</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span style="color: var(--muted);">Platform Transfer Fee:</span>
+            <span id="previewTransferFee" style="font-weight: 700; color: #b45309;">{{ transfer_fee }} Coins</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-bottom: 12px; color: #dc2626;">
+            <span>Total Deducted:</span>
+            <span id="previewTotalDeducted">0 Coins</span>
+          </div>
+
+          <!-- What is Received -->
+          <div style="font-size: 11px; font-weight: 700; color: #15803d; margin-bottom: 4px; text-transform: uppercase;">
+            <i class="fa-solid fa-arrow-up-long"></i> What is Received
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: var(--muted);">Recipient Receives:</span>
+            <span id="previewRecipientReceives" style="font-weight: 700; color: #16a34a;">0 Coins</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span style="color: var(--muted);">System Wallet Treasury:</span>
+            <span style="font-weight: 700; color: #0284c7;">{{ transfer_fee }} Coins Fee</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; border-top: 1px solid var(--line); padding-top: 8px; color: var(--blue);">
+            <span>Balance After Transfer:</span>
+            <span id="previewRemainingBalance" style="font-weight: 900;">{{ wallet.coins }} Coins</span>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="button" 
+          id="btnSubmitTransfer" 
+          class="btn primary" 
+          style="width: 100%; padding: 14px; font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+          {% if wallet.coins <= 0 %}disabled{% endif %}
+        >
+          <i class="fa-solid fa-paper-plane"></i> SEND COINS INSTANTLY
+        </button>
+
+        {% if wallet.coins <= 0 %}
+          <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #dc2626; font-weight: 700;">
+            <i class="fa-solid fa-triangle-exclamation"></i> You have 0 coins. Please top up your wallet to send coins.
+          </div>
+        {% endif %}
+
+        <!-- Trust & Security Note -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; font-size: 11px; color: var(--muted); flex-wrap: wrap;">
+          <span><i class="fa-solid fa-shield-halved" style="color: #16a34a;"></i> Instant Settlement</span>
+          <span>&bull;</span>
+          <span><i class="fa-solid fa-check-double" style="color: #2563eb;"></i> No Admin Approval Needed</span>
+          <span>&bull;</span>
+          <span><i class="fa-solid fa-tag" style="color: #f59e0b;"></i> {{ transfer_fee }} Coin System Transfer Fee</span>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Right Column: How it works & Recent Transfers -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+      <!-- How it Works Card -->
+      <div class="dash-section" style="padding: 22px;">
+        <h4 style="font-size: 15px; color: var(--blue); margin: 0 0 12px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-circle-info" style="color: #0284c7;"></i> How Coin Transfers Work
+        </h4>
+        <ul style="font-size: 12px; color: var(--muted); line-height: 1.6; padding-left: 18px; margin: 0;">
+          <li><b>Instant Delivery:</b> Coins arrive immediately in the recipient's wallet the second you hit send.</li>
+          <li><b>No Admin Delay:</b> Direct peer-to-peer execution with no admin verification or bottleneck.</li>
+          <li><b>Study Groups & Classmates:</b> Easily pool coins for full course bundles or share extra coins with peers.</li>
+          <li><b>Transparent Audit:</b> You and your peer see the counterpart's name, while admin privacy rules protect official platform adjustments.</li>
+        </ul>
+      </div>
+
+      <!-- Recent Transfers Card -->
+      <div class="dash-section" style="padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h4 style="font-size: 15px; color: var(--blue); margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-clock-rotate-left" style="color: var(--gold);"></i> Recent Peer Transfers
+          </h4>
+          <a href="{% url 'wallet:coin_history' %}?type=TRANSFER" style="font-size: 11px; color: #2563eb; font-weight: 700;">
+            View All &rarr;
+          </a>
+        </div>
+
+        {% if recent_transfers %}
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for tx in recent_transfers %}
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; {% if tx.amount < 0 %}background: #dbeafe; color: #2563eb;{% else %}background: #dcfce7; color: #15803d;{% endif %}">
+                    {% if tx.amount < 0 %}
+                      <i class="fa-solid fa-arrow-up-right"></i>
+                    {% else %}
+                      <i class="fa-solid fa-arrow-down-left"></i>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; color: var(--blue);">
+                      {% if tx.amount < 0 %}
+                        To: {{ tx.counterparty.full_name|default:tx.counterparty.email }}
+                      {% else %}
+                        From: {{ tx.counterparty.full_name|default:tx.counterparty.email }}
+                      {% endif %}
+                    </div>
+                    <div style="font-size: 10px; color: var(--muted);">
+                      {{ tx.created_at|date:"d M Y, H:i" }}
+                    </div>
+                  </div>
+                </div>
+
+                <div style="font-weight: 800; font-size: 13px; {% if tx.amount < 0 %}color: #dc2626;{% else %}color: #16a34a;{% endif %}">
+                  {{ tx.formatted_amount }} Coins
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="text-align: center; padding: 20px; color: var(--muted); font-size: 12px;">
+            <i class="fa-solid fa-paper-plane" style="font-size: 24px; opacity: 0.3; margin-bottom: 6px;"></i>
+            <p style="margin: 0;">No peer transfers made yet. Send coins to a friend above!</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- SweetAlert2 Interactive Transfer Script -->
+<script>
+  const userBalance = {{ wallet.coins }};
+  const transferFee = {{ transfer_fee }};
+  const amountInput = document.getElementById('amountInput');
+  const recipientInput = document.getElementById('recipientInput');
+  const noteInput = document.getElementById('noteInput');
+  const previewSendAmount = document.getElementById('previewSendAmount');
+  const previewRecipientReceives = document.getElementById('previewRecipientReceives');
+  const previewTotalDeducted = document.getElementById('previewTotalDeducted');
+  const previewRemainingBalance = document.getElementById('previewRemainingBalance');
+  const btnSubmit = document.getElementById('btnSubmitTransfer');
+  const transferForm = document.getElementById('transferForm');
+
+  function setTransferAmount(val) {
+    if (val > userBalance) val = userBalance;
+    if (val < 1) val = 1;
+    amountInput.value = val;
+    updatePreview();
+  }
+
+  function updatePreview() {
+    const val = parseInt(amountInput.value) || 0;
+    const totalDeducted = val > 0 ? (val + transferFee) : 0;
+    if (previewSendAmount) previewSendAmount.textContent = val + ' Coins';
+    if (previewRecipientReceives) previewRecipientReceives.textContent = val + ' Coins';
+    if (previewTotalDeducted) previewTotalDeducted.textContent = totalDeducted + ' Coins';
+    const remaining = Math.max(0, userBalance - totalDeducted);
+    if (previewRemainingBalance) previewRemainingBalance.textContent = remaining + ' Coins';
+    if (totalDeducted > userBalance) {
+      if (previewRemainingBalance) previewRemainingBalance.style.color = '#dc2626';
+    } else {
+      if (previewRemainingBalance) previewRemainingBalance.style.color = 'var(--blue)';
+    }
+  }
+
+  amountInput.addEventListener('input', updatePreview);
+
+  btnSubmit.addEventListener('click', function(e) {
+    e.preventDefault();
+
+    const recipient = recipientInput.value.trim();
+    const amount = parseInt(amountInput.value) || 0;
+    const note = noteInput.value.trim();
+    const totalDeducted = amount + transferFee;
+
+    if (!recipient) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Recipient Required',
+        text: "Please enter the recipient's registered account email.",
+        confirmButtonColor: '#2563eb'
+      });
+      recipientInput.focus();
+      return;
+    }
+
+    if (amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Invalid Amount',
+        text: 'Please enter at least 1 coin to transfer.',
+        confirmButtonColor: '#2563eb'
+      });
+      amountInput.focus();
+      return;
+    }
+
+    if (totalDeducted > userBalance) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Insufficient Balance',
+        html: `You have <b>${userBalance} coins</b>. Sending <b>${amount} coins</b> plus the <b>${transferFee} coin platform fee</b> requires <b>${totalDeducted} coins</b>.`,
+        confirmButtonColor: '#2563eb'
+      });
+      return;
+    }
+
+    // Pre-Transaction Disclosure Confirmation Modal
+    Swal.fire({
+      title: 'Pre-Transaction Disclosure',
+      html: `
+        <div style="font-size: 13px; text-align: left; margin-top: 10px;">
+          <!-- What is Taken -->
+          <div style="background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #c2410c; margin-bottom: 6px;">
+              <i class="fa-solid fa-arrow-down-long"></i> What is Being Taken from You
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: #64748b;">Transfer Amount:</span>
+              <b style="color: #dc2626;">-${amount} Coins</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #64748b;">Platform Transfer Fee:</span>
+              <b style="color: #b45309;">-${transferFee} Coins</b>
+            </div>
+            <div style="border-top: 1px dashed #fdba74; padding-top: 6px; display: flex; justify-content: space-between; font-weight: 800; color: #dc2626;">
+              <span>Total Deducted:</span>
+              <span>-${totalDeducted} Coins</span>
+            </div>
+          </div>
+
+          <!-- What is Received -->
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #15803d; margin-bottom: 6px;">
+              <i class="fa-solid fa-arrow-up-long"></i> What is Being Received
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: #64748b;">Recipient (${recipient}):</span>
+              <b style="color: #16a34a;">+${amount} Coins</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #64748b;">System Wallet Treasury:</span>
+              <b style="color: #0284c7;">+${transferFee} Coins Fee</b>
+            </div>
+          </div>
+
+          ${note ? `<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 12px;"><span style="color: #64748b;">Memo:</span> <i>"${note}"</i></div>` : ''}
+
+          <div style="background: #e0f2fe; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; font-weight: 700; color: #0369a1;">
+            <span>Remaining Balance:</span>
+            <span>${userBalance - totalDeducted} Coins</span>
+          </div>
+        </div>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: `Confirm & Transfer (${totalDeducted} Coins)`,
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#64748b',
+    }).then((res) => {
+      if (res.isConfirmed) {
+        // Show loading state
+        Swal.fire({
+          title: 'Sending Coins...',
+          text: 'Please wait while your transfer is processed.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // AJAX POST
+        const formData = new FormData(transferForm);
+        fetch("{% url 'wallet:transfer_coins' %}", {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            Swal.fire({
+              icon: 'success',
+              title: 'Transfer Completed!',
+              html: `<b>${data.amount} Coins</b> have been sent to <b>${data.recipient_name}</b>.<br>Your new balance is <b>${data.new_balance} Coins</b>.`,
+              confirmButtonText: 'View Coin History',
+              confirmButtonColor: '#16a34a'
+            }).then(() => {
+              window.location.href = "{% url 'wallet:coin_history' %}?type=TRANSFER";
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Transfer Failed',
+              text: data.message || 'An error occurred during transfer.',
+              confirmButtonColor: '#dc2626'
+            });
+          }
+        })
+        .catch(err => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Connection Error',
+            text: 'Unable to reach the server. Please check your network.',
+            confirmButtonColor: '#dc2626'
+          });
+        });
+      }
+    });
+
+  });
+</script>
+{% endblock %}

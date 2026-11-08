@@ -1,0 +1,194 @@
+name: Build, Push & Deploy Rodz Tutoring
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*.*.*']
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Automated Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run automated test suite
+        env:
+          SECRET_KEY: test-ci-secret-key-for-rodz-tutoring-validation
+          DEBUG: "True"
+        run: python manage.py test --verbosity=2
+
+  build:
+    name: Build & Push Docker Image
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Resolve Docker Hub Credentials
+        id: creds
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME || secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USER }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN || secrets.DOCKER_PASSWORD || secrets.DOCKERHUB_TOKEN || secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_TOKEN" ]; then
+            echo "::error title=Missing Docker Hub Secrets::Docker Hub credentials are not configured in GitHub Repository Secrets!"
+            echo "=================================================================="
+            echo "ACTION REQUIRED: Please add Docker Hub Secrets to your GitHub Repo:"
+            echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Add Repository Secret: DOCKER_USERNAME (e.g. tinashemp)"
+            echo "3. Add Repository Secret: DOCKER_TOKEN (Docker Hub Personal Access Token)"
+            echo "=================================================================="
+            exit 1
+          fi
+          echo "username=$DOCKER_USERNAME" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.creds.outputs.username }}
+          password: ${{ secrets.DOCKER_TOKEN || secrets.DOCKER_PASSWORD || secrets.DOCKERHUB_TOKEN || secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.creds.outputs.username }}/rodz-tutoring
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
+            type=sha,format=short
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_HASH=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output Build Summary
+        run: |
+          echo "### 🐳 Docker Hub Build & Push Successful" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry Image:** \`${{ steps.creds.outputs.username }}/rodz-tutoring\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags Published:**" >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.meta.outputs.tags }}' | tr ',' '\n' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Hash:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  deploy-aws:
+    name: Deploy to AWS EC2
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check AWS Deployment Secrets
+        id: check-aws
+        env:
+          AWS_HOST: ${{ secrets.AWS_HOST }}
+          AWS_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY || secrets.AWS_SSH_KEY }}
+        run: |
+          if [ -n "$AWS_HOST" ] && [ -n "$AWS_KEY" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+            echo "AWS deployment credentials detected. Proceeding with deployment..."
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "AWS credentials not detected. Skipping automatic SSH deployment step."
+          fi
+
+      - name: Copy docker-compose configuration to AWS
+        if: steps.check-aws.outputs.configured == 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER || 'ubuntu' }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY || secrets.AWS_SSH_KEY }}
+          port: ${{ secrets.AWS_PORT || 22 }}
+          source: "docker-compose.prod.yml"
+          target: "/home/${{ secrets.AWS_USER || 'ubuntu' }}/rodz-tutoring/docker-compose.yml"
+          strip_components: 1
+
+      - name: Execute Remote AWS Update via SSH
+        if: steps.check-aws.outputs.configured == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME || secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USER }}
+          DOCKER_PASS: ${{ secrets.DOCKER_TOKEN || secrets.DOCKER_PASSWORD || secrets.DOCKERHUB_TOKEN || secrets.DOCKERHUB_PASSWORD }}
+          APP_DIR: "/home/${{ secrets.AWS_USER || 'ubuntu' }}/rodz-tutoring"
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER || 'ubuntu' }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY || secrets.AWS_SSH_KEY }}
+          port: ${{ secrets.AWS_PORT || 22 }}
+          envs: DOCKER_USER,DOCKER_PASS,APP_DIR
+          script: |
+            set -e
+            mkdir -p $APP_DIR
+            cd $APP_DIR
+
+            echo "[1/4] Authenticating with Docker Hub if credentials provided..."
+            if [ -n "$DOCKER_USER" ] && [ -n "$DOCKER_PASS" ]; then
+              echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            fi
+
+            echo "[2/4] Pulling latest production container image..."
+            docker compose pull web
+
+            echo "[3/4] Recreating and updating application container..."
+            docker compose up -d --remove-orphans web
+
+            echo "[4/4] Pruning obsolete dangling images..."
+            docker image prune -f
+
+            echo "=========================================================="
+            echo " Rodz Tutoring deployed successfully on AWS!"
+            echo "=========================================================="
+            docker compose ps
+
+      - name: Deployment Summary
+        run: |
+          if [ "${{ steps.check-aws.outputs.configured }}" = "true" ]; then
+            echo "### 🚀 AWS EC2 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+            echo "- **Target Host:** \`${{ secrets.AWS_HOST }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status:** Deployed & running latest Docker container" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ AWS EC2 Auto-Deployment Not Yet Configured" >> $GITHUB_STEP_SUMMARY
+            echo "The Docker image was successfully pushed to Docker Hub! To enable automated 1-click deployments to AWS, add these repository secrets in GitHub Settings:" >> $GITHUB_STEP_SUMMARY
+            echo "- \`AWS_HOST\`: Your AWS EC2 Public IPv4 or DNS" >> $GITHUB_STEP_SUMMARY
+            echo "- \`AWS_USER\`: Server username (default: \`ubuntu\`)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`AWS_SSH_PRIVATE_KEY\`: Your EC2 SSH Key (.pem content)" >> $GITHUB_STEP_SUMMARY
+          fi

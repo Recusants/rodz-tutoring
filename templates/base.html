@@ -162,6 +162,9 @@
               <a href="{% url 'accounts:admin_user_list' %}" class="dropdown-item">
                 <i class="fa-solid fa-users-gear dropdown-icon"></i> User Accounts Control
               </a>
+              <a href="{% url 'accounts:admin_tutor_approvals' %}" class="dropdown-item">
+                <i class="fa-solid fa-user-check dropdown-icon"></i> Tutor Approvals
+              </a>
               <a href="{% url 'content_hub:admin_course_approvals' %}" class="dropdown-item">
                 <i class="fa-solid fa-stamp dropdown-icon"></i> Course Approvals
               </a>
@@ -170,6 +173,15 @@
               </a>
               <a href="{% url 'wallet:coin_history' %}" class="dropdown-item">
                 <i class="fa-solid fa-table-list dropdown-icon"></i> Coin Ledger (All Users)
+              </a>
+              <a href="{% url 'wallet:admin_pricing' %}" class="dropdown-item">
+                <i class="fa-solid fa-tags dropdown-icon"></i> Bundle Pricing & Rates
+              </a>
+              <a href="{% url 'wallet:transfer_coins' %}" class="dropdown-item">
+                <i class="fa-solid fa-paper-plane dropdown-icon"></i> Transfer Coins
+              </a>
+              <a href="{% url 'wallet:sell_coins' %}" class="dropdown-item">
+                <i class="fa-solid fa-money-bill-transfer dropdown-icon"></i> Cash Out / Sell Coins
               </a>
               <a href="{% url 'wallet:admin_credit_panel' %}" class="dropdown-item">
                 <i class="fa-solid fa-coins dropdown-icon"></i> Manual Coin Credits
@@ -188,11 +200,20 @@
               <a href="{% url 'accounts:dashboard' %}" class="dropdown-item">
                 <i class="fa-solid fa-gauge-high dropdown-icon"></i> Tutor Hub
               </a>
+              <a href="{% url 'content_hub:upload_resource' %}" class="dropdown-item">
+                <i class="fa-solid fa-cloud-arrow-up dropdown-icon"></i> Upload Study Resource
+              </a>
               <a href="{% url 'content_hub:tutor_course_create' %}" class="dropdown-item">
                 <i class="fa-solid fa-circle-plus dropdown-icon"></i> Create Course Bundle
               </a>
               <a href="{% url 'wallet:coin_history' %}" class="dropdown-item">
                 <i class="fa-solid fa-clock-rotate-left dropdown-icon"></i> Coin History
+              </a>
+              <a href="{% url 'wallet:transfer_coins' %}" class="dropdown-item">
+                <i class="fa-solid fa-paper-plane dropdown-icon"></i> Transfer Coins
+              </a>
+              <a href="{% url 'wallet:sell_coins' %}" class="dropdown-item">
+                <i class="fa-solid fa-money-bill-transfer dropdown-icon"></i> Cash Out / Sell Coins
               </a>
               <a href="{% url 'wallet:buy_coins' %}" class="dropdown-item" style="justify-content: space-between;">
                 <span style="display: flex; align-items: center; gap: 10px;">
@@ -211,8 +232,23 @@
               <a href="{% url 'content_hub:catalog' %}" class="dropdown-item">
                 <i class="fa-solid fa-book-open dropdown-icon"></i> Browse Resource Hub
               </a>
+              {% if user.tutor_status == 'PENDING' %}
+                <a href="{% url 'accounts:tutor_apply' %}" class="dropdown-item" style="color: #b45309;">
+                  <i class="fa-solid fa-hourglass-half dropdown-icon" style="color: #f59e0b;"></i> Tutor Status (Pending)
+                </a>
+              {% else %}
+                <a href="{% url 'accounts:tutor_apply' %}" class="dropdown-item">
+                  <i class="fa-solid fa-chalkboard-user dropdown-icon"></i> Apply to Become a Tutor
+                </a>
+              {% endif %}
               <a href="{% url 'wallet:coin_history' %}" class="dropdown-item">
                 <i class="fa-solid fa-clock-rotate-left dropdown-icon"></i> Coin History
+              </a>
+              <a href="{% url 'wallet:transfer_coins' %}" class="dropdown-item">
+                <i class="fa-solid fa-paper-plane dropdown-icon"></i> Transfer Coins
+              </a>
+              <a href="{% url 'wallet:sell_coins' %}" class="dropdown-item">
+                <i class="fa-solid fa-money-bill-transfer dropdown-icon"></i> Cash Out Coins
               </a>
               <a href="{% url 'wallet:buy_coins' %}" class="dropdown-item" style="justify-content: space-between;">
                 <span style="display: flex; align-items: center; gap: 10px;">
@@ -269,6 +305,7 @@
         <a href="{% url 'how_to' %}">How It Works</a>
         <a href="{% url 'tutoring' %}">Tutoring Options</a>
         <a href="{% url 'content_hub:catalog' %}">Study Materials</a>
+        <a href="{% url 'content_hub:terms' %}">Terms &amp; Conditions</a>
         <a href="{% url 'contact' %}">Contact Us</a>
       </div>
 
@@ -290,19 +327,78 @@
 
     <div class="footer-bottom">
       <div>© 2026 Rodz Tutoring. All rights reserved. Non-downloadable digital content engine.</div>
-      <div>Strictly for enrolled learner access &bull; Digital protection enabled</div>
+      <div>Strictly for enrolled learner access &bull; <a href="{% url 'content_hub:terms' %}" style="color: #94a3b8; text-decoration: underline;">Terms &amp; Conditions</a></div>
     </div>
   </footer>
 
   <script>
-    // Mobile navigation toggle
-    const toggle = document.getElementById('menuToggle');
-    const nav = document.getElementById('mainNav');
-    if (toggle && nav) {
-      toggle.addEventListener('click', () => {
-        nav.classList.toggle('open');
+    document.addEventListener('DOMContentLoaded', function () {
+      // Mobile navigation toggle
+      const toggle = document.getElementById('menuToggle');
+      const nav = document.getElementById('mainNav');
+      if (toggle && nav) {
+        toggle.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const isOpen = nav.classList.toggle('open');
+          toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+      }
+
+      // Touch & click support for all dropdowns (Mode Pill, Profile menu, etc.)
+      const dropdowns = document.querySelectorAll('.dropdown');
+      dropdowns.forEach(function (dropdown) {
+        const btn = dropdown.querySelector('button, .profile-btn');
+        if (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const wasOpen = dropdown.classList.contains('active') || dropdown.classList.contains('open');
+
+            // Close all dropdowns
+            dropdowns.forEach(function (d) {
+              d.classList.remove('active', 'open');
+              const b = d.querySelector('button, .profile-btn');
+              if (b) b.setAttribute('aria-expanded', 'false');
+            });
+
+            // Toggle this dropdown if it was not already open
+            if (!wasOpen) {
+              dropdown.classList.add('active', 'open');
+              btn.setAttribute('aria-expanded', 'true');
+            }
+          });
+        }
       });
-    }
+
+      // Close dropdowns and mobile nav on outside clicks
+      document.addEventListener('click', function (e) {
+        // Outside dropdowns
+        if (!e.target.closest('.dropdown')) {
+          dropdowns.forEach(function (d) {
+            d.classList.remove('active', 'open');
+            const b = d.querySelector('button, .profile-btn');
+            if (b) b.setAttribute('aria-expanded', 'false');
+          });
+        }
+        // Outside mobile nav
+        if (nav && toggle && !nav.contains(e.target) && !toggle.contains(e.target)) {
+          nav.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Close mobile nav when clicking normal anchor links inside it
+      if (nav) {
+        nav.querySelectorAll('a:not(.dropdown-item):not(.dropdown a)').forEach(function (link) {
+          link.addEventListener('click', function () {
+            if (window.innerWidth <= 992) {
+              nav.classList.remove('open');
+              if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            }
+          });
+        });
+      }
+    });
   </script>
   {% block extra_js %}{% endblock %}
 </body>

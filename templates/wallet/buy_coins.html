@@ -27,9 +27,14 @@
       <div style="font-size: 13px; color: #cbd5e1; max-width: 480px; line-height: 1.5; text-align: right;">
         Coins allow you to unlock Grade 7–12 exam packs, revision notes, videos, and quizzes. Once unlocked, materials remain accessible for your entire academic year.
       </div>
-      <a href="{% url 'wallet:coin_history' %}" class="btn outline small" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); font-size: 12px;">
-        <i class="fa-solid fa-clock-rotate-left"></i> View My Coin History &rarr;
-      </a>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+        <a href="{% url 'wallet:transfer_coins' %}" class="btn outline small" style="background: rgba(255,255,255,0.18); color: #fff; border-color: rgba(255,255,255,0.4); font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-paper-plane"></i> Transfer Coins
+        </a>
+        <a href="{% url 'wallet:coin_history' %}" class="btn outline small" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-clock-rotate-left"></i> View My Coin History &rarr;
+        </a>
+      </div>
     </div>
   </div>
 
@@ -73,7 +78,7 @@
         <div class="pkg-card bundle-select-card {% if 'POPULAR' in b.badge or 'BEST' in b.badge %}highlight{% endif %}" 
              data-bundle-id="{{ b.id }}" 
              data-bundle-name="{{ b.name }}"
-             data-bundle-price="R{{ b.price_zar }}"
+             data-bundle-price="{{ currency_symbol }}{{ b.price_zar }}"
              data-bundle-coins="{{ b.coins }}"
              style="cursor: pointer; position: relative; transition: all 0.2s ease;">
           
@@ -85,9 +90,10 @@
 
           <h3 style="margin-top: 10px;">{{ b.name }}</h3>
           <div class="price" style="font-size: 32px; font-weight: 900; color: var(--blue);">
-            R{{ b.price_zar }}
+            {{ currency_symbol }}{{ b.price_zar }}
             <div style="font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 4px;">
               <i class="fa-solid fa-coins" style="color: #b45309;"></i> {{ b.coins }} Coins Total
+              <span style="display: block; font-size: 11px; color: #0284c7; font-weight: 700; margin-top: 2px;">{{ currency_symbol }}{{ b.rate_per_coin }}/coin</span>
             </div>
           </div>
 
@@ -263,8 +269,9 @@
         </div>
 
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px; border-top: 1px solid var(--line); padding-top: 20px;">
-          <div style="font-size: 12px; color: var(--muted);">
-            <i class="fa-solid fa-lock"></i> All uploads are securely stored and verified directly by the Rodz Tutoring administration.
+          <div style="font-size: 12px; color: var(--muted); max-width: 480px;">
+            <i class="fa-solid fa-lock"></i> All uploads are securely stored and verified directly by the Rodz Tutoring administration. 
+            By purchasing coins, you agree to our <a href="{% url 'content_hub:terms' %}" target="_blank" style="color: var(--blue); text-decoration: underline; font-weight: 600;">Terms &amp; Conditions</a>.
           </div>
           <button type="submit" class="btn primary" style="padding: 12px 30px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-bolt"></i> SUBMIT & ACTIVATE COINS &rarr;
@@ -301,13 +308,18 @@
                   {{ req.created_at|date:"d M Y, H:i" }}
                 </td>
                 <td style="padding: 12px 16px; font-weight: 700;">
-                  {{ req.bundle.name|default:"Coin Pack" }}
+                  {{ req.bundle_name_snapshot|default:req.bundle.name|default:"Coin Pack" }}
                 </td>
                 <td style="padding: 12px 16px; font-weight: 800; color: #b45309;">
                   <i class="fa-solid fa-coins"></i> {{ req.coins_to_credit }}
                 </td>
-                <td style="padding: 12px 16px;">
-                  R{{ req.amount_paid }}
+                <td style="padding: 12px 16px; font-weight: 700;">
+                  {{ currency_symbol }}{{ req.amount_paid }}
+                  {% if req.rate_per_coin %}
+                    <div style="font-size: 11px; color: var(--muted); font-weight: normal; margin-top: 2px;">
+                      ({{ currency_symbol }}{{ req.rate_per_coin }}/coin)
+                    </div>
+                  {% endif %}
                 </td>
                 <td style="padding: 12px 16px; font-family: monospace;">
                   {{ req.reference_number }}
@@ -376,7 +388,7 @@ function selectBundle(bundleId, bundleName, priceZar, coins) {
 
   if (summaryBox) {
     summaryName.textContent = bundleName;
-    summaryPrice.textContent = 'R' + priceZar;
+    summaryPrice.textContent = '{{ currency_symbol }}' + priceZar;
     summaryCoins.textContent = coins + ' Coins';
     summaryBox.style.display = 'block';
   }

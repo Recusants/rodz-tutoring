@@ -56,10 +56,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rodz_project.wsgi.application'
 
+DB_DIR = config('DB_DIR', default=None)
+if DB_DIR:
+    DB_PATH = Path(DB_DIR) / 'db.sqlite3'
+else:
+    DB_PATH = Path(config('SQLITE_PATH', default=str(BASE_DIR / 'db.sqlite3')))
+
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_PATH,
     }
 }
 

@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.utils import timezone
 from .models import CustomUser
-from .forms import RegistrationForm, LoginForm
+from .forms import RegistrationForm, LoginForm, TutorApplicationForm
 from wallet.models import StudentWallet, ContentUnlock, CoinTransaction
 from content_hub.models import ContentItem
 from quizzes.models import QuizAttempt
@@ -14,11 +15,19 @@ def register_view(request):
         return redirect('accounts:dashboard')
 
     if request.method == 'POST':
-        form = RegistrationForm(request.POST)
+        form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, f'Welcome to Rodz Tutoring, {user.full_name or user.email}! Your account has been created.')
+            if user.tutor_status == 'PENDING':
+                messages.info(
+                    request,
+                    f"Welcome, {user.full_name or user.email}! Your tutor application has been submitted and is currently "
+                    f"Pending Admin Review. Administrators will review your profile picture and contact details. "
+                    f"In the meantime, you have full student access to explore the learning vault."
+                )
+            else:
+                messages.success(request, f'Welcome to Rodz Tutoring, {user.full_name or user.email}! Your account has been created.')
             return redirect('accounts:dashboard')
     else:
         form = RegistrationForm()
@@ -363,7 +372,7 @@ def admin_user_detail_view(request, user_id):
         action = request.POST.get('action')
 
         if action == 'edit_profile':
-            profile_form = AdminUserEditForm(request.POST, instance=target_user)
+            profile_form = AdminUserEditForm(request.POST, request.FILES, instance=target_user)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, f"✓ Profile and roles for {target_user.email} updated successfully!")
@@ -389,10 +398,10 @@ def admin_user_detail_view(request, user_id):
                 amt = wallet_form.cleaned_data['coins']
                 desc = wallet_form.cleaned_data['description']
                 if act == 'CREDIT':
-                    target_wallet.credit_coins(amt, description=f"Admin Credit by {request.user.email}: {desc}")
+                    target_wallet.credit_coins(amt, description=desc or "Admin Manual Credit", admin_user=request.user, transaction_type='ADMIN_CREDIT')
                     messages.success(request, f"✓ Credited {amt} coins to {target_user.email}.")
                 elif act == 'DEBIT':
-                    target_wallet.debit_coins(amt, description=f"Admin Debit by {request.user.email}: {desc}")
+                    target_wallet.debit_coins(amt, description=desc or "Admin Manual Deduction", admin_user=request.user, transaction_type='ADMIN_CREDIT')
                     messages.success(request, f"✓ Deducted {amt} coins from {target_user.email}.")
                 return redirect('accounts:admin_user_detail', user_id=target_user.id)
 
@@ -431,6 +440,25 @@ def admin_user_detail_view(request, user_id):
                 messages.success(request, f"Account for {target_user.email} has been {status_str}.")
             return redirect('accounts:admin_user_detail', user_id=target_user.id)
 
+        elif action == 'approve_tutor':
+            target_user.is_tutor = True
+            target_user.tutor_status = 'APPROVED'
+            target_user.tutor_approved_at = timezone.now()
+            target_user.tutor_reviewed_by = request.user
+            target_user.save()
+            messages.success(request, f"✓ Tutor status for {target_user.email} has been APPROVED.")
+            return redirect('accounts:admin_user_detail', user_id=target_user.id)
+
+        elif action == 'reject_tutor':
+            reason = request.POST.get('rejection_reason', '').strip()
+            target_user.is_tutor = False
+            target_user.tutor_status = 'REJECTED'
+            target_user.tutor_rejection_reason = reason or "Declined after administrator review."
+            target_user.tutor_reviewed_by = request.user
+            target_user.save()
+            messages.warning(request, f"Tutor application for {target_user.email} has been REJECTED.")
+            return redirect('accounts:admin_user_detail', user_id=target_user.id)
+
     user_unlocks = ContentUnlock.objects.filter(user=target_user).select_related('content_item', 'content_item__subject')
     user_transactions = CoinTransaction.objects.filter(wallet=target_wallet).order_by('-created_at')[:20]
     user_quizzes = QuizAttempt.objects.filter(student=target_user).select_related('quiz')[:10]
@@ -457,7 +485,7 @@ def admin_user_create_view(request):
             initial_coins = form.cleaned_data.get('initial_coins') or 0
             if initial_coins > 0:
                 wallet, _ = StudentWallet.objects.get_or_create(user=new_user)
-                wallet.credit_coins(initial_coins, description=f"Initial welcome allocation by {request.user.email}")
+                wallet.credit_coins(initial_coins, description="Initial welcome allocation", admin_user=request.user, transaction_type='BONUS')
             messages.success(request, f"✓ Account for {new_user.email} successfully created!")
             return redirect('accounts:admin_user_detail', user_id=new_user.id)
     else:
@@ -481,3 +509,80 @@ def admin_user_delete_view(request, user_id):
         return redirect('accounts:admin_user_list')
 
     return redirect('accounts:admin_user_detail', user_id=user_id)
+
+
+@login_required
+def tutor_apply_view(request):
+    """
+    Allows registered learners to apply to become a verified Tutor by uploading a photo,
+    providing phone number and qualifications.
+    """
+    user = request.user
+    if user.is_tutor:
+        messages.info(request, "You are already an approved Tutor!")
+        return redirect('accounts:dashboard')
+
+    if request.method == 'POST':
+        form = TutorApplicationForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            app_user = form.save(commit=False)
+            app_user.tutor_status = 'PENDING'
+            app_user.tutor_applied_at = timezone.now()
+            app_user.is_tutor = False
+            app_user.save()
+            messages.success(
+                request,
+                "✓ Your tutor application has been submitted for manual admin review! "
+                "Our administration team will review your photo, credentials, and contact details."
+            )
+            return redirect('accounts:dashboard')
+        else:
+            messages.error(request, "Please correct the errors in the tutor application form below.")
+    else:
+        form = TutorApplicationForm(instance=user)
+
+    return render(request, 'accounts/tutor_apply.html', {'form': form, 'user_obj': user})
+
+
+@user_passes_test(is_admin_or_staff)
+def admin_tutor_approvals_view(request):
+    """
+    Admin dashboard to review, approve, or reject tutor applications with photos,
+    email, phone number, and manual notes.
+    """
+    from django.shortcuts import get_object_or_404
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        user_id = request.POST.get('user_id')
+        applicant = get_object_or_404(CustomUser, id=user_id)
+
+        if action == 'approve':
+            applicant.is_tutor = True
+            applicant.tutor_status = 'APPROVED'
+            applicant.tutor_approved_at = timezone.now()
+            applicant.tutor_reviewed_by = request.user
+            applicant.save()
+            messages.success(request, f"✓ Tutor application for {applicant.full_name or applicant.email} has been APPROVED.")
+            return redirect('accounts:admin_tutor_approvals')
+
+        elif action == 'reject':
+            reason = request.POST.get('rejection_reason', '').strip()
+            applicant.is_tutor = False
+            applicant.tutor_status = 'REJECTED'
+            applicant.tutor_rejection_reason = reason or "Declined after manual review."
+            applicant.tutor_reviewed_by = request.user
+            applicant.save()
+            messages.warning(request, f"Tutor application for {applicant.full_name or applicant.email} has been REJECTED.")
+            return redirect('accounts:admin_tutor_approvals')
+
+    pending_applicants = CustomUser.objects.filter(tutor_status='PENDING').order_by('-tutor_applied_at')
+    approved_tutors = CustomUser.objects.filter(tutor_status='APPROVED').order_by('-tutor_approved_at')[:30]
+    rejected_applicants = CustomUser.objects.filter(tutor_status='REJECTED').order_by('-tutor_applied_at')[:30]
+
+    return render(request, 'accounts/admin_tutor_approvals.html', {
+        'pending_applicants': pending_applicants,
+        'approved_tutors': approved_tutors,
+        'rejected_applicants': rejected_applicants,
+    })
+

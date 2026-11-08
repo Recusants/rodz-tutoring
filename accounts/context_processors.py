@@ -4,8 +4,10 @@ from wallet.models import ContentUnlock
 
 def brand_context(request):
     from content_hub.models import ContactInfo, AboutContent
+    from wallet.models import SystemWallet
     contact_info = ContactInfo.get_solo()
     about_content = AboutContent.get_solo()
+    system_wallet = SystemWallet.get_instance()
 
     ctx = {
         'BRAND_NAME': 'Rodz Tutoring',
@@ -14,6 +16,11 @@ def brand_context(request):
         'INFO_EMAIL': contact_info.email_address,
         'site_contact': contact_info,
         'site_about': about_content,
+        'system_wallet': system_wallet,
+        'currency_code': system_wallet.currency_code,
+        'currency_symbol': system_wallet.currency_symbol,
+        'transfer_fee_coins': system_wallet.transfer_fee_coins,
+        'cashout_rate_per_coin': system_wallet.cashout_rate_per_coin,
     }
 
     user = getattr(request, 'user', None)

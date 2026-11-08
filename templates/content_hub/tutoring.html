@@ -1,47 +1,329 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Online Tutoring | Rodz Tutoring{% endblock %}
+{% block title %}Expert Online Tutoring | Rodz Tutoring{% endblock %}
+
+{% block extra_head %}
+<style>
+  @keyframes bounceIndicator {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px);
+    }
+    60% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .scroll-down-btn {
+    animation: bounceIndicator 2.2s infinite;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--blue);
+    font-weight: 800;
+    font-size: 13px;
+    padding: 10px 22px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .scroll-down-btn:hover {
+    background: #ffffff;
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  }
+
+  .tutoring-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
+    border-radius: var(--radius-lg);
+    padding: 50px 40px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 50px;
+    box-shadow: 0 15px 35px -5px rgba(30, 58, 138, 0.35);
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 40px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  @media (max-width: 900px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    .hero-illustration {
+      order: -1;
+      margin: 0 auto;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<section class="section" style="padding-top: 40px;">
-  <div class="section-heading">
-    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">PERSONALISED LEARNING</div>
+<section class="section" style="padding-top: 30px;">
+
+  <!-- WELCOMING HERO BANNER -->
+  <div class="tutoring-hero">
+    <div class="hero-grid">
+      <!-- Left Content -->
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.4); color: #fef08a; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;">
+          <i class="fa-solid fa-hand-sparkles"></i> Welcome to Rodz Tutoring
+        </div>
+
+        <h1 style="font-size: 36px; font-weight: 900; line-height: 1.2; margin: 0 0 16px; color: #ffffff;">
+          Personalized Tutoring Designed for Your Academic Success
+        </h1>
+
+        <p style="font-size: 15px; line-height: 1.65; color: #cbd5e1; margin: 0 0 28px; max-width: 580px;">
+          Whether you need dedicated 1-on-1 tutoring, motivating small group revision, or comprehensive exam preparation, our verified and passionate tutors are here to turn academic challenges into top marks.
+        </p>
+
+        <!-- Call to Actions & Scroll Prompt -->
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+          <a href="#tutoring-programmes" class="scroll-down-btn">
+            <span>Scroll Down to Check Tutoring Options</span>
+            <i class="fa-solid fa-arrow-down"></i>
+          </a>
+
+          <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20would%20like%20to%20inquire%20about%20tutoring." 
+             class="btn" target="_blank" rel="noopener"
+             style="background: #22c55e; color: #ffffff; border: none; font-weight: 800; padding: 10px 20px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-brands fa-whatsapp" style="font-size: 17px;"></i> Chat on WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Illustration / Welcoming Visual -->
+      <div class="hero-illustration" style="text-align: center;">
+        <svg viewBox="0 0 400 320" style="max-width: 360px; width: 100%; height: auto; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3));">
+          <!-- Background circle glow -->
+          <circle cx="200" cy="160" r="140" fill="#2563eb" opacity="0.35"/>
+          <circle cx="200" cy="160" r="110" fill="#3b82f6" opacity="0.45"/>
+
+          <!-- Desk / Base -->
+          <rect x="50" y="240" width="300" height="14" rx="7" fill="#64748b"/>
+          <rect x="70" y="254" width="260" height="6" rx="3" fill="#475569"/>
+
+          <!-- Open Book / Study Material -->
+          <path d="M120 220 C160 210, 190 225, 200 230 C210 225, 240 210, 280 220 L275 238 C235 228, 210 240, 200 240 C190 240, 165 228, 125 238 Z" fill="#ffffff"/>
+          <path d="M198 228 L198 240" stroke="#3b82f6" stroke-width="2"/>
+          <line x1="140" y1="223" x2="185" y2="225" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="140" y1="229" x2="180" y2="231" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="215" y1="225" x2="260" y2="223" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="220" y1="231" x2="260" y2="229" stroke="#94a3b8" stroke-width="2"/>
+
+          <!-- Laptop / Tablet for Online Tutoring -->
+          <rect x="145" y="130" width="110" height="74" rx="6" fill="#1e293b" stroke="#94a3b8" stroke-width="2"/>
+          <rect x="151" y="136" width="98" height="62" rx="3" fill="#38bdf8"/>
+          <!-- Screen content: video tutor & student icons -->
+          <circle cx="180" cy="162" r="14" fill="#ffffff"/>
+          <circle cx="220" cy="162" r="14" fill="#fbbf24"/>
+          <path d="M168 188 C168 178, 192 178, 192 188 Z" fill="#ffffff"/>
+          <path d="M208 188 C208 178, 232 178, 232 188 Z" fill="#fbbf24"/>
+          <!-- Laptop base -->
+          <path d="M130 204 L270 204 L260 212 L140 212 Z" fill="#cbd5e1"/>
+
+          <!-- Graduation Cap Floating -->
+          <g transform="translate(160, 45)">
+            <polygon points="40,10 80,26 40,42 0,26" fill="#fbbf24"/>
+            <polygon points="15,32 15,48 40,58 65,48 65,32 40,42" fill="#d97706"/>
+            <!-- Tassel -->
+            <line x1="75" y1="28" x2="84" y2="45" stroke="#fef08a" stroke-width="2.5"/>
+            <circle cx="85" cy="48" r="3.5" fill="#fef08a"/>
+          </g>
+
+          <!-- Floating Badges / A+ Star -->
+          <g transform="translate(65, 90)">
+            <circle cx="26" cy="26" r="26" fill="#10b981" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.2))"/>
+            <text x="26" y="34" font-size="20" font-weight="900" fill="#ffffff" text-anchor="middle" font-family="sans-serif">A+</text>
+          </g>
+
+          <g transform="translate(300, 110)">
+            <circle cx="24" cy="24" r="24" fill="#fbbf24" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.2))"/>
+            <polygon points="24,10 28,19 38,20 30,27 33,37 24,31 15,37 18,27 10,20 20,19" fill="#78350f"/>
+          </g>
+        </svg>
+
+        <div style="margin-top: 10px; font-size: 13px; font-weight: 700; color: #93c5fd;">
+          <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> Verified Qualified Tutors &bull; All Curricula
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION HEADING (SCROLL ANCHOR) -->
+  <div class="section-heading" id="tutoring-programmes">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      PERSONALISED LEARNING
+    </div>
     <h2>ONLINE TUTORING PROGRAMMES</h2>
-    <p>Choose the support that fits your learner's exact goals and schedule.</p>
+    <p>Choose the tutoring format that fits your learner's exact goals, pace, and schedule.</p>
     <div class="bar"></div>
   </div>
 
-  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 30px;">
-    <div class="dash-section" style="display: flex; flex-direction: column;">
-      <span class="badge curriculum" style="align-self: flex-start; margin-bottom: 12px;">FOCUSED ATTENTION</span>
-      <h3>1-on-1 Private Tuition</h3>
-      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1;">
-        Individualised lessons tailored to the student's pacing. Ideal for tackling specific concept bottlenecks, closing gaps, and deep exam prep.
+  <!-- TUTORING PROGRAMMES GRID (3 CARDS - ALL 'COURSE' WORDS REPLACED) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 30px;">
+    
+    <!-- 1-on-1 Tutoring -->
+    <div class="dash-section" style="display: flex; flex-direction: column; border-top: 4px solid #3b82f6;">
+      <span class="badge curriculum" style="align-self: flex-start; margin-bottom: 12px;">
+        <i class="fa-solid fa-user"></i> FOCUSED ATTENTION
+      </span>
+      <h3 style="color: var(--blue); margin: 0 0 8px;">1-on-1 Private Tutoring</h3>
+      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1; line-height: 1.6;">
+        Individualised private tutoring lessons tailored to the student's unique pacing. Ideal for tackling specific concept bottlenecks, closing foundational gaps, and personalized exam preparation.
       </p>
+      <div style="background: var(--soft); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px; font-size: 12px; color: var(--text);">
+        <div><i class="fa-solid fa-check" style="color: #16a34a;"></i> Custom lesson schedules</div>
+        <div style="margin-top: 4px;"><i class="fa-solid fa-check" style="color: #16a34a;"></i> Matched with subject specialist</div>
+        <div style="margin-top: 4px;"><i class="fa-solid fa-check" style="color: #16a34a;"></i> 100% dedicated tutor focus</div>
+      </div>
       <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%201-on-1%20private%20tutoring." 
-         class="btn primary" target="_blank" rel="noopener">ENROL FOR 1-ON-1</a>
+         class="btn primary" target="_blank" rel="noopener" style="text-align: center; font-weight: 800;">
+        ENROL FOR 1-ON-1 TUTORING &rarr;
+      </a>
     </div>
 
-    <div class="dash-section" style="display: flex; flex-direction: column; border-color: var(--blue);">
-      <span class="badge premium" style="align-self: flex-start; margin-bottom: 12px;">INTERACTIVE</span>
-      <h3>Small Group Classes</h3>
-      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1;">
-        Dynamic cohort learning with peers at the same grade level. Highly motivating, cost-effective, and covers syllabus topics systematically.
+    <!-- Small Group Tutoring -->
+    <div class="dash-section" style="display: flex; flex-direction: column; border-top: 4px solid #f59e0b; border-color: var(--blue);">
+      <span class="badge premium" style="align-self: flex-start; margin-bottom: 12px;">
+        <i class="fa-solid fa-users"></i> INTERACTIVE GROUP
+      </span>
+      <h3 style="color: var(--blue); margin: 0 0 8px;">Small Group Tutoring</h3>
+      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1; line-height: 1.6;">
+        Dynamic cohort learning with peers at the same grade level. Highly motivating, cost-effective, and systematically covers syllabus topics with peer collaboration and tutor-guided problem solving.
       </p>
-      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%20Small%20Group%20classes." 
-         class="btn primary" target="_blank" rel="noopener">JOIN A GROUP</a>
+      <div style="background: var(--soft); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px; font-size: 12px; color: var(--text);">
+        <div><i class="fa-solid fa-check" style="color: #16a34a;"></i> Max 5-8 students per cohort</div>
+        <div style="margin-top: 4px;"><i class="fa-solid fa-check" style="color: #16a34a;"></i> Collaborative problem solving</div>
+        <div style="margin-top: 4px;"><i class="fa-solid fa-check" style="color: #16a34a;"></i> Cost-effective tuition rates</div>
+      </div>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%20Small%20Group%20tutoring." 
+         class="btn primary" target="_blank" rel="noopener" style="text-align: center; font-weight: 800;">
+        JOIN A TUTORING GROUP &rarr;
+      </a>
     </div>
 
-    <div class="dash-section" style="display: flex; flex-direction: column;">
-      <span class="badge free" style="align-self: flex-start; margin-bottom: 12px;">INTENSIVE CRASH COURSES</span>
-      <h3>Exam Revision Bootcamps</h3>
-      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1;">
-        Term-end and final matric exam preparation sessions covering high-yield past exam papers, examiner rubrics, and time management strategies.
+    <!-- Intensive Exam Revision Tutoring -->
+    <div class="dash-section" style="display: flex; flex-direction: column; border-top: 4px solid #10b981;">
+      <span class="badge free" style="align-self: flex-start; margin-bottom: 12px;">
+        <i class="fa-solid fa-bolt"></i> INTENSIVE REVISION TUTORING
+      </span>
+      <h3 style="color: var(--blue); margin: 0 0 8px;">Exam Revision Tutoring</h3>
+      <p style="color: var(--muted); font-size: 13px; margin: 12px 0 20px; flex: 1; line-height: 1.6;">
+        Term-end and matric exam preparation sessions covering high-yield past examination papers, examiner marking guidelines, step-by-step model solutions, and time management strategies.
       </p>
-      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%20Exam%20Bootcamps." 
-         class="btn primary" target="_blank" rel="noopener">BOOK EXAM CRASH COURSE</a>
+      <div style="background: var(--soft); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px; font-size: 12px; color: var(--text);">
+        <div><i class="fa-solid fa-check" style="color: #16a34a;"></i> Past paper deep-dives</div>
+        <div style="margin-top: 4px;"><i class="fa-solid fa-check" style="color: #16a34a;"></i> Examiner marking rubric tips</div>
+        <div style="margin-top: 4px;"><i class="fa-solid fa-check" style="color: #16a34a;"></i> High-yield exam predictions</div>
+      </div>
+      <a href="https://wa.me/{{ WHATSAPP_PHONE }}?text=Hi%20Rodz%20Tutoring!%20I%20am%20interested%20in%20Exam%20Revision%20Tutoring." 
+         class="btn primary" target="_blank" rel="noopener" style="text-align: center; font-weight: 800;">
+        BOOK EXAM REVISION TUTORING &rarr;
+      </a>
     </div>
   </div>
+
+  <!-- HOW TUTORING WORKS (4-STEP JOURNEY) -->
+  <div style="margin-top: 60px; background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 40px 30px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+      <span style="font-size: 12px; font-weight: 800; color: var(--blue); text-transform: uppercase; letter-spacing: 0.1em;">
+        THE RODZ METHOD
+      </span>
+      <h3 style="font-size: 24px; color: var(--blue); margin: 6px 0 0;">How Tutoring Sessions Work</h3>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+      <div style="background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #eff6ff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px; font-weight: 900;">
+          1
+        </div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">Needs Diagnostic</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          We evaluate the student's current curriculum grade, key test results, and specific challenge topics.
+        </p>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #eff6ff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px; font-weight: 900;">
+          2
+        </div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">Tutor Matching</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          You are paired with a manually verified tutor who specializes specifically in that subject and curriculum.
+        </p>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #eff6ff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px; font-weight: 900;">
+          3
+        </div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">Live Interactive Lessons</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          Interactive sessions with digital whiteboard, step-by-step problem breakdown, and syllabus materials.
+        </p>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #eff6ff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px; font-weight: 900;">
+          4
+        </div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">Exam Readiness</h4>
+        <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
+          Continuous practice through timed quizzes, past paper drills, and measurable grade progression.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BECOME A TUTOR CTA SECTION -->
+  <div style="margin-top: 40px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: var(--radius-lg); padding: 32px 36px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+    <div>
+      <span style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.08em;">
+        JOIN OUR TEACHING TEAM
+      </span>
+      <h3 style="font-size: 20px; color: #ffffff; margin: 6px 0 6px;">Are You an Experienced Educator or Tutor?</h3>
+      <p style="font-size: 13px; color: #94a3b8; margin: 0; max-width: 620px;">
+        Apply to become a verified Rodz Tutor. Share your expertise, publish study materials, and guide students toward academic success. Applications require photo, phone, and manual admin review.
+      </p>
+    </div>
+
+    <div>
+      {% if user.is_authenticated %}
+        {% if user.is_tutor %}
+          <span style="background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; color: #4ade80; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 800;">
+            <i class="fa-solid fa-circle-check"></i> You are an Approved Tutor
+          </span>
+        {% elif user.tutor_status == 'PENDING' %}
+          <span style="background: rgba(234, 179, 8, 0.2); border: 1px solid #eab308; color: #fde047; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 800;">
+            <i class="fa-solid fa-clock"></i> Tutor Application Under Review
+          </span>
+        {% else %}
+          <a href="{% url 'accounts:tutor_apply' %}" class="btn primary" style="background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 800; padding: 10px 22px;">
+            <i class="fa-solid fa-chalkboard-user"></i> Apply to Become a Tutor &rarr;
+          </a>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'accounts:register' %}" class="btn primary" style="background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 800; padding: 10px 22px;">
+          <i class="fa-solid fa-user-plus"></i> Register as Tutor &rarr;
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
 </section>
 {% endblock %}

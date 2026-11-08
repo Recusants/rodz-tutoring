@@ -79,9 +79,28 @@
         <a href="{% url 'wallet:buy_coins' %}" class="btn gold" style="width: 100%; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
           <i class="fa-solid fa-plus"></i> BUY / ACTIVATE COINS
         </a>
+        <a href="{% url 'wallet:transfer_coins' %}" class="btn outline small" style="width: 100%; text-align: center; margin-top: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-paper-plane"></i> Transfer Coins
+        </a>
+        <a href="{% url 'wallet:sell_coins' %}" class="btn outline small" style="width: 100%; text-align: center; margin-top: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-money-bill-transfer"></i> Cash Out Coins
+        </a>
         <a href="{% url 'wallet:coin_history' %}" class="btn outline small" style="width: 100%; text-align: center; margin-top: 8px; display: block;">
           <i class="fa-solid fa-clock-rotate-left"></i> Coin History
         </a>
+        {% if not user.is_tutor %}
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center;">
+            {% if user.tutor_status == 'PENDING' %}
+              <div style="background: #fef3c7; color: #92400e; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">
+                <i class="fa-solid fa-hourglass-start"></i> Tutor Application Pending
+              </div>
+            {% else %}
+              <a href="{% url 'accounts:tutor_apply' %}" style="font-size: 12px; color: var(--blue); font-weight: 700; text-decoration: underline;">
+                <i class="fa-solid fa-chalkboard-user"></i> Apply to Become a Tutor
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
       </div>
     {% endif %}
 
@@ -97,11 +116,20 @@
         <a href="{% url 'accounts:admin_user_list' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #6d28d9;">
           <i class="fa-solid fa-users-gear"></i> USER ACCOUNTS CONTROL
         </a>
+        <a href="{% url 'accounts:admin_tutor_approvals' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-color: #f59e0b; color: #b45309; font-weight: 700;">
+          <i class="fa-solid fa-user-check"></i> TUTOR APPROVALS
+        </a>
         <a href="{% url 'content_hub:admin_course_approvals' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-stamp"></i> COURSE APPROVALS
         </a>
+        <a href="{% url 'wallet:admin_pricing' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-color: #8b5cf6; color: #6d28d9; font-weight: 700;">
+          <i class="fa-solid fa-tags"></i> BUNDLE PRICING & RATES
+        </a>
         <a href="{% url 'wallet:coin_history' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-table-list"></i> COIN TRANSACTIONS LEDGER
+        </a>
+        <a href="{% url 'wallet:transfer_coins' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-paper-plane"></i> TRANSFER COINS
         </a>
         <a href="{% url 'wallet:admin_payment_requests' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-receipt"></i> PAYMENT PROOFS
@@ -130,8 +158,20 @@
         <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
           Educator access across all curricula, lesson study packs, and student assessments.
         </p>
+        <a href="{% url 'content_hub:upload_resource' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #0284c7; border-color: #0284c7;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> UPLOAD STUDY RESOURCE
+        </a>
         <a href="{% url 'content_hub:tutor_course_create' %}" class="btn primary small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #16a34a;">
           <i class="fa-solid fa-circle-plus"></i> CREATE COURSE BUNDLE
+        </a>
+        <a href="{% url 'wallet:transfer_coins' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-paper-plane"></i> TRANSFER COINS
+        </a>
+        <a href="{% url 'wallet:sell_coins' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-color: #16a34a; color: #16a34a; font-weight: 700;">
+          <i class="fa-solid fa-money-bill-transfer"></i> CASH OUT / SELL COINS
+        </a>
+        <a href="{% url 'wallet:coin_history' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <i class="fa-solid fa-clock-rotate-left"></i> COIN HISTORY
         </a>
         <a href="{% url 'content_hub:catalog' %}" class="btn outline small" style="width: 100%; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-book-open"></i> BROWSE LESSONS
@@ -566,7 +606,14 @@
                 {% for tx in recent_transactions %}
                   <tr style="border-bottom: 1px solid var(--line);">
                     <td style="padding: 12px 8px; color: var(--muted);">{{ tx.created_at|date:"d M Y, H:i" }}</td>
-                    <td style="padding: 12px 8px; font-weight: 600;">{{ tx.description }}</td>
+                    <td style="padding: 12px 8px; font-weight: 600;">
+                      {{ tx.get_clean_description }}
+                      {% if tx.counterparty %}
+                        <span class="badge outline" style="font-size: 10px; margin-left: 6px; background: #f8fafc; color: var(--blue); border-color: #cbd5e1;">
+                          <i class="fa-solid fa-user"></i> {{ tx.counterparty.get_full_name|default:tx.counterparty.username }}
+                        </span>
+                      {% endif %}
+                    </td>
                     <td style="padding: 12px 8px;">
                       <span class="badge curriculum" style="font-size: 10px;">{{ tx.get_transaction_type_display }}</span>
                     </td>

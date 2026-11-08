@@ -1,15 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseForbidden, Http404, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, Http404, JsonResponse, FileResponse
 from django.contrib import messages
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.utils import timezone
 from .models import (
     Subject, ContentItem, Curriculum, Course, 
-    AboutContent, ContactInfo, HowToGuide, HowToStep
+    AboutContent, ContactInfo, HowToGuide, HowToStep, TermsContent
 )
 from .forms import (
-    TutorCourseCreateForm, AboutContentForm, ContactInfoForm, HowToStepForm
+    TutorCourseCreateForm, ContentItemUploadForm, AboutContentForm, ContactInfoForm, HowToStepForm
 )
 from wallet.models import ContentUnlock, StudentWallet, CourseUnlock
 import os
@@ -190,18 +190,46 @@ def admin_site_content_view(request):
                 messages.success(request, 'Guide details updated.')
                 return redirect('content_hub:admin_site_content')
 
+        elif action == 'save_terms':
+            terms_obj = TermsContent.get_solo()
+            terms_obj.title = request.POST.get('title', terms_obj.title).strip()
+            terms_obj.last_updated = request.POST.get('last_updated', terms_obj.last_updated).strip()
+            terms_obj.intro_notice = request.POST.get('intro_notice', terms_obj.intro_notice).strip()
+            terms_obj.coin_policy = request.POST.get('coin_policy', terms_obj.coin_policy).strip()
+            terms_obj.pricing_policy = request.POST.get('pricing_policy', terms_obj.pricing_policy).strip()
+            terms_obj.transfer_charges_policy = request.POST.get('transfer_charges_policy', terms_obj.transfer_charges_policy).strip()
+            terms_obj.creator_earnings_policy = request.POST.get('creator_earnings_policy', terms_obj.creator_earnings_policy).strip()
+            terms_obj.content_licensing_policy = request.POST.get('content_licensing_policy', terms_obj.content_licensing_policy).strip()
+            terms_obj.refund_policy = request.POST.get('refund_policy', terms_obj.refund_policy).strip()
+            terms_obj.save()
+            msg = "Terms & Conditions and Coin Policies updated successfully!"
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'success': True, 'message': msg})
+            messages.success(request, msg)
+            return redirect('content_hub:admin_site_content')
+
     about_form = AboutContentForm(instance=about_obj)
     contact_form = ContactInfoForm(instance=contact_obj)
     step_form = HowToStepForm(initial={'guide': guide_obj, 'step_number': steps.count() + 1, 'order': steps.count() + 1})
+    terms_obj = TermsContent.get_solo()
 
     return render(request, 'accounts/admin_site_content.html', {
         'about_obj': about_obj,
         'contact_obj': contact_obj,
         'guide_obj': guide_obj,
         'steps': steps,
+        'terms_obj': terms_obj,
         'about_form': about_form,
         'contact_form': contact_form,
         'step_form': step_form,
+    })
+
+
+def terms_view(request):
+    """Public display of platform Terms & Conditions, dynamic pricing, and transfer policies."""
+    terms_obj = TermsContent.get_solo()
+    return render(request, 'content_hub/terms.html', {
+        'terms': terms_obj,
     })
 
 
@@ -440,13 +468,18 @@ def subject_view(request, slug):
     })
 
 
-@login_required
 def view_content_view(request, item_slug):
     item = get_object_or_404(ContentItem, slug=item_slug)
     user = request.user
 
-    # Determine access using helper method (validates active academic year retention)
-    has_access = user.has_unlocked(item)
+    # Free access items do NOT require login
+    if item.is_free:
+        has_access = True
+    else:
+        # Paid items require authentication and active unlock
+        if not user.is_authenticated:
+            return redirect(f"/accounts/login/?next={request.path}")
+        has_access = user.has_unlocked(item)
 
     if not has_access:
         wallet, _ = StudentWallet.objects.get_or_create(user=user)
@@ -455,7 +488,14 @@ def view_content_view(request, item_slug):
             'wallet': wallet,
         })
 
-    # User has access - route to appropriate protected viewer
+    user_email_display = user.email if user.is_authenticated else "GUEST LEARNER"
+    watermark_label = (
+        "FREE STUDY RESOURCE • RODZ TUTORING • OPEN ACCESS"
+        if item.is_free
+        else f"LICENSED TO: {user_email_display} • RODZ TUTORING • STRICTLY CONFIDENTIAL"
+    )
+
+    # Route to appropriate viewer
     if item.content_type == 'PDF':
         import pypdfium2 as pdfium
         total_pages = 1
@@ -472,13 +512,18 @@ def view_content_view(request, item_slug):
             'item': item,
             'total_pages': total_pages,
             'pages_list': pages_list,
-            'watermark_text': f"LICENSED TO: {user.email} • RODZ TUTORING • STRICTLY CONFIDENTIAL",
+            'watermark_text': watermark_label,
         })
     elif item.content_type == 'VIDEO':
+        video_watermark = (
+            "FREE EDUCATIONAL VIDEO • RODZ TUTORING"
+            if item.is_free
+            else f"LICENSED TO: {user_email_display} • RODZ TUTORING • NON-DOWNLOADABLE STREAM"
+        )
         return render(request, 'content_hub/video_viewer.html', {
             'item': item,
             'video_stream': item.video_stream_source,
-            'watermark_text': f"LICENSED TO: {user.email} • RODZ TUTORING • NON-DOWNLOADABLE STREAM",
+            'watermark_text': video_watermark,
         })
     elif item.content_type == 'QUIZ':
         if hasattr(item, 'quiz'):
@@ -490,18 +535,17 @@ def view_content_view(request, item_slug):
     return redirect('content_hub:catalog')
 
 
-@login_required
 def render_pdf_page_view(request, item_slug, page_number):
     """
     Renders an individual PDF page as a high-resolution, watermarked image.
-    This eliminates any raw PDF transmission to the client browser, completely
-    preventing browser download prompts or download managers (IDM) from downloading PDFs.
+    Free items do not require login.
     """
     item = get_object_or_404(ContentItem, slug=item_slug)
     user = request.user
 
-    if not user.has_unlocked(item):
-        return HttpResponseForbidden("Access Denied: You must unlock this content with coins before viewing.")
+    if not item.is_free:
+        if not user.is_authenticated or not user.has_unlocked(item):
+            return HttpResponseForbidden("Access Denied: You must unlock this content with coins before viewing.")
 
     if not item.pdf_file or not os.path.exists(item.pdf_file.path):
         raise Http404("Document page is currently unavailable.")
@@ -526,7 +570,11 @@ def render_pdf_page_view(request, item_slug, page_number):
         # Burn in dynamic security watermark
         overlay = Image.new('RGBA', (width, height), (255, 255, 255, 0))
         draw = ImageDraw.Draw(overlay)
-        watermark_text = f"LICENSED TO: {user.email} • RODZ TUTORING • UNAUTHORIZED SHARING PROHIBITED"
+        if item.is_free:
+            watermark_text = "FREE STUDY RESOURCE • RODZ TUTORING • OPEN ACCESS"
+        else:
+            user_tag = user.email if user.is_authenticated else "UNLICENSED"
+            watermark_text = f"LICENSED TO: {user_tag} • RODZ TUTORING • UNAUTHORIZED SHARING PROHIBITED"
         
         # Diagonal watermarks across the page
         draw.text((width // 6, height // 4), watermark_text, fill=(30, 58, 138, 35))
@@ -545,13 +593,15 @@ def render_pdf_page_view(request, item_slug, page_number):
         raise Http404(f"Failed to render page: {e}")
 
 
-@login_required
 def stream_pdf_view(request, item_slug):
     item = get_object_or_404(ContentItem, slug=item_slug)
     user = request.user
 
-    if not user.has_unlocked(item):
-        return HttpResponseForbidden("Access Denied: You must unlock this content with coins before viewing.")
+    if not item.is_free:
+        if not user.is_authenticated:
+            return redirect(f"/accounts/login/?next={request.path}")
+        if not user.has_unlocked(item):
+            return HttpResponseForbidden("Access Denied: You must unlock this content with coins before viewing.")
 
     if not item.pdf_file or not os.path.exists(item.pdf_file.path):
         raise Http404("PDF document is currently unavailable.")
@@ -560,15 +610,70 @@ def stream_pdf_view(request, item_slug):
     return redirect('content_hub:view_content', item_slug=item.slug)
 
 
-@login_required
 def protected_pdf_guard_view(request, filename):
     """
     Prevents any direct file downloading of PDF files under media/protected_pdfs/.
-    If the file belongs to a ContentItem, redirects to the in-app viewer.
+    If the file belongs to a ContentItem, redirects to viewer or download if free & downloadable.
     Otherwise returns 403 Forbidden.
     """
     item = ContentItem.objects.filter(pdf_file__icontains=filename).first()
     if item:
+        if item.can_download:
+            return redirect('content_hub:download_content', item_slug=item.slug)
+        if not item.is_free and not request.user.is_authenticated:
+            return redirect(f"/accounts/login/?next={request.path}")
         return redirect('content_hub:view_content', item_slug=item.slug)
     return HttpResponseForbidden("Access Denied: Direct PDF downloads are disabled.")
+
+
+def download_content_view(request, item_slug):
+    """
+    Allows direct file download strictly if the content item is free
+    and the uploader enabled allow_download=True.
+    """
+    item = get_object_or_404(ContentItem, slug=item_slug)
+
+    # Security verification: only free items with allow_download enabled may be downloaded
+    if not (item.is_free and item.allow_download):
+        return HttpResponseForbidden("Access Denied: This resource is not permitted for direct download.")
+
+    target_file = item.pdf_file or item.video_file
+    if not target_file or not target_file.name:
+        raise Http404("No downloadable file is attached to this resource.")
+
+    try:
+        file_path = target_file.path
+        if not os.path.exists(file_path):
+            raise Http404("The requested file was not found on the server.")
+
+        ext = os.path.splitext(file_path)[1]
+        download_name = f"{item.slug}{ext}"
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=download_name)
+    except Exception as e:
+        raise Http404(f"Failed to prepare download: {e}")
+
+
+@login_required
+def upload_resource_view(request):
+    """
+    Allows approved tutors and staff to upload content items with explicit allow_download control.
+    """
+    user = request.user
+    if not (user.is_tutor or user.is_admin_role or user.is_staff or user.is_superuser):
+        messages.error(request, "Only verified Tutors and Admins can upload study resources.")
+        return redirect('accounts:dashboard')
+
+    if request.method == 'POST':
+        form = ContentItemUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            item = form.save()
+            messages.success(request, f"✓ Resource '{item.title}' has been successfully uploaded and published!")
+            return redirect('content_hub:catalog')
+        else:
+            messages.error(request, "Please correct the errors in the upload form below.")
+    else:
+        form = ContentItemUploadForm()
+
+    return render(request, 'content_hub/upload_resource.html', {'form': form})
+
 

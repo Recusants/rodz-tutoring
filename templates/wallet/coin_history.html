@@ -100,12 +100,33 @@
         </a>
       </div>
 
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="{% url 'wallet:transfer_coins' %}" class="btn primary small" style="background: #2563eb; display: inline-flex; align-items: center; gap: 6px; font-size: 11px;">
+          <i class="fa-solid fa-paper-plane"></i> Transfer Coins
+        </a>
+        <a href="{% url 'wallet:admin_pricing' %}" class="btn outline small" style="font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-tags" style="color: #6d28d9;"></i> Pricing & Rates
+        </a>
         <a href="{% url 'wallet:admin_credit_panel' %}" class="btn outline small" style="font-size: 11px;">
           <i class="fa-solid fa-plus-circle" style="color: var(--green);"></i> Manual Credit
         </a>
         <a href="{% url 'wallet:admin_payment_requests' %}" class="btn outline small" style="font-size: 11px;">
           <i class="fa-solid fa-receipt" style="color: var(--gold);"></i> Payment Proofs
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <!-- Student / Tutor Quick Action Bar -->
+    <div style="background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+      <div style="font-size: 13px; color: var(--blue); font-weight: 700;">
+        <i class="fa-solid fa-wallet" style="color: var(--gold);"></i> Your Balance: <span style="font-size: 16px; font-weight: 900;">{{ my_wallet.coins }} Coins</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a href="{% url 'wallet:transfer_coins' %}" class="btn primary small" style="background: #2563eb; display: inline-flex; align-items: center; gap: 6px; font-size: 11px;">
+          <i class="fa-solid fa-paper-plane"></i> Transfer Coins
+        </a>
+        <a href="{% url 'wallet:buy_coins' %}" class="btn primary small" style="font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-coins"></i> Top Up Coins
         </a>
       </div>
     </div>
@@ -298,6 +319,9 @@
           <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=DEBIT&days={{ days_filter }}" class="btn {% if type_filter == 'DEBIT' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
             <i class="fa-solid fa-arrow-up-right" style="color: #ef4444;"></i> Debits (-)
           </a>
+          <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=TRANSFER&days={{ days_filter }}" class="btn {% if type_filter == 'TRANSFER' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
+            <i class="fa-solid fa-paper-plane" style="color: #3b82f6;"></i> Peer Transfers
+          </a>
           <a href="?view={{ view_scope }}{% if target_user %}&user_id={{ target_user.id }}{% endif %}&q={{ q }}&sort={{ sort }}&type=CONTENT_UNLOCK&days={{ days_filter }}" class="btn {% if type_filter == 'CONTENT_UNLOCK' %}primary{% else %}outline{% endif %} small" style="font-size: 11px; padding: 4px 10px;">
             Single Unlocks
           </a>
@@ -346,7 +370,11 @@
               <th style="padding: 14px 18px;">Transaction Type</th>
               <th style="padding: 14px 18px;">Coins Amount</th>
               <th style="padding: 14px 18px;">Description & Reference</th>
-              <th style="padding: 14px 18px;">Authorized By</th>
+              {% if is_admin %}
+                <th style="padding: 14px 18px;">Authorized By / Source</th>
+              {% else %}
+                <th style="padding: 14px 18px;">Source / Counterpart</th>
+              {% endif %}
             </tr>
           </thead>
           <tbody>
@@ -402,7 +430,15 @@
 
                 <!-- Transaction Type Badge -->
                 <td style="padding: 14px 18px; white-space: nowrap;">
-                  {% if tx.amount > 0 %}
+                  {% if tx.transaction_type == 'TRANSFER_SENT' %}
+                    <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 11px; padding: 4px 10px;">
+                      <i class="fa-solid fa-paper-plane"></i> Transfer Sent
+                    </span>
+                  {% elif tx.transaction_type == 'TRANSFER_RECEIVED' %}
+                    <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 11px; padding: 4px 10px;">
+                      <i class="fa-solid fa-hand-holding-dollar"></i> Transfer Received
+                    </span>
+                  {% elif tx.amount > 0 %}
                     <span class="badge badge-credit" style="font-size: 11px; padding: 4px 10px;">
                       <i class="fa-solid fa-arrow-down-left"></i> {{ tx.get_transaction_type_display }}
                     </span>
@@ -429,18 +465,50 @@
                 <!-- Description / Reference -->
                 <td style="padding: 14px 18px; max-width: 320px;">
                   <div style="font-weight: 600; color: var(--text); line-height: 1.4;">
-                    {{ tx.description }}
+                    {% if is_admin %}
+                      {{ tx.description }}
+                    {% else %}
+                      {{ tx.get_clean_description }}
+                    {% endif %}
                   </div>
                 </td>
 
-                <!-- Authorized By -->
-                <td style="padding: 14px 18px; white-space: nowrap; color: var(--muted); font-size: 12px;">
-                  {% if tx.created_by %}
-                    <span title="{{ tx.created_by.email }}">
-                      <i class="fa-solid fa-user-shield" style="color: #6366f1;"></i> {{ tx.created_by.full_name|default:tx.created_by.email }}
-                    </span>
+                <!-- Authorized By / Source -->
+                <td style="padding: 14px 18px; white-space: nowrap; font-size: 12px;">
+                  {% if is_admin %}
+                    {# Admin sees full audit trail #}
+                    {% if tx.counterparty %}
+                      <span title="Peer Transfer">
+                        {% if tx.amount < 0 %}
+                          <i class="fa-solid fa-paper-plane" style="color: #2563eb;"></i> Sent to {{ tx.counterparty.full_name|default:tx.counterparty.email }}
+                        {% else %}
+                          <i class="fa-solid fa-hand-holding-dollar" style="color: #16a34a;"></i> From {{ tx.counterparty.full_name|default:tx.counterparty.email }}
+                        {% endif %}
+                      </span>
+                    {% elif tx.created_by %}
+                      <span title="{{ tx.created_by.email }}" style="color: #4338ca; font-weight: 600;">
+                        <i class="fa-solid fa-user-shield"></i> {{ tx.created_by.full_name|default:tx.created_by.email }}
+                      </span>
+                    {% else %}
+                      <span style="color: var(--muted);"><i class="fa-solid fa-robot"></i> System Automated</span>
+                    {% endif %}
                   {% else %}
-                    <span><i class="fa-solid fa-robot"></i> System Automated</span>
+                    {# Non-admin viewer: NEVER reveal who credited or debited unless it is a user-to-user transfer! #}
+                    {% if tx.counterparty %}
+                      {% if tx.amount < 0 %}
+                        <span style="color: #1d4ed8; font-weight: 700;">
+                          <i class="fa-solid fa-paper-plane"></i> Sent to {{ tx.counterparty.full_name|default:tx.counterparty.email }}
+                        </span>
+                      {% else %}
+                        <span style="color: #15803d; font-weight: 700;">
+                          <i class="fa-solid fa-hand-holding-dollar"></i> Received from {{ tx.counterparty.full_name|default:tx.counterparty.email }}
+                        </span>
+                      {% endif %}
+                    {% else %}
+                      <span style="color: var(--muted);">
+                        <i class="fa-solid fa-building-columns"></i> Rodz Tutoring Platform
+                      </span>
+                    {% endif %}
                   {% endif %}
                 </td>
 

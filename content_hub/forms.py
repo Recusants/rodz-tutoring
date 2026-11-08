@@ -57,6 +57,75 @@ class TutorCourseCreateForm(forms.ModelForm):
         return price
 
 
+class ContentItemUploadForm(forms.ModelForm):
+    cover_svg_name = forms.ChoiceField(
+        choices=COVER_CHOICES,
+        initial='caps-g12-maths.svg',
+        widget=forms.Select(attrs={'class': 'form-input'}),
+        help_text="Visual cover style for catalog cards"
+    )
+
+    class Meta:
+        model = ContentItem
+        fields = [
+            'title',
+            'subject',
+            'grade',
+            'curriculum',
+            'content_type',
+            'category',
+            'is_free',
+            'allow_download',
+            'coin_price',
+            'pdf_file',
+            'video_file',
+            'youtube_url',
+            'cover_svg_name',
+            'description',
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Grade 12 Calculus Past Paper 1 Solutions'}),
+            'subject': forms.Select(attrs={'class': 'form-input'}),
+            'grade': forms.Select(attrs={'class': 'form-input'}),
+            'curriculum': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. CAPS & IEB'}),
+            'content_type': forms.Select(attrs={'class': 'form-input'}),
+            'category': forms.Select(attrs={'class': 'form-input'}),
+            'is_free': forms.CheckboxInput(attrs={'class': 'form-checkbox', 'id': 'id_is_free'}),
+            'allow_download': forms.CheckboxInput(attrs={'class': 'form-checkbox', 'id': 'id_allow_download'}),
+            'coin_price': forms.NumberInput(attrs={'class': 'form-input', 'min': 0, 'placeholder': '50'}),
+            'pdf_file': forms.FileInput(attrs={'class': 'form-input', 'accept': '.pdf'}),
+            'video_file': forms.FileInput(attrs={'class': 'form-input', 'accept': 'video/mp4,video/webm'}),
+            'youtube_url': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://youtube.com/watch?v=... or Vimeo URL'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 4, 'placeholder': 'Detailed syllabus summary and study guidelines...'}),
+        }
+        help_texts = {
+            'is_free': 'If checked, all learners can view this material without spending coins.',
+            'allow_download': 'Allow learners to download this file directly (Only applies to free resources).',
+            'coin_price': 'Coins required to unlock if not free (ignored when free is checked).',
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_free = cleaned_data.get('is_free')
+        allow_download = cleaned_data.get('allow_download')
+        content_type = cleaned_data.get('content_type')
+        pdf_file = cleaned_data.get('pdf_file')
+        video_file = cleaned_data.get('video_file')
+        youtube_url = cleaned_data.get('youtube_url')
+
+        if not is_free and allow_download:
+            # Enforce that only free items can be downloadable
+            cleaned_data['allow_download'] = False
+
+        if content_type == 'PDF' and not pdf_file and not self.instance.pdf_file:
+            self.add_error('pdf_file', 'Please select a PDF document to upload.')
+
+        if content_type == 'VIDEO' and not video_file and not youtube_url and not self.instance.video_file and not self.instance.youtube_url:
+            self.add_error('youtube_url', 'Please provide a video file or streaming link (YouTube/Vimeo).')
+
+        return cleaned_data
+
+
 from .models import AboutContent, ContactInfo, HowToGuide, HowToStep
 
 

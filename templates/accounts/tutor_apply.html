@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Apply to Become a Tutor | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 760px; margin: 0 auto;">
+  <div class="section-heading" style="margin-bottom: 25px;">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      EDUCATOR ONBOARDING
+    </div>
+    <h2>APPLY TO BECOME A VERIFIED TUTOR</h2>
+    <p>Join our tutoring network to share knowledge, publish study bundles, and teach students.</p>
+    <div class="bar"></div>
+  </div>
+
+  {% if user_obj.tutor_status == 'PENDING' %}
+    <div style="background: #eff6ff; border: 2px solid #93c5fd; border-radius: var(--radius-md); padding: 28px; text-align: center; margin-bottom: 30px;">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: #dbeafe; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 16px;">
+        <i class="fa-solid fa-hourglass-half"></i>
+      </div>
+      <h3 style="color: var(--blue); margin: 0 0 8px;">Your Tutor Application is Under Review</h3>
+      <p style="color: var(--muted); font-size: 14px; max-width: 540px; margin: 0 auto 20px; line-height: 1.6;">
+        Thank you for submitting your application. Our administrative team is currently reviewing your profile photo, phone number, and credentials. We will contact you or update your account status once the review is completed.
+      </p>
+      <div style="font-size: 12px; color: #1e40af; font-weight: 700;">
+        Applied on: {{ user_obj.tutor_applied_at|date:"d M Y, H:i" }} &bull; Status: <span class="badge" style="background: #fef3c7; color: #92400e;">PENDING REVIEW</span>
+      </div>
+    </div>
+  {% elif user_obj.tutor_status == 'REJECTED' %}
+    <div style="background: #fef2f2; border: 2px solid #fecaca; border-radius: var(--radius-md); padding: 24px; margin-bottom: 30px;">
+      <div style="display: flex; gap: 14px; align-items: flex-start;">
+        <i class="fa-solid fa-circle-exclamation" style="font-size: 24px; color: #dc2626; margin-top: 2px;"></i>
+        <div>
+          <h4 style="color: #991b1b; margin: 0 0 6px;">Previous Application Status: Declined</h4>
+          <p style="font-size: 13px; color: #7f1d1d; margin: 0 0 8px; line-height: 1.5;">
+            {{ user_obj.tutor_rejection_reason|default:"Your previous application could not be verified by administrators." }}
+          </p>
+          <small style="color: #991b1b; font-weight: 700;">You may update your photo and qualifications below to re-apply for review.</small>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="form-card" style="max-width: 100%; padding: 32px; box-shadow: var(--shadow-md);">
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert error" style="margin-bottom: 20px;">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="background: var(--soft); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 22px;">
+        <div style="font-size: 13px; color: var(--text);">
+          <b>Applicant Account:</b> {{ user_obj.full_name|default:user_obj.email }} &bull; <span style="color: var(--muted);">{{ user_obj.email }}</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Profile Picture (Headshot Photo) *</label>
+        {{ form.profile_picture }}
+        {% if form.profile_picture.errors %}<div class="form-error">{{ form.profile_picture.errors.0 }}</div>{% endif %}
+        <small style="color: var(--muted); font-size: 11px;">Upload a professional, clear portrait image (JPG, PNG, or WebP).</small>
+        {% if user_obj.profile_picture %}
+          <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+            <img src="{{ user_obj.profile_picture.url }}" alt="Current Photo" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--blue);">
+            <span style="font-size: 12px; color: var(--muted);">Current Photo</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">WhatsApp Contact Number *</label>
+        {{ form.phone_number }}
+        {% if form.phone_number.errors %}<div class="form-error">{{ form.phone_number.errors.0 }}</div>{% endif %}
+        <small style="color: var(--muted); font-size: 11px;">Must be reachable via WhatsApp for student consultations and administrator verification.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Teaching Experience, Subjects & Bio *</label>
+        {{ form.bio }}
+        {% if form.bio.errors %}<div class="form-error">{{ form.bio.errors.0 }}</div>{% endif %}
+        <small style="color: var(--muted); font-size: 11px;">Summarize the grades, curricula (e.g. CAPS, IEB, Cambridge), and subjects you tutor.</small>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; margin: 20px 0; font-size: 12px; color: var(--muted); line-height: 1.5;">
+        <i class="fa-solid fa-circle-info" style="color: var(--blue);"></i>
+        <b>Manual Admin Review Requirement:</b> Tutors have content creation and student management privileges. All applications require manual verification of your identity, phone number, and photo before activation.
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px;">
+        <a href="{% url 'accounts:dashboard' %}" class="btn outline">Cancel</a>
+        <button type="submit" class="btn primary" style="padding: 12px 28px;">
+          <i class="fa-solid fa-paper-plane"></i> SUBMIT APPLICATION FOR REVIEW &rarr;
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

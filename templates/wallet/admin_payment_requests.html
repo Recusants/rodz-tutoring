@@ -83,7 +83,7 @@
 
                 <!-- Bundle & Coins -->
                 <td style="padding: 14px 16px;">
-                  <div style="font-weight: 700;">{{ req.bundle.name|default:"Custom Pack" }}</div>
+                  <div style="font-weight: 700;">{{ req.bundle_name_snapshot|default:req.bundle.name|default:"Custom Pack" }}</div>
                   <div style="font-size: 14px; font-weight: 900; color: #b45309; margin-top: 2px;">
                     <i class="fa-solid fa-coins"></i> {{ req.coins_to_credit }} Coins
                   </div>
@@ -91,7 +91,12 @@
 
                 <!-- Amount -->
                 <td style="padding: 14px 16px; font-weight: 800; color: #15803d; font-size: 14px;">
-                  R{{ req.amount_paid }}
+                  {{ currency_symbol }}{{ req.amount_paid }}
+                  {% if req.rate_per_coin %}
+                    <div style="font-size: 11px; color: var(--muted); font-weight: normal; margin-top: 2px;">
+                      ({{ currency_symbol }}{{ req.rate_per_coin }}/coin)
+                    </div>
+                  {% endif %}
                 </td>
 
                 <!-- Method & Ref -->

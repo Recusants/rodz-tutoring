@@ -13,6 +13,10 @@ urlpatterns = [
     path('switch-mode/<str:mode>/', views.switch_mode_view, name='switch_mode'),
     path('system-settings/', views.admin_system_settings_view, name='system_settings'),
 
+    # Tutor Application & Admin Review
+    path('tutor-apply/', views.tutor_apply_view, name='tutor_apply'),
+    path('admin/tutor-approvals/', views.admin_tutor_approvals_view, name='admin_tutor_approvals'),
+
     # Admin Total Account Control & CMS
     path('admin/users/', views.admin_user_list_view, name='admin_user_list'),
     path('admin/users/create/', views.admin_user_create_view, name='admin_user_create'),

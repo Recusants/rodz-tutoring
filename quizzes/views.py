@@ -5,20 +5,24 @@ from .models import Quiz, Question, Choice, QuizAttempt
 from wallet.models import ContentUnlock
 
 
-@login_required
 def take_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
     user = request.user
     item = quiz.content_item
 
-    # Check unlock status
-    has_access = (
-        item.is_free or 
-        user.is_tutor or 
-        user.is_admin_role or 
-        user.is_staff or 
-        ContentUnlock.objects.filter(user=user, content_item=item).exists()
-    )
+    # Free items do NOT require login
+    if item.is_free:
+        has_access = True
+    else:
+        if not user.is_authenticated:
+            return redirect(f"/accounts/login/?next={request.path}")
+        has_access = (
+            user.is_tutor or 
+            user.is_admin_role or 
+            user.is_staff or 
+            user.is_superuser or
+            ContentUnlock.objects.filter(user=user, content_item=item).exists()
+        )
 
     if not has_access:
         messages.warning(request, f"Please unlock '{item.title}' with coins to take this quiz.")
@@ -58,14 +62,16 @@ def take_quiz_view(request, quiz_id):
         score_percent = (correct_count / total_questions * 100) if total_questions > 0 else 0
         passed = score_percent >= quiz.pass_percentage
 
-        attempt = QuizAttempt.objects.create(
-            student=user,
-            quiz=quiz,
-            total_questions=total_questions,
-            correct_answers=correct_count,
-            score_percent=round(score_percent, 1),
-            passed=passed
-        )
+        attempt = None
+        if user.is_authenticated:
+            attempt = QuizAttempt.objects.create(
+                student=user,
+                quiz=quiz,
+                total_questions=total_questions,
+                correct_answers=correct_count,
+                score_percent=round(score_percent, 1),
+                passed=passed
+            )
 
         return render(request, 'quizzes/quiz_result.html', {
             'quiz': quiz,

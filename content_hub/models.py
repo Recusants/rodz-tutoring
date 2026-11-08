@@ -90,6 +90,7 @@ class ContentItem(models.Model):
 
     # Monetization / Coins
     is_free = models.BooleanField(default=False, help_text="If True, any student can view without spending coins")
+    allow_download = models.BooleanField(default=False, help_text="Allow learners to download this file directly if the item is free.")
     coin_price = models.PositiveIntegerField(
         default=50, 
         help_text="Amount of coins required to permanently unlock this resource"
@@ -128,6 +129,17 @@ class ContentItem(models.Model):
 
     def __str__(self):
         return f"[{self.grade} - {self.subject.name}] {self.title} ({self.content_type})"
+
+    @property
+    def can_download(self):
+        """Returns True if the resource is free, marked downloadable by uploader, and has a downloadable file."""
+        return bool(self.is_free and self.allow_download and (self.pdf_file or self.video_file))
+
+    @property
+    def downloadable_file(self):
+        if not self.can_download:
+            return None
+        return self.pdf_file or self.video_file
 
     @property
     def youtube_embed_id(self):
@@ -552,5 +564,51 @@ class HowToStep(models.Model):
 
     def __str__(self):
         return f"Step {self.step_number}: {self.title}"
+
+
+class TermsContent(models.Model):
+    title = models.CharField(max_length=255, default="Terms of Service & Coin Economy Policies")
+    last_updated = models.CharField(max_length=100, default="September 2026")
+    intro_notice = models.TextField(
+        default="Please review these terms and conditions carefully before using the Rodz Tutoring portal, purchasing study coins, unlocking educational course packs, or initiating peer coin transfers. By utilizing our services, you agree to be bound by these policies."
+    )
+    coin_policy = models.TextField(
+        default="1. NATURE OF STUDY COINS: Rodz Study Coins are non-fiat, educational utility tokens designated exclusively for unlocking curated study packs, exam revision notes, videos, and quizzes on the Rodz Tutoring portal. Coins have no direct cash redemption rights for learners unless specifically sold back through verified tutor/student cash-out programs.",
+        help_text="Nature of coins and educational utility"
+    )
+    pricing_policy = models.TextField(
+        default="2. DYNAMIC PRICING & PRICE ADJUSTMENTS: All coin bundle purchase prices, base rates, and cash-out redemption rates are established by platform administration and are subject to periodic review and adjustment based on academic curricula, server infrastructure, and operating conditions. All coin purchases permanently lock in the rate per coin snapshot active at the exact timestamp of deposit verification. Any future price increases or decreases do not alter previously confirmed purchases or unlocks.",
+        help_text="Dynamic pricing changes and rate snapshot preservation"
+    )
+    transfer_charges_policy = models.TextField(
+        default="3. PEER-TO-PEER TRANSFERS & SERVICE CHARGES: Users may transfer coins directly to any registered student or educator on Rodz Tutoring without requiring administrative approval. All peer transfers are subject to a platform transfer fee (standard: 2 coins or configured percentage) which is automatically deducted from the sender and credited to the Rodz Central System Treasury to maintain infrastructure integrity and prevent spam.",
+        help_text="Peer transfer fee policy and routing to System Treasury"
+    )
+    creator_earnings_policy = models.TextField(
+        default="4. COURSE CREATOR REVENUE & EARNINGS: When a learner unlocks a published course bundle, the complete coin amount paid is immediately credited to the registered creator's (tutor's) wallet. Qualified tutors may accumulate study coins and request cash-out redemption at the prevailing cash-out rate set by administration, subject to minimum thresholds and account verification.",
+        help_text="Creator course unlock earnings and redemption terms"
+    )
+    content_licensing_policy = models.TextField(
+        default="5. INTELLECTUAL PROPERTY & SECURITY: All learning materials, protected PDF documents, question papers, and streaming video walkthroughs remain the exclusive proprietary property of Rodz Tutoring and its vetted educators. Content is provided strictly for in-app educational viewing. Downloading, screen recording, republishing, or redistributing content without express written consent constitutes a material breach resulting in immediate account termination.",
+        help_text="Anti-piracy and content protection"
+    )
+    refund_policy = models.TextField(
+        default="6. PAYMENTS & REFUND POLICY: Once coin purchases or course bundle unlocks are verified and credited, transactions are final and non-refundable. In cases of billing discrepancies or technical access failures, support inquiries must be lodged with official payment receipts within 14 days of the transaction.",
+        help_text="Refunds and dispute policy"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Terms & Conditions'
+        verbose_name_plural = 'Terms & Conditions'
+
+    def __str__(self):
+        return f"{self.title} (Updated: {self.last_updated})"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
 
 

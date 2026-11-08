@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ terms.title }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 36px; max-width: 980px; margin: 0 auto;">
+  
+  {% if user.is_staff or user.is_admin_role %}
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 14px;">
+      <a href="{% url 'accounts:admin_site_content' %}#terms-tab" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px;">
+        <i class="fa-solid fa-pen-to-square"></i> Edit Terms in Admin CMS
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- Header -->
+  <div class="section-heading" style="margin-bottom: 24px;">
+    <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
+      LEGAL & COIN ECONOMY DISCLOSURES
+    </div>
+    <h1 style="font-size: 32px; font-weight: 900; color: var(--blue); margin-bottom: 10px;">
+      {{ terms.title }}
+    </h1>
+    <p style="font-size: 14px; color: var(--muted); max-width: 720px; margin: 0 auto 10px;">
+      Official platform policies, coin utility guidelines, dynamic pricing disclosures, and peer-to-peer transfer terms.
+    </p>
+    <div style="font-size: 12px; font-weight: 700; color: #6d28d9; background: #f5f3ff; display: inline-block; padding: 4px 12px; border-radius: 20px; border: 1px solid #ddd6fe;">
+      <i class="fa-solid fa-clock-rotate-left"></i> Effective Date: {{ terms.last_updated }}
+    </div>
+    <div class="bar" style="margin: 18px auto 0;"></div>
+  </div>
+
+  <!-- Intro Notice Box -->
+  <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid var(--blue); border-radius: var(--radius-md); padding: 18px 22px; margin-bottom: 30px; font-size: 14px; line-height: 1.6; color: #1e3a8a;">
+    <div style="font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-circle-info"></i> Important Agreement
+    </div>
+    {{ terms.intro_notice }}
+  </div>
+
+  <!-- Quick Jump Pills -->
+  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px;">
+    <a href="#coins-policy" class="btn outline small" style="font-size: 11px;">1. Study Coins</a>
+    <a href="#pricing-policy" class="btn outline small" style="font-size: 11px;">2. Dynamic Pricing</a>
+    <a href="#transfers-policy" class="btn outline small" style="font-size: 11px;">3. Transfer Charges</a>
+    <a href="#creators-policy" class="btn outline small" style="font-size: 11px;">4. Creator Earnings</a>
+    <a href="#content-policy" class="btn outline small" style="font-size: 11px;">5. Intellectual Property</a>
+    <a href="#refund-policy" class="btn outline small" style="font-size: 11px;">6. Refunds & Finality</a>
+  </div>
+
+  <!-- Clauses -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- 1. Nature of Coins -->
+    <div id="coins-policy" style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 28px; box-shadow: var(--shadow-sm);">
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--blue); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: #fef3c7; color: #b45309; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="fa-solid fa-coins"></i>
+        </span>
+        Section 1: Nature of Rodz Study Coins
+      </h3>
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        {{ terms.coin_policy|linebreaksbr }}
+      </div>
+    </div>
+
+    <!-- 2. Dynamic Pricing & Price Adjustments -->
+    <div id="pricing-policy" style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 28px; box-shadow: var(--shadow-sm); border-left: 4px solid #8b5cf6;">
+      <h3 style="font-size: 18px; font-weight: 800; color: #6d28d9; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: #f5f3ff; color: #6d28d9; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="fa-solid fa-tags"></i>
+        </span>
+        Section 2: Dynamic Pricing & Rate Snapshot Disclosures
+      </h3>
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        {{ terms.pricing_policy|linebreaksbr }}
+      </div>
+      <div style="margin-top: 14px; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: var(--radius-sm); padding: 12px 16px; font-size: 12px; color: #581c87;">
+        <b>Rate Snapshot Guarantee:</b> Even when platform bundle prices are updated, past payment activation requests permanently maintain the exact price and rate per coin locked in at the time of your purchase.
+      </div>
+    </div>
+
+    <!-- 3. Transfers & Platform Charges -->
+    <div id="transfers-policy" style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 28px; box-shadow: var(--shadow-sm); border-left: 4px solid #0284c7;">
+      <h3 style="font-size: 18px; font-weight: 800; color: #0284c7; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: #e0f2fe; color: #0369a1; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="fa-solid fa-paper-plane"></i>
+        </span>
+        Section 3: Peer Transfers & Platform Service Charges
+      </h3>
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        {{ terms.transfer_charges_policy|linebreaksbr }}
+      </div>
+      <div style="margin-top: 14px; background: #f0f9ff; border: 1px dashed #bae6fd; border-radius: var(--radius-sm); padding: 12px 16px; font-size: 12px; color: #0369a1;">
+        <b>System Treasury Routing:</b> All transfer fees are automatically credited to the platform System Wallet Treasury to sustain high-speed instant peer transactions with zero admin delay.
+      </div>
+    </div>
+
+    <!-- 4. Creator Course Revenue -->
+    <div id="creators-policy" style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 28px; box-shadow: var(--shadow-sm); border-left: 4px solid #16a34a;">
+      <h3 style="font-size: 18px; font-weight: 800; color: #166534; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: #dcfce7; color: #15803d; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="fa-solid fa-chalkboard-user"></i>
+        </span>
+        Section 4: Course Creator Revenue & Cash-Out Terms
+      </h3>
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        {{ terms.creator_earnings_policy|linebreaksbr }}
+      </div>
+    </div>
+
+    <!-- 5. Content Licensing & Anti-Piracy -->
+    <div id="content-policy" style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 28px; box-shadow: var(--shadow-sm); border-left: 4px solid #dc2626;">
+      <h3 style="font-size: 18px; font-weight: 800; color: #b91c1c; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: #fee2e2; color: #b91c1c; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="fa-solid fa-shield-halved"></i>
+        </span>
+        Section 5: Intellectual Property & Security Controls
+      </h3>
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        {{ terms.content_licensing_policy|linebreaksbr }}
+      </div>
+    </div>
+
+    <!-- 6. Refunds & Disputes -->
+    <div id="refund-policy" style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 28px; box-shadow: var(--shadow-sm);">
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--blue); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <span style="background: #f1f5f9; color: #475569; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="fa-solid fa-scale-balanced"></i>
+        </span>
+        Section 6: Payments, Finality & Dispute Policy
+      </h3>
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        {{ terms.refund_policy|linebreaksbr }}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom CTA -->
+  <div style="text-align: center; margin-top: 40px; padding: 26px; background: var(--soft); border-radius: var(--radius-md);">
+    <h4 style="font-size: 18px; margin-bottom: 8px;">Questions About Our Terms or Coin Economy?</h4>
+    <p style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">
+      Our team is available to assist students, parents, and educators with any inquiries.
+    </p>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="{% url 'content_hub:contact' %}" class="btn primary small">Contact Advisory Support</a>
+      <a href="{% url 'wallet:buy_coins' %}" class="btn outline small">View Coin Bundles</a>
+    </div>
+  </div>
+
+</section>
+{% endblock %}

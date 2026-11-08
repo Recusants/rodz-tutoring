@@ -44,6 +44,9 @@
     <button type="button" class="cms-tab-btn" data-tab="howto-tab" style="padding: 10px 20px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--text); display: inline-flex; align-items: center; gap: 8px;">
       <i class="fa-solid fa-list-ol"></i> 3. How-To Guide & Steps
     </button>
+    <button type="button" class="cms-tab-btn" data-tab="terms-tab" style="padding: 10px 20px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--text); display: inline-flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-scale-balanced"></i> 4. Terms & Coin Policies
+    </button>
   </div>
 
   <!-- ==================== TAB 1: ABOUT US CONTENT ==================== -->
@@ -310,6 +313,79 @@
     </div>
   </div>
 
+  <!-- ==================== TAB 4: TERMS & COIN POLICIES ==================== -->
+  <div id="terms-tab" class="cms-tab-content" style="display: none;">
+    <div class="dash-section" style="padding: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 style="font-size: 20px; color: var(--blue); margin: 0 0 4px;">Edit Terms of Service & Coin Economy Policies</h2>
+          <p style="font-size: 12px; color: var(--muted); margin: 0;">Stored in database and rendered live on /terms/ and transaction confirmation modals.</p>
+        </div>
+        <a href="{% url 'content_hub:terms' %}" target="_blank" class="btn outline small" style="font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview Live Terms &rarr;
+        </a>
+      </div>
+
+      <form id="termsForm" method="POST" action="{% url 'content_hub:admin_site_content' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_terms">
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div>
+            <label style="font-size: 13px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Document Title</label>
+            <input type="text" name="title" value="{{ terms_obj.title }}" class="form-input" style="width: 100%;" required>
+          </div>
+          <div>
+            <label style="font-size: 13px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Effective Last Updated Date</label>
+            <input type="text" name="last_updated" value="{{ terms_obj.last_updated }}" class="form-input" style="width: 100%;" placeholder="e.g. September 2026">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Introductory Notice (Highlighted Banner)</label>
+          <textarea name="intro_notice" class="form-input" rows="3" style="width: 100%;">{{ terms_obj.intro_notice }}</textarea>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Section 1: Nature of Study Coins</label>
+          <textarea name="coin_policy" class="form-input" rows="4" style="width: 100%;">{{ terms_obj.coin_policy }}</textarea>
+        </div>
+
+        <div style="margin-bottom: 20px; border-left: 3px solid #8b5cf6; padding-left: 14px;">
+          <label style="font-size: 13px; font-weight: 700; color: #6d28d9; display: block; margin-bottom: 6px;">Section 2: Dynamic Pricing & Rate Snapshot Disclosures</label>
+          <textarea name="pricing_policy" class="form-input" rows="4" style="width: 100%;">{{ terms_obj.pricing_policy }}</textarea>
+          <small style="color: var(--muted); font-size: 11px;">Discloses that prices are adjustable by admin, while past purchases maintain frozen snapshots.</small>
+        </div>
+
+        <div style="margin-bottom: 20px; border-left: 3px solid #0284c7; padding-left: 14px;">
+          <label style="font-size: 13px; font-weight: 700; color: #0284c7; display: block; margin-bottom: 6px;">Section 3: Peer Transfers & Platform Service Charges</label>
+          <textarea name="transfer_charges_policy" class="form-input" rows="4" style="width: 100%;">{{ terms_obj.transfer_charges_policy }}</textarea>
+          <small style="color: var(--muted); font-size: 11px;">Explains transfer fee deductions and deposit to System Treasury.</small>
+        </div>
+
+        <div style="margin-bottom: 20px; border-left: 3px solid #16a34a; padding-left: 14px;">
+          <label style="font-size: 13px; font-weight: 700; color: #166534; display: block; margin-bottom: 6px;">Section 4: Course Creator Revenue & Cash-Out Terms</label>
+          <textarea name="creator_earnings_policy" class="form-input" rows="4" style="width: 100%;">{{ terms_obj.creator_earnings_policy }}</textarea>
+          <small style="color: var(--muted); font-size: 11px;">Explains that course unlock coins go to creator, and outlines cash-out rules.</small>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Section 5: Intellectual Property & Security Controls</label>
+          <textarea name="content_licensing_policy" class="form-input" rows="4" style="width: 100%;">{{ terms_obj.content_licensing_policy }}</textarea>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 6px;">Section 6: Payments, Finality & Dispute Policy</label>
+          <textarea name="refund_policy" class="form-input" rows="4" style="width: 100%;">{{ terms_obj.refund_policy }}</textarea>
+        </div>
+
+        <button type="submit" id="saveTermsBtn" class="btn primary small" style="display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-floppy-disk"></i> Save Terms & Policies (AJAX)
+        </button>
+      </form>
+    </div>
+  </div>
+
 </section>
 
 <!-- ==================== STEP MODAL (For Add / Edit) ==================== -->
@@ -479,6 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setupAjaxForm('aboutForm', 'saveAboutBtn', 'About Page Updated!');
   setupAjaxForm('contactCmsForm', 'saveContactBtn', 'Contact Details Updated!');
   setupAjaxForm('guideHeaderForm', 'saveGuideBtn', 'Guide Header Updated!');
+  setupAjaxForm('termsForm', 'saveTermsBtn', 'Terms & Conditions Saved!');
 
   // 3. Step Form Modal AJAX submission
   const stepModalForm = document.getElementById('stepModalForm');

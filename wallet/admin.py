@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import StudentWallet, CoinTransaction, ContentUnlock, CourseUnlock, PaymentMethod, CoinBundle, CoinPaymentRequest
+from decimal import Decimal
+from .models import (
+    StudentWallet, CoinTransaction, ContentUnlock, CourseUnlock, 
+    PaymentMethod, CoinBundle, CoinPaymentRequest, CoinPriceChangeLog
+)
 
 
 @admin.register(PaymentMethod)
@@ -11,14 +15,46 @@ class PaymentMethodAdmin(admin.ModelAdmin):
 
 @admin.register(CoinBundle)
 class CoinBundleAdmin(admin.ModelAdmin):
-    list_display = ('name', 'coins', 'price_zar', 'badge', 'order', 'is_active')
+    list_display = ('name', 'coins', 'price_zar', 'rate_per_coin_display', 'badge', 'order', 'is_active')
     list_editable = ('order', 'is_active')
     search_fields = ('name',)
+
+    def rate_per_coin_display(self, obj):
+        if obj.coins:
+            return f"R{round(obj.price_zar / obj.coins, 4)}/c"
+        return "R0.00/c"
+    rate_per_coin_display.short_description = "Rate / Coin"
+
+    def save_model(self, request, obj, form, change):
+        if change and 'price_zar' in form.changed_data:
+            old_price = form.initial.get('price_zar', obj.price_zar)
+            old_rate = round(old_price / obj.coins, 4) if obj.coins else Decimal('0.0000')
+            new_rate = round(obj.price_zar / obj.coins, 4) if obj.coins else Decimal('0.0000')
+            CoinPriceChangeLog.objects.create(
+                bundle=obj,
+                bundle_name=obj.name,
+                coins=obj.coins,
+                old_price_zar=old_price,
+                new_price_zar=obj.price_zar,
+                old_rate_per_coin=old_rate,
+                new_rate_per_coin=new_rate,
+                changed_by=request.user,
+                change_reason="Django Admin Change"
+            )
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(CoinPriceChangeLog)
+class CoinPriceChangeLogAdmin(admin.ModelAdmin):
+    list_display = ('bundle_name', 'coins', 'old_price_zar', 'new_price_zar', 'old_rate_per_coin', 'new_rate_per_coin', 'changed_by', 'created_at')
+    list_filter = ('bundle', 'created_at')
+    search_fields = ('bundle_name', 'change_reason', 'changed_by__email')
+    readonly_fields = ('bundle', 'bundle_name', 'coins', 'old_price_zar', 'new_price_zar', 'old_rate_per_coin', 'new_rate_per_coin', 'changed_by', 'change_reason', 'created_at')
 
 
 @admin.register(CoinPaymentRequest)
 class CoinPaymentRequestAdmin(admin.ModelAdmin):
-    list_display = ('id', 'student', 'bundle', 'coins_to_credit', 'amount_paid', 'reference_number', 'status', 'created_at')
+    list_display = ('id', 'student', 'bundle', 'coins_to_credit', 'amount_paid', 'rate_per_coin', 'reference_number', 'status', 'created_at')
     list_filter = ('status', 'payment_method', 'created_at')
     search_fields = ('student__email', 'reference_number')
 

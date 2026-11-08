@@ -7,7 +7,12 @@ from django.utils import timezone
 from django.db.models import Sum, Q
 from django.core.paginator import Paginator
 from urllib.parse import quote
-from .models import StudentWallet, ContentUnlock, CourseUnlock, CoinTransaction, CoinBundle, PaymentMethod, CoinPaymentRequest
+from decimal import Decimal
+from django.http import JsonResponse
+from .models import (
+    StudentWallet, ContentUnlock, CourseUnlock, CoinTransaction, 
+    CoinBundle, PaymentMethod, CoinPaymentRequest, CoinPriceChangeLog, CoinWallet, SystemWallet
+)
 from .forms import CoinPaymentActivationForm
 from content_hub.models import ContentItem
 from accounts.models import CustomUser
@@ -39,6 +44,9 @@ def buy_coins_view(request):
             req_obj.student = request.user
             req_obj.coins_to_credit = req_obj.bundle.coins
             req_obj.amount_paid = req_obj.bundle.price_zar
+            req_obj.bundle_name_snapshot = req_obj.bundle.name
+            req_obj.bundle_price_snapshot = req_obj.bundle.price_zar
+            req_obj.rate_per_coin = round(req_obj.bundle.price_zar / req_obj.bundle.coins, 4) if req_obj.bundle.coins else 0
             req_obj.save()
             messages.success(
                 request,
@@ -136,9 +144,25 @@ def unlock_course_view(request, course_slug):
             )
             return redirect('wallet:buy_coins')
 
-        # Debit coins
+        # Debit coins from student, and credit coins to the course creator!
         if final_price > 0:
-            wallet.debit_coins(final_price, description=f"Course Bundle Unlock: {course.title}", transaction_type='COURSE_UNLOCK')
+            wallet.debit_coins(
+                final_price, 
+                description=f"Course Bundle Unlock: {course.title}", 
+                transaction_type='COURSE_UNLOCK',
+                counterparty=course.creator
+            )
+            if course.creator and course.creator != request.user:
+                creator_wallet, _ = StudentWallet.objects.get_or_create(user=course.creator)
+                creator_wallet.credit_coins(
+                    final_price,
+                    description=f"Course Sale Earning: '{course.title}' unlocked by student",
+                    transaction_type='CREATOR_EARNING',
+                    counterparty=request.user
+                )
+                system_wallet = SystemWallet.get_instance()
+                system_wallet.total_creator_earnings_processed += final_price
+                system_wallet.save()
 
         course_unlock = CourseUnlock.objects.create(
             user=request.user,
@@ -208,11 +232,12 @@ def admin_payment_requests_view(request):
                     coin_req.admin_notes = admin_note
                 coin_req.save()
 
-                # Credit student wallet
+                # Credit student wallet by deducting from System Wallet Treasury
                 student_wallet, _ = StudentWallet.objects.get_or_create(user=coin_req.student)
                 bundle_title = coin_req.bundle.name if coin_req.bundle else 'Coin Pack'
                 tx_desc = f"Payment Approved: {bundle_title} (Ref: {coin_req.reference_number})"
-                student_wallet.credit_coins(coin_req.coins_to_credit, description=tx_desc, admin_user=request.user, transaction_type='PAYMENT_APPROVED')
+                system_wallet = SystemWallet.get_instance()
+                system_wallet.deduct_for_purchase(student_wallet, coin_req.coins_to_credit, description=tx_desc, admin_user=request.user)
 
                 messages.success(
                     request,
@@ -302,10 +327,10 @@ def coin_history_view(request):
 
     # Base Queryset
     if view_scope == 'all':
-        transactions_qs = CoinTransaction.objects.select_related('wallet__user', 'created_by').all()
+        transactions_qs = CoinTransaction.objects.select_related('wallet__user', 'created_by', 'counterparty').all()
     else:
         wallet, _ = StudentWallet.objects.get_or_create(user=user)
-        transactions_qs = CoinTransaction.objects.select_related('wallet__user', 'created_by').filter(wallet=wallet)
+        transactions_qs = CoinTransaction.objects.select_related('wallet__user', 'created_by', 'counterparty').filter(wallet=wallet)
 
     # Search filter (User name/email or transaction description)
     q = request.GET.get('q', '').strip()
@@ -313,7 +338,9 @@ def coin_history_view(request):
         transactions_qs = transactions_qs.filter(
             Q(wallet__user__email__icontains=q) |
             Q(wallet__user__full_name__icontains=q) |
-            Q(description__icontains=q)
+            Q(description__icontains=q) |
+            Q(counterparty__email__icontains=q) |
+            Q(counterparty__full_name__icontains=q)
         )
 
     # Specific user filter (for admin inspecting a specific learner's wallet)
@@ -326,13 +353,15 @@ def coin_history_view(request):
         except (CustomUser.DoesNotExist, ValueError):
             pass
 
-    # Type filter: 'ALL', 'CREDIT', 'DEBIT', or specific transaction_type code
+    # Type filter: 'ALL', 'CREDIT', 'DEBIT', 'TRANSFER', or specific transaction_type code
     type_filter = request.GET.get('type', 'ALL').strip().upper()
     if type_filter and type_filter != 'ALL':
         if type_filter == 'CREDIT':
             transactions_qs = transactions_qs.filter(amount__gt=0)
         elif type_filter == 'DEBIT':
             transactions_qs = transactions_qs.filter(amount__lt=0)
+        elif type_filter == 'TRANSFER':
+            transactions_qs = transactions_qs.filter(transaction_type__in=['TRANSFER_SENT', 'TRANSFER_RECEIVED'])
         else:
             transactions_qs = transactions_qs.filter(transaction_type=type_filter)
 
@@ -405,4 +434,409 @@ def coin_history_view(request):
         'my_total_tx_count': my_total_tx_count,
         'TYPE_CHOICES': CoinTransaction.TYPE_CHOICES,
     })
+
+
+@login_required
+def transfer_coins_view(request):
+    """
+    Instant user-to-user coin transfer without requiring admin approval.
+    Allows students, tutors, and staff to send coins directly to any other registered user.
+    Supports both SweetAlert2 AJAX requests and standard POST fallback.
+    """
+    user = request.user
+    wallet, _ = StudentWallet.objects.get_or_create(user=user)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('is_ajax') == '1'
+
+    # Pre-filled recipient from query param ?to=email
+    prefilled_to = request.GET.get('to', '').strip()
+
+    if request.method == 'POST':
+        recipient_identifier = (request.POST.get('recipient') or request.POST.get('recipient_email') or '').strip()
+        coin_amount = request.POST.get('amount', '').strip()
+        note = request.POST.get('note', '').strip()
+
+        # Validate Recipient
+        if not recipient_identifier:
+            msg = "Please enter the recipient's registered email address."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('wallet:transfer_coins')
+
+        recipient_user = CustomUser.objects.filter(
+            Q(email__iexact=recipient_identifier) | 
+            Q(phone_number__iexact=recipient_identifier)
+        ).first()
+
+        if not recipient_user:
+            msg = f"User '{recipient_identifier}' was not found. Please double-check their registered account email."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=404)
+            messages.error(request, msg)
+            return redirect('wallet:transfer_coins')
+
+        if recipient_user == user:
+            msg = "You cannot transfer coins to your own account."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('wallet:transfer_coins')
+
+        # Validate Amount & Transfer Fee
+        system_wallet = SystemWallet.get_instance()
+        try:
+            amount = int(coin_amount)
+            if amount <= 0:
+                raise ValueError()
+        except ValueError:
+            msg = "Please enter a valid coin amount of at least 1 coin."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('wallet:transfer_coins')
+
+        transfer_fee = system_wallet.calculate_transfer_fee(amount)
+        total_deducted = amount + transfer_fee
+
+        if not wallet.can_afford(total_deducted):
+            msg = f"Insufficient coins! Transferring {amount} coins requires a {transfer_fee} coin platform fee (Total: {total_deducted} coins). You only have {wallet.coins} coins."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('wallet:transfer_coins')
+
+        # Execute atomic transfer (zero admin approval needed)
+        try:
+            tx_sender, tx_recipient = wallet.transfer_coins_to(recipient_user, amount, note=note)
+            success_msg = f"🎉 Successfully transferred {amount} coins to {recipient_user.full_name or recipient_user.email} (Platform fee: {transfer_fee} coins)!"
+            if is_ajax:
+                return JsonResponse({
+                    'status': 'success',
+                    'success': True,
+                    'new_balance': wallet.coins,
+                    'remaining_coins': wallet.coins,
+                    'amount': amount,
+                    'fee': transfer_fee,
+                    'total_deducted': total_deducted,
+                    'recipient_name': recipient_user.full_name or recipient_user.email,
+                    'message': success_msg,
+                })
+            messages.success(request, success_msg)
+            return redirect('wallet:coin_history')
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': str(e)}, status=400)
+            messages.error(request, f"Transfer failed: {str(e)}")
+            return redirect('wallet:transfer_coins')
+
+    # GET: Load recent peer transfers made by this user
+    system_wallet = SystemWallet.get_instance()
+    recent_transfers = CoinTransaction.objects.filter(
+        wallet=wallet,
+        transaction_type__in=['TRANSFER_SENT', 'TRANSFER_RECEIVED']
+    ).select_related('counterparty').order_by('-created_at')[:8]
+
+    return render(request, 'wallet/transfer_coins.html', {
+        'wallet': wallet,
+        'recent_transfers': recent_transfers,
+        'prefilled_to': prefilled_to,
+        'transfer_fee': system_wallet.transfer_fee_coins,
+        'system_wallet': system_wallet,
+    })
+
+
+@login_required
+def sell_coins_view(request):
+    """
+    Allows tutors and students to cash out / sell coins back to the platform treasury.
+    Coins are deducted from the user's wallet and returned to the System Wallet Treasury.
+    """
+    wallet, _ = StudentWallet.objects.get_or_create(user=request.user)
+    system_wallet = SystemWallet.get_instance()
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('is_ajax') == '1'
+
+    if request.method == 'POST':
+        coin_amount_raw = request.POST.get('coins', '').strip()
+        bank_name = request.POST.get('bank_name', '').strip()
+        account_number = request.POST.get('account_number', '').strip()
+        account_holder = request.POST.get('account_holder', '').strip()
+        notes = request.POST.get('notes', '').strip()
+
+        try:
+            coins_to_sell = int(coin_amount_raw)
+            if coins_to_sell < system_wallet.min_cashout_coins:
+                raise ValueError(f"Minimum cash-out is {system_wallet.min_cashout_coins} coins.")
+        except ValueError as ve:
+            msg = str(ve) if "Minimum" in str(ve) else f"Please enter a valid coin amount of at least {system_wallet.min_cashout_coins} coins."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('wallet:sell_coins')
+
+        if not wallet.can_afford(coins_to_sell):
+            msg = f"Insufficient coin balance! You only have {wallet.coins} coins."
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('wallet:sell_coins')
+
+        # Calculate cash payout
+        payout_amount = round(Decimal(str(coins_to_sell)) * system_wallet.cashout_rate_per_coin, 2)
+
+        # Debit user wallet & add coins to SystemWallet
+        desc = f"Coins Cashed Out: {coins_to_sell} coins -> {system_wallet.currency_symbol}{payout_amount} ({bank_name} {account_number})"
+        system_wallet.add_from_sale(wallet, coins_to_sell, payout_amount=payout_amount, description=desc, user=request.user)
+
+        success_msg = f"🎉 Successfully sold {coins_to_sell} coins for {system_wallet.currency_symbol}{payout_amount}! Payout has been queued to your bank account."
+        if is_ajax:
+            return JsonResponse({
+                'status': 'success',
+                'success': True,
+                'message': success_msg,
+                'remaining_coins': wallet.coins,
+                'coins_sold': coins_to_sell,
+                'payout_amount': str(payout_amount),
+                'currency_symbol': system_wallet.currency_symbol,
+            })
+        messages.success(request, success_msg)
+        return redirect('wallet:coin_history')
+
+    recent_sales = CoinTransaction.objects.filter(
+        wallet=wallet,
+        transaction_type='COIN_SALE'
+    ).order_by('-created_at')[:8]
+
+    return render(request, 'wallet/sell_coins.html', {
+        'wallet': wallet,
+        'system_wallet': system_wallet,
+        'recent_sales': recent_sales,
+    })
+
+
+@user_passes_test(is_admin_or_staff)
+def admin_coin_pricing_view(request):
+    """
+    Comprehensive Admin control center:
+    1. Adjust platform financial settings (Currency Code, Currency Symbol, Transfer Fees, Cash-out Price).
+    2. Full Coin Bundle Editor (adjust Name, Coins, Price, Badge, Description, Order, Active/Inactive).
+    3. Create and delete coin bundles.
+    4. View Central System Wallet Treasury reserves and price change audit logs.
+    """
+    bundles = CoinBundle.objects.all().order_by('order', 'price_zar')
+    system_wallet = SystemWallet.get_instance()
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('is_ajax') == '1'
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # 1. Update Platform Financial Settings (Currency, Fees, Cashout Price)
+        if action == 'save_financial_settings':
+            currency_code = request.POST.get('currency_code', 'ZAR').strip().upper()
+            currency_symbol = request.POST.get('currency_symbol', 'R').strip()
+            transfer_fee_coins_raw = request.POST.get('transfer_fee_coins', '2').strip()
+            cashout_rate_raw = request.POST.get('cashout_rate_per_coin', '0.80').strip()
+            min_cashout_raw = request.POST.get('min_cashout_coins', '50').strip()
+
+            try:
+                system_wallet.currency_code = currency_code or 'ZAR'
+                system_wallet.currency_symbol = currency_symbol or 'R'
+                system_wallet.transfer_fee_coins = max(0, int(transfer_fee_coins_raw))
+                system_wallet.cashout_rate_per_coin = Decimal(cashout_rate_raw)
+                system_wallet.min_cashout_coins = max(1, int(min_cashout_raw))
+                system_wallet.save()
+
+                msg = f"✓ Platform Financial Settings updated: Currency is {system_wallet.currency_symbol} ({system_wallet.currency_code}), Transfer Fee is {system_wallet.transfer_fee_coins} coins, Cash-out Rate is {system_wallet.currency_symbol}{system_wallet.cashout_rate_per_coin}/coin."
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'success': True, 'message': msg})
+                messages.success(request, msg)
+                return redirect('wallet:admin_pricing')
+            except Exception as e:
+                err_msg = f"Error saving financial settings: {str(e)}"
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'success': False, 'message': err_msg}, status=400)
+                messages.error(request, err_msg)
+                return redirect('wallet:admin_pricing')
+
+        # 2. Create New Bundle
+        elif action == 'create_bundle':
+            name = request.POST.get('name', '').strip()
+            coins_raw = request.POST.get('coins', '').strip()
+            price_raw = request.POST.get('price_zar', '').strip()
+            badge = request.POST.get('badge', '').strip()
+            description = request.POST.get('description', '').strip()
+            order_raw = request.POST.get('order', '0').strip()
+            is_active = request.POST.get('is_active') in ['1', 'true', 'True', 'on']
+
+            if not name or not coins_raw or not price_raw:
+                err = "Name, Coins, and Price are required fields."
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'success': False, 'message': err}, status=400)
+                messages.error(request, err)
+                return redirect('wallet:admin_pricing')
+
+            try:
+                new_bundle = CoinBundle.objects.create(
+                    name=name,
+                    coins=int(coins_raw),
+                    price_zar=Decimal(price_raw),
+                    badge=badge,
+                    description=description,
+                    order=int(order_raw or 0),
+                    is_active=is_active
+                )
+                CoinPriceChangeLog.objects.create(
+                    bundle=new_bundle,
+                    bundle_name=new_bundle.name,
+                    coins=new_bundle.coins,
+                    old_price_zar=Decimal('0.00'),
+                    new_price_zar=new_bundle.price_zar,
+                    old_rate_per_coin=Decimal('0.0000'),
+                    new_rate_per_coin=new_bundle.rate_per_coin,
+                    changed_by=request.user,
+                    change_reason="Initial Bundle Creation"
+                )
+                msg = f"✓ Created new bundle '{new_bundle.name}' ({new_bundle.coins} coins for {system_wallet.currency_symbol}{new_bundle.price_zar})."
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'success': True, 'message': msg})
+                messages.success(request, msg)
+                return redirect('wallet:admin_pricing')
+            except Exception as e:
+                err = f"Failed to create bundle: {str(e)}"
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'success': False, 'message': err}, status=400)
+                messages.error(request, err)
+                return redirect('wallet:admin_pricing')
+
+        # 3. Full Bundle Update (Edit All Fields)
+        elif action == 'save_bundle':
+            bundle_id = request.POST.get('bundle_id')
+            bundle = get_object_or_404(CoinBundle, id=bundle_id)
+
+            name = request.POST.get('name', bundle.name).strip()
+            coins_raw = request.POST.get('coins', str(bundle.coins)).strip()
+            price_raw = request.POST.get('price_zar', str(bundle.price_zar)).strip()
+            badge = request.POST.get('badge', bundle.badge).strip()
+            description = request.POST.get('description', bundle.description).strip()
+            order_raw = request.POST.get('order', str(bundle.order)).strip()
+            is_active = request.POST.get('is_active') in ['1', 'true', 'True', 'on']
+            reason = request.POST.get('change_reason', '').strip()
+
+            try:
+                new_coins = int(coins_raw)
+                new_price = Decimal(price_raw)
+                old_price = bundle.price_zar
+                old_coins = bundle.coins
+
+                price_or_coins_changed = (new_price != old_price) or (new_coins != old_coins)
+
+                bundle.name = name
+                bundle.coins = new_coins
+                bundle.price_zar = new_price
+                bundle.badge = badge
+                bundle.description = description
+                bundle.order = int(order_raw or 0)
+                bundle.is_active = is_active
+                bundle.save()
+
+                if price_or_coins_changed:
+                    old_rate = round(old_price / old_coins, 4) if old_coins else Decimal('0.0000')
+                    new_rate = round(new_price / new_coins, 4) if new_coins else Decimal('0.0000')
+                    CoinPriceChangeLog.objects.create(
+                        bundle=bundle,
+                        bundle_name=bundle.name,
+                        coins=bundle.coins,
+                        old_price_zar=old_price,
+                        new_price_zar=new_price,
+                        old_rate_per_coin=old_rate,
+                        new_rate_per_coin=new_rate,
+                        changed_by=request.user,
+                        change_reason=reason or "Admin Bundle Specifications Update"
+                    )
+
+                msg = f"✓ Bundle '{bundle.name}' updated successfully!"
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'success': True, 'message': msg})
+                messages.success(request, msg)
+                return redirect('wallet:admin_pricing')
+            except Exception as e:
+                err = f"Failed to update bundle: {str(e)}"
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'success': False, 'message': err}, status=400)
+                messages.error(request, err)
+                return redirect('wallet:admin_pricing')
+
+        # 4. Delete Bundle
+        elif action == 'delete_bundle':
+            bundle_id = request.POST.get('bundle_id')
+            bundle = get_object_or_404(CoinBundle, id=bundle_id)
+            bundle_name = bundle.name
+            bundle.delete()
+            msg = f"✓ Bundle '{bundle_name}' has been deleted."
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'success': True, 'message': msg})
+            messages.success(request, msg)
+            return redirect('wallet:admin_pricing')
+
+        # 5. Quick Price Update (Backward Compatibility)
+        else:
+            bundle_id = request.POST.get('bundle_id')
+            new_price_raw = (request.POST.get('new_price') or request.POST.get('price_zar') or '').strip()
+            reason = request.POST.get('change_reason', '').strip()
+
+            bundle = get_object_or_404(CoinBundle, id=bundle_id)
+
+            try:
+                new_price = Decimal(new_price_raw)
+                if new_price <= 0:
+                    raise ValueError("Price must be greater than zero")
+            except Exception:
+                msg = "Please enter a valid positive decimal price."
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'success': False, 'message': msg}, status=400)
+                messages.error(request, msg)
+                return redirect('wallet:admin_pricing')
+
+            old_price = bundle.price_zar
+            old_rate = round(old_price / bundle.coins, 4) if bundle.coins else Decimal('0.0000')
+            new_rate = round(new_price / bundle.coins, 4) if bundle.coins else Decimal('0.0000')
+
+            # Log price change
+            CoinPriceChangeLog.objects.create(
+                bundle=bundle,
+                bundle_name=bundle.name,
+                coins=bundle.coins,
+                old_price_zar=old_price,
+                new_price_zar=new_price,
+                old_rate_per_coin=old_rate,
+                new_rate_per_coin=new_rate,
+                changed_by=request.user,
+                change_reason=reason or "Admin Price Adjustment"
+            )
+
+            # Update bundle price
+            bundle.price_zar = new_price
+            bundle.save()
+
+            success_msg = f"✓ Price for '{bundle.name}' ({bundle.coins} coins) updated to {system_wallet.currency_symbol}{new_price} (Rate: {system_wallet.currency_symbol}{new_rate}/coin)."
+            if is_ajax:
+                return JsonResponse({
+                    'status': 'success',
+                    'success': True,
+                    'message': success_msg,
+                    'bundle_id': bundle.id,
+                    'new_price': str(new_price),
+                    'new_rate': str(new_rate),
+                })
+            messages.success(request, success_msg)
+            return redirect('wallet:admin_pricing')
+
+    # Load price change history audit log
+    price_logs = CoinPriceChangeLog.objects.select_related('bundle', 'changed_by').order_by('-created_at')[:60]
+
+    return render(request, 'wallet/admin_coin_pricing.html', {
+        'bundles': bundles,
+        'price_logs': price_logs,
+        'system_wallet': system_wallet,
+    })
+
 

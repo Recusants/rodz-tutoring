@@ -23,6 +23,20 @@
             <i class="fa-solid fa-ban"></i> Suspended
           </span>
         {% endif %}
+
+        {% if target_user.tutor_status == 'PENDING' %}
+          <span style="background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+            <i class="fa-solid fa-hourglass-start"></i> Tutor Pending Review
+          </span>
+        {% elif target_user.tutor_status == 'APPROVED' %}
+          <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+            <i class="fa-solid fa-chalkboard-user"></i> Approved Tutor
+          </span>
+        {% elif target_user.tutor_status == 'REJECTED' %}
+          <span style="background: #fee2e2; color: #991b1b; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 12px;">
+            <i class="fa-solid fa-xmark"></i> Tutor Application Declined
+          </span>
+        {% endif %}
       </div>
       <div style="font-size: 13px; color: var(--muted); display: flex; gap: 15px; flex-wrap: wrap;">
         <span><i class="fa-solid fa-envelope"></i> {{ target_user.email }}</span>
@@ -52,6 +66,60 @@
     </div>
   </div>
 
+  <!-- TUTOR APPLICATION REVIEW BAR -->
+  {% if target_user.tutor_status == 'PENDING' or target_user.is_tutor or target_user.profile_picture %}
+    <div style="background: #ffffff; border: 1.5px solid {% if target_user.tutor_status == 'PENDING' %}#f59e0b{% elif target_user.is_tutor %}#16a34a{% else %}var(--line){% endif %}; border-radius: var(--radius-md); padding: 20px 24px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+      <div style="display: flex; align-items: center; gap: 18px;">
+        {% if target_user.profile_picture %}
+          <a href="{{ target_user.profile_picture.url }}" target="_blank" title="View Full Profile Photo">
+            <img src="{{ target_user.profile_picture.url }}" alt="{{ target_user.full_name }}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid var(--blue);">
+          </a>
+        {% else %}
+          <div style="width: 70px; height: 70px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #64748b;">
+            <i class="fa-solid fa-user"></i>
+          </div>
+        {% endif %}
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h4 style="margin: 0; font-size: 16px; color: var(--blue);">Tutor Verification Status</h4>
+            <span class="badge" style="background: {% if target_user.tutor_status == 'PENDING' %}#fef3c7; color: #92400e{% elif target_user.tutor_status == 'APPROVED' %}#dcfce7; color: #166534{% else %}#fee2e2; color: #991b1b{% endif %};">
+              {{ target_user.get_tutor_status_display }}
+            </span>
+          </div>
+          {% if target_user.tutor_applied_at %}
+            <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">
+              Applied on {{ target_user.tutor_applied_at|date:"d M Y, H:i" }}
+            </div>
+          {% endif %}
+          {% if target_user.bio %}
+            <div style="font-size: 12px; color: var(--text); margin-top: 6px; max-width: 600px;">
+              <b>Bio / Qualifications:</b> {{ target_user.bio }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <form method="POST" style="margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve_tutor">
+          <button type="submit" class="btn primary small" style="background: #16a34a; border-color: #16a34a;" onclick="return confirm('Approve tutor privileges for {{ target_user.email }}?');">
+            <i class="fa-solid fa-check"></i> Approve Tutor
+          </button>
+        </form>
+
+        <form method="POST" style="margin: 0;" onsubmit="var r = prompt('Reason for declining this tutor application (optional):'); if(r===null) return false; this.rejection_reason.value = r; return true;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject_tutor">
+          <input type="hidden" name="rejection_reason" value="">
+          <button type="submit" class="btn outline small" style="color: #dc2626; border-color: #dc2626;">
+            <i class="fa-solid fa-xmark"></i> Reject Tutor
+          </button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
 
     <!-- PANEL 1: Profile & Roles Editing -->
@@ -60,7 +128,7 @@
         <i class="fa-solid fa-user-pen" style="color: var(--blue);"></i> Profile & Role Assignment
       </h3>
 
-      <form method="POST">
+      <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="action" value="edit_profile">
 

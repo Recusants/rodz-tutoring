@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cash Out & Sell Coins | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 980px; margin: 0 auto;">
+
+  <!-- Breadcrumbs -->
+  <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">
+    <a href="{% url 'home' %}">Home</a> &rsaquo; 
+    <a href="{% url 'accounts:dashboard' %}">Dashboard</a> &rsaquo; 
+    <a href="{% url 'wallet:coin_history' %}">Coin Wallet</a> &rsaquo; 
+    <span style="color: var(--text);">Sell / Cash Out Coins</span>
+  </div>
+
+  <!-- Header -->
+  <div class="section-heading" style="margin-bottom: 28px;">
+    <div class="eyebrow" style="color: #16a34a; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 6px;">
+      <i class="fa-solid fa-money-bill-transfer"></i> CREATOR & LEARNER CASH-OUT
+    </div>
+    <h1 style="font-size: 28px; font-weight: 900; color: var(--blue); margin-bottom: 8px;">
+      SELL STUDY COINS & REQUEST PAYOUT
+    </h1>
+    <p style="font-size: 13px; color: var(--muted); margin: 0 auto; max-width: 650px;">
+      Redeem your earned coins back into {{ currency_code }} ({{ currency_symbol }}) deposited into your bank account. Sold coins are safely returned to the central System Wallet Treasury.
+    </p>
+    <div class="bar" style="margin: 14px auto 0;"></div>
+  </div>
+
+  <!-- Wallet & Rate Overview Bar -->
+  <div style="background: linear-gradient(135deg, #065f46 0%, #064e3b 100%); color: #fff; border-radius: var(--radius-lg); padding: 22px 28px; margin-bottom: 30px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; box-shadow: var(--shadow-md);">
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="font-size: 32px; background: rgba(255,255,255,0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: #fde047;">
+        <i class="fa-solid fa-coins"></i>
+      </div>
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #a7f3d0;">Available Coins</div>
+        <div style="font-size: 30px; font-weight: 900; color: #fde047;" id="userCurrentBalance" data-balance="{{ wallet.coins }}">
+          {{ wallet.coins }} Coins
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+      <div style="text-align: right;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #a7f3d0;">Active Cash-Out Rate</div>
+        <div style="font-size: 20px; font-weight: 800; color: #fff;" id="activeRateDisplay" data-rate="{{ system_wallet.cashout_rate_per_coin }}">
+          {{ currency_symbol }}{{ system_wallet.cashout_rate_per_coin }} / Coin
+        </div>
+        <div style="font-size: 11px; color: #6ee7b7;">Min. Cash-Out: {{ system_wallet.min_cashout_coins }} Coins</div>
+      </div>
+
+      <a href="{% url 'content_hub:terms' %}#creators-policy" target="_blank" class="btn outline small" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); color: #fff; font-size: 11px;">
+        <i class="fa-solid fa-circle-question"></i> Policy & Terms
+      </a>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 28px; align-items: start;">
+
+    <!-- Left: Cash-out Form -->
+    <div style="background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm);">
+      <h3 style="font-size: 17px; font-weight: 800; color: var(--blue); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-hand-holding-dollar" style="color: #16a34a;"></i> 1. Enter Payout Details
+      </h3>
+
+      <form id="sellCoinsForm" method="POST" action="{% url 'wallet:sell_coins' %}">
+        {% csrf_token %}
+
+        <!-- Coin Amount -->
+        <div class="form-group" style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+            <label class="form-label" style="font-weight: 700; font-size: 13px; color: var(--blue); margin: 0;">
+              Number of Coins to Sell <span style="color: #dc2626;">*</span>
+            </label>
+            <span style="font-size: 11px; color: var(--muted);">Min: {{ system_wallet.min_cashout_coins }} | Max: {{ wallet.coins }}</span>
+          </div>
+
+          <div style="position: relative; margin-bottom: 10px;">
+            <input 
+              type="number" 
+              name="coins" 
+              id="sellAmountInput" 
+              required 
+              min="{{ system_wallet.min_cashout_coins }}" 
+              max="{{ wallet.coins }}" 
+              class="input-control" 
+              placeholder="e.g. 100"
+              style="padding-left: 38px; font-weight: 800; font-size: 16px;"
+            >
+            <i class="fa-solid fa-coins" style="position: absolute; left: 14px; top: 13px; color: var(--gold);"></i>
+          </div>
+
+          <!-- Quick Chips -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn outline small chip-btn" onclick="setSellAmount(50)" style="font-size: 11px; padding: 3px 8px;">50</button>
+            <button type="button" class="btn outline small chip-btn" onclick="setSellAmount(100)" style="font-size: 11px; padding: 3px 8px;">100</button>
+            <button type="button" class="btn outline small chip-btn" onclick="setSellAmount(250)" style="font-size: 11px; padding: 3px 8px;">250</button>
+            <button type="button" class="btn outline small chip-btn" onclick="setSellAmount(500)" style="font-size: 11px; padding: 3px 8px;">500</button>
+            <button type="button" class="btn outline small chip-btn" onclick="setSellAmount({{ wallet.coins }})" style="font-size: 11px; padding: 3px 8px; font-weight: 800; color: #16a34a;">Max ({{ wallet.coins }})</button>
+          </div>
+        </div>
+
+        <!-- Banking Information -->
+        <div style="background: var(--soft); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 18px; border: 1px solid var(--line);">
+          <div style="font-size: 12px; font-weight: 800; color: var(--blue); text-transform: uppercase; margin-bottom: 10px;">
+            <i class="fa-solid fa-building-columns"></i> Receiving Bank Account
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Bank Name</label>
+              <input type="text" name="bank_name" class="input-control" required placeholder="e.g. FNB / Capitec" style="font-size: 12px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Account Type</label>
+              <select name="account_type" class="input-control" style="font-size: 12px;">
+                <option value="Cheque / Current">Cheque / Current</option>
+                <option value="Savings">Savings</option>
+                <option value="Transmission">Transmission</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Account Number</label>
+              <input type="text" name="account_number" class="input-control" required placeholder="Account number" style="font-size: 12px; font-family: monospace;">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Account Holder</label>
+              <input type="text" name="account_holder" class="input-control" required placeholder="Full Name / Legal Entity" value="{{ user.full_name|default:user.email }}" style="font-size: 12px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional Notes -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 4px;">Reference Note (Optional)</label>
+          <input type="text" name="notes" class="input-control" placeholder="e.g. September Tutor Teaching Payout" style="font-size: 12px;">
+        </div>
+
+        <button 
+          type="submit" 
+          id="sellSubmitBtn" 
+          class="btn primary" 
+          style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: #16a34a; border-color: #15803d; display: inline-flex; align-items: center; justify-content: center; gap: 8px;"
+        >
+          <i class="fa-solid fa-check"></i> Review & Confirm Cash-Out &rarr;
+        </button>
+      </form>
+    </div>
+
+    <!-- Right: Real-time Pre-Transaction Disclosure Breakdown -->
+    <div>
+      <div style="background: var(--white); border: 2px solid #bbf7d0; border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm); position: sticky; top: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+          <h4 style="margin: 0; font-size: 15px; color: #166534; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-receipt"></i> Transaction Breakdown
+          </h4>
+          <span style="font-size: 11px; font-weight: 700; background: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px;">PRE-CONFIRMATION</span>
+        </div>
+
+        <!-- Breakdown List -->
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+
+          <!-- What is Taken -->
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #991b1b; margin-bottom: 4px;">
+              <i class="fa-solid fa-minus-circle"></i> What Is Taken (Deducted)
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Coins Sold from Wallet:</span>
+              <b style="color: #b91c1c; font-size: 15px;" id="summaryCoinsTaken">0 Coins</b>
+            </div>
+            <div style="font-size: 11px; color: #7f1d1d; margin-top: 4px;">
+              Returned to System Wallet Treasury
+            </div>
+          </div>
+
+          <!-- What is Received -->
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 12px 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #166534; margin-bottom: 4px;">
+              <i class="fa-solid fa-plus-circle"></i> What Is Received (Payout)
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Cash Payout:</span>
+              <b style="color: #15803d; font-size: 18px;" id="summaryCashReceived">{{ currency_symbol }}0.00</b>
+            </div>
+            <div style="font-size: 11px; color: #14532d; margin-top: 4px;">
+              Transferred to verified bank account
+            </div>
+          </div>
+
+          <!-- Balance after -->
+          <div style="display: flex; justify-content: space-between; padding: 8px 4px; border-top: 1px dashed var(--line); font-size: 12px;">
+            <span style="color: var(--muted);">Remaining Wallet Balance:</span>
+            <b id="summaryRemainingBalance">{{ wallet.coins }} Coins</b>
+          </div>
+
+        </div>
+
+        <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); line-height: 1.5;">
+          <i class="fa-solid fa-shield-halved" style="color: #16a34a;"></i> <b>Admin Guarantee:</b> All cash-outs are audited against genuine course bundle sales and deposits before payout processing.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Sales History -->
+  {% if recent_sales %}
+    <div style="margin-top: 40px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden;">
+      <div style="padding: 16px 20px; background: var(--soft); border-bottom: 1px solid var(--line);">
+        <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--blue);">
+          <i class="fa-solid fa-clock-rotate-left"></i> Recent Cash-Out Records
+        </h4>
+      </div>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px;">
+              <th style="padding: 10px 16px;">Date</th>
+              <th style="padding: 10px 16px;">Details</th>
+              <th style="padding: 10px 16px; text-align: right;">Coins Deducted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sale in recent_sales %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 12px 16px; color: var(--muted);">{{ sale.created_at|date:"d M Y, H:i" }}</td>
+                <td style="padding: 12px 16px; font-weight: 600;">{{ sale.get_clean_description }}</td>
+                <td style="padding: 12px 16px; text-align: right; font-weight: 800; color: #dc2626;">
+                  {{ sale.amount }} Coins
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+</section>
+
+<!-- Scripts -->
+<script>
+function setSellAmount(amt) {
+  const input = document.getElementById('sellAmountInput');
+  if (input) {
+    input.value = amt;
+    input.dispatchEvent(new Event('input'));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const sellInput = document.getElementById('sellAmountInput');
+  const userBalance = parseInt(document.getElementById('userCurrentBalance').dataset.balance || '0', 10);
+  const activeRate = parseFloat(document.getElementById('activeRateDisplay').dataset.rate || '0.8');
+  const currencySymbol = '{{ currency_symbol }}';
+
+  const summaryCoinsTaken = document.getElementById('summaryCoinsTaken');
+  const summaryCashReceived = document.getElementById('summaryCashReceived');
+  const summaryRemaining = document.getElementById('summaryRemainingBalance');
+
+  function updateBreakdown() {
+    const val = parseInt(sellInput.value || '0', 10);
+    if (val > 0) {
+      summaryCoinsTaken.textContent = val + ' Coins';
+      const payout = (val * activeRate).toFixed(2);
+      summaryCashReceived.textContent = currencySymbol + payout;
+      const remaining = Math.max(0, userBalance - val);
+      summaryRemaining.textContent = remaining + ' Coins';
+    } else {
+      summaryCoinsTaken.textContent = '0 Coins';
+      summaryCashReceived.textContent = currencySymbol + '0.00';
+      summaryRemaining.textContent = userBalance + ' Coins';
+    }
+  }
+
+  if (sellInput) {
+    sellInput.addEventListener('input', updateBreakdown);
+  }
+
+  // SweetAlert2 Pre-Transaction Confirmation
+  const form = document.getElementById('sellCoinsForm');
+  const submitBtn = document.getElementById('sellSubmitBtn');
+
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const val = parseInt(sellInput.value || '0', 10);
+      const minVal = parseInt(sellInput.min || '50', 10);
+
+      if (val < minVal) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Minimum Required',
+          text: `Minimum cash-out is ${minVal} coins.`,
+          confirmButtonColor: '#1e3a8a'
+        });
+        return;
+      }
+
+      if (val > userBalance) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Insufficient Coins',
+          text: `You only have ${userBalance} coins in your wallet.`,
+          confirmButtonColor: '#dc2626'
+        });
+        return;
+      }
+
+      const payout = (val * activeRate).toFixed(2);
+
+      Swal.fire({
+        title: 'Confirm Coin Cash-Out',
+        html: `
+          <div style="text-align: left; font-size: 13px; line-height: 1.6; margin-top: 10px;">
+            <p style="margin-bottom: 8px;">Please review the transaction breakdown before proceeding:</p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span><b>Coins Taken (Deducted):</b></span>
+                <span style="color: #dc2626; font-weight: 800;">-${val} Coins</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span><b>Payout Received:</b></span>
+                <span style="color: #16a34a; font-weight: 800;">${currencySymbol}${payout}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
+                <span>Remaining Wallet Balance:</span>
+                <span><b>${userBalance - val} Coins</b></span>
+              </div>
+            </div>
+            <p style="font-size: 11px; color: #64748b; margin-top: 10px;">
+              Coins will be deducted immediately and deposited back into the System Wallet Treasury.
+            </p>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="fa-solid fa-check"></i> Yes, Authorize Cash-Out',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Cash-Out...';
+
+          const formData = new FormData(form);
+          fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
+          .then(res => res.json())
+          .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Review & Confirm Cash-Out &rarr;';
+
+            if (data.status === 'success' || data.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Cash-Out Successful!',
+                html: `
+                  <p>${data.message}</p>
+                  <p style="font-size: 12px; color: #64748b; margin-top: 6px;">Remaining balance: <b>${data.remaining_coins} Coins</b></p>
+                `,
+                confirmButtonColor: '#16a34a'
+              }).then(() => {
+                window.location.href = "{% url 'wallet:coin_history' %}";
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Transaction Error',
+                text: data.message || 'Failed to process cash-out.',
+                confirmButtonColor: '#dc2626'
+              });
+            }
+          })
+          .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Review & Confirm Cash-Out &rarr;';
+            Swal.fire({
+              icon: 'error',
+              title: 'Server Error',
+              text: 'Unable to communicate with the server. Please try again.',
+              confirmButtonColor: '#dc2626'
+            });
+          });
+        }
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

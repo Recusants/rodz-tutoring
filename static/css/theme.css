@@ -141,7 +141,10 @@ h1, h2, h3, h4 {
   display: none;
   z-index: 110;
 }
-.dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu {
+.dropdown:hover .dropdown-menu,
+.dropdown:focus-within .dropdown-menu,
+.dropdown.active .dropdown-menu,
+.dropdown.open .dropdown-menu {
   display: block;
 }
 .dropdown-menu a.dropdown-item {
@@ -1028,20 +1031,78 @@ footer {
 }
 
 /* ========================================================
-   UNIFIED RESPONSIVE BREAKPOINTS
+   RESPONSIVE UTILITIES & BASE GRID DEFAULTS
+   ======================================================== */
+.catalog-filter-grid {
+  display: grid;
+  grid-template-columns: 1.8fr 1.2fr 1fr 1fr 1fr auto;
+  gap: 14px;
+  align-items: flex-end;
+}
+.catalog-filter-grid .btn {
+  width: auto;
+  white-space: nowrap;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 24px;
+  align-items: center;
+}
+
+/* Universal Table Responsiveness */
+.table-responsive,
+.table-wrapper,
+div:has(> table) {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  border-collapse: collapse;
+}
+
+/* ========================================================
+   UNIFIED RESPONSIVE BREAKPOINTS (DESK, TABS, MOBILE)
    ======================================================== */
 @media (max-width: 1024px) {
-  .hero-copy h1 { font-size: 52px; }
+  .hero-copy h1 { font-size: clamp(36px, 5vw, 52px); }
   .subject-grid, .resource-grid { grid-template-columns: repeat(3, 1fr); }
   .stats-banner { grid-template-columns: repeat(3, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
+  .catalog-filter-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .catalog-filter-grid > div:last-child {
+    display: flex;
+    align-items: flex-end;
+  }
+  .catalog-filter-grid .btn {
+    width: 100%;
+  }
 }
 
-@media (max-width: 768px) {
-  .topbar { display: none; }
-  .header { height: 72px; }
-  .menu-toggle { display: block; }
+@media (max-width: 992px) {
+  /* Tablet Navigation Drawer */
+  .topbar {
+    padding: 6px 4%;
+    font-size: 11px;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .header {
+    height: 72px;
+    padding: 0 4%;
+  }
+  .menu-toggle {
+    display: block;
+  }
   .nav {
     display: none;
     position: absolute;
@@ -1054,14 +1115,48 @@ footer {
     align-items: stretch;
     border-bottom: 1px solid var(--line);
     box-shadow: var(--shadow-md);
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 105;
+    gap: 12px;
   }
-  .nav.open { display: flex; }
+  .nav.open {
+    display: flex;
+  }
   .dropdown-menu {
     position: static;
     box-shadow: none;
-    border: 0;
-    padding-left: 15px;
+    border: 1px solid var(--line);
+    margin-top: 6px;
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    width: 100%;
+    max-width: 100%;
   }
+  .dropdown-menu.dropdown-right {
+    min-width: 100%;
+  }
+
+  /* Sticky viewer toolbars adjust to 72px header */
+  .viewer-toolbar,
+  .video-toolbar {
+    top: 72px !important;
+    padding: 10px 4%;
+  }
+
+  /* Major Two-Column Split Layouts stack gracefully on tablet portrait */
+  [style*="grid-template-columns: 1.2fr 1fr"],
+  [style*="grid-template-columns: 1.2fr 0.8fr"],
+  [style*="grid-template-columns: 1.25fr 1fr"],
+  [style*="grid-template-columns: 1.6fr 1fr"],
+  [style*="grid-template-columns: 2fr 1fr"],
+  [style*="grid-template-columns: 1fr 1.4fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
   .hero {
     flex-direction: column;
     text-align: center;
@@ -1069,20 +1164,86 @@ footer {
   }
   .hero-copy { width: 100%; }
   .hero-copy p { margin: 15px auto 25px; }
-  .hero-buttons { justify-content: center; }
+  .hero-buttons { justify-content: center; flex-wrap: wrap; }
   .hero-art { width: 100%; margin-top: 30px; }
   .subject-grid, .resource-grid, .packages-grid { grid-template-columns: repeat(2, 1fr); }
   .stats-banner { grid-template-columns: repeat(2, 1fr); }
   .whatsapp-banner { flex-direction: column; text-align: center; }
   .footer-grid { grid-template-columns: 1fr; gap: 28px; }
   .footer-bottom { flex-direction: column; gap: 10px; text-align: center; }
+
+  /* Step Card stacks on mobile */
+  .step-card {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+    justify-items: center;
+    gap: 16px !important;
+  }
+
+  /* Catalog Filter Bar stacks to 1 column */
+  .catalog-filter-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .catalog-filter-grid .btn {
+    width: 100%;
+    padding: 14px;
+  }
+
+  /* Form Row Multi-Column Splits stack on mobile */
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"],
+  [style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Form & Section Padding */
+  .section {
+    padding: 24px 4%;
+  }
+  .form-card {
+    padding: 24px 18px;
+    margin: 20px auto;
+  }
+  .dash-section {
+    padding: 20px 16px;
+  }
+
+  /* Viewer Stage */
+  .viewer-stage {
+    padding: 16px 8px;
+  }
+
+  /* Touch Targets for Buttons */
+  .btn {
+    min-height: 42px;
+  }
+  .btn.small {
+    min-height: 34px;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
-  .hero-copy h1 { font-size: 40px; }
+  .hero-copy h1 { font-size: clamp(28px, 8vw, 38px); }
   .subject-grid, .resource-grid, .packages-grid { grid-template-columns: 1fr; }
   .stats-banner { grid-template-columns: 1fr; }
   .trust-row { flex-direction: column; gap: 12px; }
+  .form-card {
+    padding: 18px 14px;
+    margin: 12px auto;
+  }
+  .form-input {
+    font-size: 14px; /* Prevents auto-zoom on iOS Safari */
+  }
+  .btn {
+    min-height: 44px; /* Apple Human Interface Guideline 44x44px */
+  }
 }
 
 /* ========================================================

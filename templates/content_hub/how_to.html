@@ -15,22 +15,48 @@
   {% endif %}
 
   <!-- Header Banner -->
-  <div class="section-heading" style="margin-bottom: 40px;">
+  <div class="section-heading" style="margin-bottom: 30px;">
     <div class="eyebrow" style="color: var(--blue); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 8px;">
       {{ primary_guide.badge_text|default:"STUDENT STEP-BY-STEP GUIDE" }}
     </div>
     <h2>{{ primary_guide.title|default:"HOW RODZ TUTORING WORKS" }}</h2>
     <p style="max-width: 700px; margin: 0 auto;">
-      {{ primary_guide.subtitle|default:"A step-by-step walkthrough to get registered, acquire study coins, unlock protected materials, and excel in your exams." }}
+      {{ primary_guide.subtitle|default:"A step-by-step walkthrough to get registered, access free study tools, acquire coins when needed, and excel in your exams." }}
     </p>
     <div class="bar"></div>
+  </div>
+
+  <!-- PROMINENT FREE RESOURCES HIGHLIGHT CARD -->
+  <div style="background: linear-gradient(135deg, #065f46 0%, #047857 50%, #0f766e 100%); border-radius: var(--radius-lg); padding: 30px 34px; margin-bottom: 35px; color: #ffffff; box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3); border: 2px solid #34d399; position: relative; overflow: hidden;">
+    <div style="position: absolute; right: -20px; top: -20px; opacity: 0.12; font-size: 150px; color: #fff; pointer-events: none;">
+      <i class="fa-solid fa-gift"></i>
+    </div>
+    <div style="position: relative; z-index: 2;">
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #a7f3d0; margin-bottom: 12px;">
+        <i class="fa-solid fa-circle-check"></i> 100% Free Study Resources Available
+      </div>
+      <h3 style="font-size: 24px; font-weight: 800; color: #ffffff; margin: 0 0 10px; line-height: 1.25;">
+        You Can Start Learning Right Now Without Buying Coins!
+      </h3>
+      <p style="font-size: 14px; color: #d1fae5; line-height: 1.6; max-width: 780px; margin: 0 0 20px;">
+        Did you know Rodz Tutoring features a wealth of completely <b>free educational materials</b>? Access authentic past examination papers, syllabus overviews, foundational notes, and practice quizzes at zero coin cost. Plus, downloadable free items can be saved directly to your device for offline study!
+      </p>
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <a href="{% url 'content_hub:catalog' %}?pricing=free" class="btn primary" style="background: #ffffff; color: #065f46; border-color: #ffffff; font-weight: 800; padding: 12px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <i class="fa-solid fa-folder-open"></i> BROWSE FREE STUDY RESOURCES &rarr;
+        </a>
+        <a href="{% url 'accounts:register' %}" style="color: #a7f3d0; font-size: 13px; font-weight: 700; text-decoration: underline;">
+          Create Free Student Account &rarr;
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Step-by-Step Flow Grid -->
   <div style="display: flex; flex-direction: column; gap: 24px; position: relative;">
     
     {% for step in primary_guide.steps.all %}
-      <div class="dash-section" style="padding: 28px; display: grid; grid-template-columns: 80px 1fr auto; gap: 24px; align-items: center; border-left: 5px solid var(--blue); transition: transform 0.2s ease;">
+      <div class="dash-section step-card" style="padding: 28px; display: grid; border-left: 5px solid var(--blue); transition: transform 0.2s ease;">
         
         <!-- Step Icon & Number -->
         <div style="text-align: center;">
@@ -94,10 +120,10 @@
       </div>
 
       <div style="background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 20px;">
-        <div style="color: #2563eb; font-size: 22px; margin-bottom: 8px;"><i class="fa-solid fa-mobile-screen"></i></div>
-        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">No Huge Downloads Needed</h4>
+        <div style="color: #059669; font-size: 22px; margin-bottom: 8px;"><i class="fa-solid fa-gift"></i></div>
+        <h4 style="font-size: 15px; margin: 0 0 6px; color: var(--blue);">Free Resources & Downloads</h4>
         <p style="font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5;">
-          Our non-downloadable secure engine renders pages as crisp, optimized images directly in your browser. Zero device clutter and minimal data usage.
+          Access free past papers and quizzes without spending a single coin. Downloadable study guides can be saved offline whenever enabled by educators.
         </p>
       </div>
     </div>

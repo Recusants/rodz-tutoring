@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Unlock: {{ item.title }} | Rodz Tutoring{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width: 720px; margin: 40px auto;">
+  <div class="dash-section" style="padding: 36px;">
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 44px; color: var(--blue); margin-bottom: 12px;">
+        {% if item.content_type == 'PDF' %}
+          <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+        {% elif item.content_type == 'VIDEO' %}
+          <i class="fa-solid fa-circle-play" style="color: #3b82f6;"></i>
+        {% else %}
+          <i class="fa-solid fa-list-check" style="color: #8b5cf6;"></i>
+        {% endif %}
+      </div>
+      <span class="badge premium" style="font-size: 11px; padding: 4px 10px;">
+        {{ item.get_content_type_display }}
+      </span>
+      <h1 style="font-size: 26px; margin: 12px 0 6px; color: var(--blue);">{{ item.title }}</h1>
+      <p style="color: var(--muted); font-size: 13px; margin: 0;">
+        {{ item.grade }} &bull; {{ item.curriculum }} &bull; {{ item.subject.name }} &bull; {{ item.category }}
+      </p>
+    </div>
+
+    <!-- PRE-TRANSACTION DISCLOSURE -->
+    <div style="background: #f8fafc; border: 2px solid #3b82f6; border-radius: var(--radius-md); padding: 22px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);">
+      <div style="font-size: 12px; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-file-invoice-dollar"></i> Pre-Transaction Disclosure & Breakdown
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <!-- What is Being Taken -->
+        <div style="background: #fff; border: 1px solid #fed7aa; border-radius: 8px; padding: 14px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #c2410c; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-arrow-down-long"></i> What is Being Taken (Cost)
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+            <span style="color: var(--muted);">Resource Unlock:</span>
+            <b style="color: #dc2626;">-{{ item.coin_price }} Coins</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+            <span style="color: var(--muted);">Transfer / Hidden Fees:</span>
+            <b style="color: #16a34a;">0 Coins (Free)</b>
+          </div>
+          <div style="border-top: 1px dashed #fdba74; padding-top: 6px; margin-top: 6px; display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="font-weight: 700; color: var(--text);">Total Deducted:</span>
+            <b style="color: #dc2626; font-size: 15px;">{{ item.coin_price }} Coins</b>
+          </div>
+        </div>
+
+        <!-- What is Being Received -->
+        <div style="background: #fff; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #15803d; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-arrow-up-long"></i> What is Being Received
+          </div>
+          <div style="font-size: 12px; color: var(--text); line-height: 1.5;">
+            <b>You Receive:</b> Unlimited access to <b>{{ item.title }}</b> ({{ item.get_content_type_display }}) for the full academic year.
+          </div>
+          <div style="font-size: 11px; color: #16a34a; font-weight: 700; margin-top: 8px;">
+            <i class="fa-solid fa-circle-check"></i> Instant unlock upon confirmation.
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #e0f2fe; padding: 10px 14px; border-radius: 6px; font-size: 12px;">
+        <span style="color: #0369a1; font-weight: 600;">
+          <i class="fa-solid fa-wallet"></i> Current Balance: <b>{{ wallet.coins }} Coins</b>
+        </span>
+        <span style="color: #0369a1; font-weight: 700;">
+          Remaining Balance: <b>{{ wallet.coins|add:"-"|add:item.coin_price }} Coins</b>
+        </span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="text-align: center;">
+      {% if wallet.coins >= item.coin_price %}
+        <form method="POST" action="{% url 'wallet:unlock_item' item.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="btn primary" style="padding: 12px 32px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-unlock"></i> CONFIRM & UNLOCK FOR {{ item.coin_price }} COINS
+          </button>
+        </form>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 10px;">
+          <i class="fa-solid fa-shield-halved"></i> Unlocked content is permanently saved to your learning dashboard.
+        </p>
+      {% else %}
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px; color: #991b1b; font-size: 13px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> You need <b>{{ item.coin_price }} coins</b> to unlock this resource, but currently have <b>{{ wallet.coins }} coins</b>.
+        </div>
+        <a href="{% url 'wallet:buy_coins' %}" class="btn primary" style="padding: 10px 24px; font-size: 13px;">
+          <i class="fa-solid fa-plus-circle"></i> TOP UP COINS
+        </a>
+      {% endif %}
+      <div style="margin-top: 14px;">
+        <a href="{% url 'content_hub:catalog' %}" style="color: var(--muted); font-size: 12px; text-decoration: underline;">
+          &larr; Cancel and Return to Resource Hub
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

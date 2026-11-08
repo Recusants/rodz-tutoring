@@ -21,6 +21,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_admin_role', True)
         extra_fields.setdefault('is_tutor', True)
+        extra_fields.setdefault('tutor_status', 'APPROVED')
         extra_fields.setdefault('is_student', True)
 
         if extra_fields.get('is_staff') is not True:
@@ -49,6 +50,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ('Combined', 'Combined / Other'),
     ]
 
+    TUTOR_STATUS_CHOICES = [
+        ('NONE', 'Not Applied'),
+        ('PENDING', 'Pending Admin Review'),
+        ('APPROVED', 'Approved Tutor'),
+        ('REJECTED', 'Application Rejected'),
+    ]
+
     email = models.EmailField(unique=True, db_index=True)
     full_name = models.CharField(max_length=200, blank=True)
     phone_number = models.CharField(max_length=30, blank=True, help_text="WhatsApp contact number")
@@ -59,6 +67,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_student = models.BooleanField(default=True, help_text="Designates whether the user has student access")
     is_tutor = models.BooleanField(default=False, help_text="Designates whether the user can tutor and manage student content")
     is_admin_role = models.BooleanField(default=False, help_text="Designates whether the user has staff admin operational access")
+
+    # Tutor application & review fields
+    profile_picture = models.ImageField(upload_to='tutor_profiles/', blank=True, null=True, help_text="Profile picture for tutors/applicants")
+    bio = models.TextField(blank=True, help_text="Tutor biography, subjects taught, or qualifications")
+    tutor_status = models.CharField(max_length=20, choices=TUTOR_STATUS_CHOICES, default='NONE', blank=True, db_index=True)
+    tutor_applied_at = models.DateTimeField(null=True, blank=True)
+    tutor_approved_at = models.DateTimeField(null=True, blank=True)
+    tutor_rejection_reason = models.TextField(blank=True)
+    tutor_reviewed_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_tutors')
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

@@ -192,3 +192,24 @@ class QuizzesTestCase(TestCase):
         self.assertEqual(attempt.score_percent, 50.0)
         self.assertFalse(attempt.passed)
         self.assertIn('FAILED', str(attempt))
+
+    def test_anonymous_user_can_take_free_quiz_without_login(self):
+        self.client.logout()
+        url = reverse('quizzes:take_quiz', kwargs={'quiz_id': self.free_quiz.id})
+        get_res = self.client.get(url)
+        self.assertEqual(get_res.status_code, 200)
+        self.assertContains(get_res, 'Calculus Fundamentals Quiz')
+
+        post_res = self.client.post(url, {
+            f'question_{self.free_q1.id}': self.free_c1_correct.id,
+        })
+        self.assertEqual(post_res.status_code, 200)
+        self.assertContains(post_res, 'PASSED')
+
+    def test_anonymous_user_taking_paid_quiz_redirects_to_login(self):
+        self.client.logout()
+        url = reverse('quizzes:take_quiz', kwargs={'quiz_id': self.paid_quiz.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+

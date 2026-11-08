@@ -1,0 +1,639 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Coin Bundle Pricing & Treasury Settings | Rodz Tutoring Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pricing-table-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 28px;
+  }
+  .rate-pill {
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #bae6fd;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-card-treasury {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 30px; max-width: 1200px; margin: 0 auto;">
+
+  <!-- Breadcrumbs -->
+  <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">
+    <a href="{% url 'home' %}">Home</a> &rsaquo; 
+    <a href="{% url 'accounts:dashboard' %}">Admin Dashboard</a> &rsaquo; 
+    <span style="color: var(--text);">Financial Settings & Coin Bundles</span>
+  </div>
+
+  <!-- Heading -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <div class="eyebrow" style="color: #6d28d9; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; margin-bottom: 6px;">
+        <i class="fa-solid fa-coins"></i> MONETIZATION & TREASURY CONTROL
+      </div>
+      <h2 style="font-size: 26px; margin: 0 0 6px; color: var(--blue);">
+        PLATFORM FINANCIAL SETTINGS & COIN BUNDLES
+      </h2>
+      <p style="margin: 0; color: var(--muted); font-size: 13px;">
+        Manage central system wallet treasury, global currency symbols, peer-to-peer transfer charges, cash-out rates, and customize all coin purchase packs.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="{% url 'wallet:buy_coins' %}" class="btn outline small" target="_blank" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-eye"></i> View Public Pricing Page &rarr;
+      </a>
+      <a href="{% url 'wallet:coin_history' %}?view=all" class="btn outline small" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-receipt"></i> Global Ledger
+      </a>
+      <a href="{% url 'content_hub:terms' %}" class="btn outline small" target="_blank" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-scale-balanced"></i> Terms & Conditions &rarr;
+      </a>
+    </div>
+  </div>
+
+  <!-- 1. System Wallet Treasury Stats -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="stat-card-treasury" style="border-left: 4px solid #f59e0b;">
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px;">System Treasury Pool</div>
+      <div style="font-size: 22px; font-weight: 900; color: var(--blue); display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-coins" style="color: #f59e0b;"></i> {{ system_wallet.coins }}
+      </div>
+      <small style="font-size: 10px; color: var(--muted);">Available reserve pool</small>
+    </div>
+
+    <div class="stat-card-treasury" style="border-left: 4px solid #16a34a;">
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px;">Total Distributed</div>
+      <div style="font-size: 22px; font-weight: 900; color: #16a34a;">
+        {{ system_wallet.total_coins_distributed }}
+      </div>
+      <small style="font-size: 10px; color: var(--muted);">Coins sold to students</small>
+    </div>
+
+    <div class="stat-card-treasury" style="border-left: 4px solid #0284c7;">
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px;">Transfer Fees Collected</div>
+      <div style="font-size: 22px; font-weight: 900; color: #0284c7;">
+        {{ system_wallet.total_fees_collected }}
+      </div>
+      <small style="font-size: 10px; color: var(--muted);">Routed to treasury</small>
+    </div>
+
+    <div class="stat-card-treasury" style="border-left: 4px solid #8b5cf6;">
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px;">Creator Earnings</div>
+      <div style="font-size: 22px; font-weight: 900; color: #8b5cf6;">
+        {{ system_wallet.total_creator_earnings_processed }}
+      </div>
+      <small style="font-size: 10px; color: var(--muted);">Direct tutor revenue</small>
+    </div>
+
+    <div class="stat-card-treasury" style="border-left: 4px solid #dc2626;">
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px;">Total Redeemed</div>
+      <div style="font-size: 22px; font-weight: 900; color: #dc2626;">
+        {{ system_wallet.total_coins_redeemed }}
+      </div>
+      <small style="font-size: 10px; color: var(--muted);">Cashed out / sold back</small>
+    </div>
+  </div>
+
+  <!-- 2. Global Platform Financial Settings Editor -->
+  <div class="pricing-table-card">
+    <div style="padding: 16px 20px; background: var(--soft); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="font-size: 16px; margin: 0 0 2px; color: var(--blue); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-sliders" style="color: #2563eb;"></i> Global Financial & Currency Settings
+        </h3>
+        <p style="font-size: 12px; color: var(--muted); margin: 0;">Configure dynamic currency symbol, transfer charge, and cash-out rate across the entire website.</p>
+      </div>
+    </div>
+
+    <form id="financialSettingsForm" method="POST" action="{% url 'wallet:admin_pricing' %}" style="padding: 22px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_financial_settings">
+      <input type="hidden" name="is_ajax" value="1">
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 20px;">
+        <!-- Currency Code -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 12px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Currency Code (ISO) <span style="color: #dc2626;">*</span>
+          </label>
+          <input type="text" name="currency_code" id="fCurrencyCode" required maxlength="10" class="input-control" value="{{ system_wallet.currency_code }}" placeholder="e.g. ZAR, USD, EUR">
+          <small style="color: var(--muted); font-size: 10px; margin-top: 3px; display: block;">Official currency acronym.</small>
+        </div>
+
+        <!-- Currency Symbol -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 12px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Currency Symbol <span style="color: #dc2626;">*</span>
+          </label>
+          <input type="text" name="currency_symbol" id="fCurrencySymbol" required maxlength="10" class="input-control" value="{{ system_wallet.currency_symbol }}" placeholder="e.g. R, $, €, £">
+          <small style="color: var(--muted); font-size: 10px; margin-top: 3px; display: block;">Symbol rendered across all pricing pages.</small>
+        </div>
+
+        <!-- Transfer Fee -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 12px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Transfer Charge (Coins) <span style="color: #dc2626;">*</span>
+          </label>
+          <input type="number" name="transfer_fee_coins" id="fTransferFee" required min="0" class="input-control" value="{{ system_wallet.transfer_fee_coins }}" placeholder="2">
+          <small style="color: var(--muted); font-size: 10px; margin-top: 3px; display: block;">Fixed coin charge routed to System Wallet.</small>
+        </div>
+
+        <!-- Cashout Rate Per Coin -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 12px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Cash-out Payout Rate / Coin <span style="color: #dc2626;">*</span>
+          </label>
+          <input type="number" step="0.01" min="0.01" name="cashout_rate_per_coin" id="fCashoutRate" required class="input-control" value="{{ system_wallet.cashout_rate_per_coin }}" placeholder="0.80">
+          <small style="color: var(--muted); font-size: 10px; margin-top: 3px; display: block;">Fiat amount paid out per coin sold back.</small>
+        </div>
+
+        <!-- Min Cashout Coins -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 12px; color: var(--blue); margin-bottom: 6px; display: block;">
+            Minimum Cash-out Coins <span style="color: #dc2626;">*</span>
+          </label>
+          <input type="number" min="1" name="min_cashout_coins" id="fMinCashout" required class="input-control" value="{{ system_wallet.min_cashout_coins }}" placeholder="50">
+          <small style="color: var(--muted); font-size: 10px; margin-top: 3px; display: block;">Minimum threshold to request payout.</small>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="submit" id="btnSaveFinancialSettings" class="btn primary small" style="padding: 10px 24px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-floppy-disk"></i> SAVE FINANCIAL & CURRENCY SETTINGS
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 3. Active Coin Bundles & Full Pack Management -->
+  <div class="pricing-table-card">
+    <div style="padding: 16px 20px; background: var(--soft); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="font-size: 16px; margin: 0 0 2px; color: var(--blue); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-tags" style="color: var(--gold);"></i> Coin Purchase Bundles
+        </h3>
+        <p style="font-size: 12px; color: var(--muted); margin: 0;">Adjust all attributes: name, coins, price in {{ currency_symbol }}, badges, order, and active status.</p>
+      </div>
+      
+      <button type="button" class="btn primary small" onclick="openCreateBundleModal()" style="font-weight: 800; display: inline-flex; align-items: center; gap: 6px; background: #16a34a;">
+        <i class="fa-solid fa-plus-circle"></i> + Add New Coin Bundle
+      </button>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+        <thead>
+          <tr style="background: #f8fafc; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase;">
+            <th style="padding: 12px 18px; width: 60px;">Order</th>
+            <th style="padding: 12px 18px;">Bundle Name</th>
+            <th style="padding: 12px 18px;">Coins</th>
+            <th style="padding: 12px 18px;">Price ({{ currency_code }})</th>
+            <th style="padding: 12px 18px;">Effective Rate / Coin</th>
+            <th style="padding: 12px 18px;">Badge</th>
+            <th style="padding: 12px 18px;">Status</th>
+            <th style="padding: 12px 18px; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bundles %}
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 14px 18px; color: var(--muted); font-weight: 700;">
+                #{{ b.order }}
+              </td>
+              <td style="padding: 14px 18px; font-weight: 700; color: var(--blue);">
+                {{ b.name }}
+                {% if b.description %}
+                  <div style="font-size: 11px; color: var(--muted); font-weight: normal; margin-top: 2px;">{{ b.description|truncatechars:45 }}</div>
+                {% endif %}
+              </td>
+              <td style="padding: 14px 18px;">
+                <span style="font-weight: 800; color: var(--blue);">
+                  <i class="fa-solid fa-coins" style="color: var(--gold);"></i> {{ b.coins }}
+                </span>
+              </td>
+              <td style="padding: 14px 18px; font-weight: 900; font-size: 15px; color: #16a34a;">
+                {{ currency_symbol }}{{ b.price_zar }}
+              </td>
+              <td style="padding: 14px 18px;">
+                <span class="rate-pill">
+                  {{ currency_symbol }}{{ b.rate_per_coin }}/coin
+                </span>
+              </td>
+              <td style="padding: 14px 18px;">
+                {% if b.badge %}
+                  <span class="badge" style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800;">
+                    {{ b.badge }}
+                  </span>
+                {% else %}
+                  <span style="color: var(--muted); font-size: 11px;">Standard</span>
+                {% endif %}
+              </td>
+              <td style="padding: 14px 18px;">
+                {% if b.is_active %}
+                  <span style="color: #15803d; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Active</span>
+                {% else %}
+                  <span style="color: #991b1b; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> Inactive</span>
+                {% endif %}
+              </td>
+              <td style="padding: 14px 18px; text-align: right; white-space: nowrap;">
+                <button 
+                  type="button" 
+                  class="btn outline small" 
+                  style="font-size: 11px; padding: 5px 10px; margin-right: 4px;"
+                  onclick="openEditBundleModal('{{ b.id }}', '{{ b.name|escapejs }}', '{{ b.coins }}', '{{ b.price_zar }}', '{{ b.badge|default:""|escapejs }}', '{{ b.description|default:""|escapejs }}', '{{ b.order }}', {{ b.is_active|yesno:'true,false' }})"
+                >
+                  <i class="fa-solid fa-pen-to-square"></i> Edit
+                </button>
+                <button 
+                  type="button" 
+                  class="btn outline small" 
+                  style="font-size: 11px; padding: 5px 10px; color: #dc2626; border-color: #fca5a5;"
+                  onclick="deleteBundle('{{ b.id }}', '{{ b.name|escapejs }}')"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" style="padding: 24px; text-align: center; color: var(--muted);">No coin bundles configured yet. Click "+ Add New Coin Bundle" above.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Price Change Audit Log -->
+  <div class="pricing-table-card">
+    <div style="padding: 16px 20px; background: var(--soft); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h3 style="font-size: 16px; margin: 0 0 2px; color: var(--blue); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-clock-rotate-left" style="color: #6d28d9;"></i> Coin Price Change Audit Log
+        </h3>
+        <p style="font-size: 12px; color: var(--muted); margin: 0;">Full historical ledger tracking every price update, old vs new rate, and the admin who authorized it.</p>
+      </div>
+      <span style="font-size: 11px; font-weight: 800; background: #ede9fe; color: #6d28d9; padding: 3px 8px; border-radius: 12px;">
+        {{ price_logs|length }} Recorded Changes
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+        <thead>
+          <tr style="background: #f8fafc; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase;">
+            <th style="padding: 12px 18px;">Timestamp</th>
+            <th style="padding: 12px 18px;">Bundle</th>
+            <th style="padding: 12px 18px;">Coins</th>
+            <th style="padding: 12px 18px;">Old Price & Rate</th>
+            <th style="padding: 12px 18px;">New Price & Rate</th>
+            <th style="padding: 12px 18px;">Authorized Admin</th>
+            <th style="padding: 12px 18px;">Change Reason / Memo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in price_logs %}
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 14px 18px; white-space: nowrap;">
+                <div style="font-weight: 700; color: var(--text);">{{ log.created_at|date:"d M Y" }}</div>
+                <div style="font-size: 11px; color: var(--muted);">{{ log.created_at|time:"H:i" }}</div>
+              </td>
+              <td style="padding: 14px 18px; font-weight: 700; color: var(--blue);">
+                {{ log.bundle_name }}
+              </td>
+              <td style="padding: 14px 18px; font-weight: 700;">
+                {{ log.coins }} Coins
+              </td>
+              <td style="padding: 14px 18px; white-space: nowrap;">
+                <div style="color: #991b1b; font-weight: 800; text-decoration: line-through;">{{ currency_symbol }}{{ log.old_price_zar }}</div>
+                <div style="font-size: 10px; color: var(--muted);">{{ currency_symbol }}{{ log.old_rate_per_coin }}/coin</div>
+              </td>
+              <td style="padding: 14px 18px; white-space: nowrap;">
+                <div style="color: #15803d; font-weight: 900;">{{ currency_symbol }}{{ log.new_price_zar }}</div>
+                <div style="font-size: 10px; color: #0284c7; font-weight: 700;">{{ currency_symbol }}{{ log.new_rate_per_coin }}/coin</div>
+              </td>
+              <td style="padding: 14px 18px; white-space: nowrap;">
+                {% if log.changed_by %}
+                  <span style="font-size: 12px; font-weight: 600; color: var(--blue);" title="{{ log.changed_by.email }}">
+                    <i class="fa-solid fa-user-shield" style="color: #6366f1;"></i> {{ log.changed_by.full_name|default:log.changed_by.email }}
+                  </span>
+                {% else %}
+                  <span style="color: var(--muted); font-size: 12px;">System</span>
+                {% endif %}
+              </td>
+              <td style="padding: 14px 18px; color: var(--text); font-size: 12px;">
+                {{ log.change_reason|default:"Price adjusted by admin" }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" style="padding: 24px; text-align: center; color: var(--muted);">
+                <i class="fa-solid fa-info-circle" style="margin-right: 6px;"></i> No price adjustments recorded yet. When you adjust bundle prices above, the full change history will be captured here.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- SweetAlert2 Scripts for Financial Settings & Bundle Management -->
+<script>
+  // 1. Save Financial Settings via AJAX
+  const financialForm = document.getElementById('financialSettingsForm');
+  financialForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    Swal.fire({
+      title: 'Saving Settings...',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
+    const formData = new FormData(financialForm);
+    fetch("{% url 'wallet:admin_pricing' %}", {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Settings Saved!',
+          text: data.message,
+          confirmButtonColor: '#16a34a'
+        }).then(() => { window.location.reload(); });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Save Failed',
+          text: data.message || 'Error saving financial settings.',
+          confirmButtonColor: '#dc2626'
+        });
+      }
+    })
+    .catch(() => {
+      Swal.fire({ icon: 'error', title: 'Network Error', text: 'Could not connect to server.', confirmButtonColor: '#dc2626' });
+    });
+  });
+
+  // 2. Open Modal to Create New Bundle
+  function openCreateBundleModal() {
+    Swal.fire({
+      title: 'Create New Coin Bundle',
+      html: `
+        <div style="text-align: left; font-size: 13px; color: #334155;">
+          <div style="margin-bottom: 10px;">
+            <label style="font-weight: 700; display: block; margin-bottom: 4px;">Bundle Name *</label>
+            <input type="text" id="newBundleName" class="swal2-input" placeholder="e.g. Starter Pack, Exam Blitz" style="margin: 0; width: 100%; box-sizing: border-box;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Coins Granted *</label>
+              <input type="number" id="newBundleCoins" min="1" class="swal2-input" placeholder="e.g. 100" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Price in {{ currency_symbol }} *</label>
+              <input type="number" step="0.01" min="1" id="newBundlePrice" class="swal2-input" placeholder="e.g. 99.00" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Badge (Optional)</label>
+              <input type="text" id="newBundleBadge" class="swal2-input" placeholder="e.g. POPULAR, BEST VALUE" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Display Order</label>
+              <input type="number" id="newBundleOrder" class="swal2-input" value="0" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <label style="font-weight: 700; display: block; margin-bottom: 4px;">Description</label>
+            <input type="text" id="newBundleDesc" class="swal2-input" placeholder="e.g. Perfect for term test prep" style="margin: 0; width: 100%; box-sizing: border-box;">
+          </div>
+          <div style="margin-top: 10px;">
+            <label style="font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="newBundleActive" checked style="width: 18px; height: 18px;">
+              Publish bundle as Active immediately
+            </label>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Create Bundle',
+      confirmButtonColor: '#16a34a',
+      cancelButtonText: 'Cancel',
+      cancelButtonColor: '#64748b',
+      preConfirm: () => {
+        const name = document.getElementById('newBundleName').value.trim();
+        const coins = document.getElementById('newBundleCoins').value.trim();
+        const price = document.getElementById('newBundlePrice').value.trim();
+        const badge = document.getElementById('newBundleBadge').value.trim();
+        const order = document.getElementById('newBundleOrder').value.trim();
+        const desc = document.getElementById('newBundleDesc').value.trim();
+        const isActive = document.getElementById('newBundleActive').checked;
+
+        if (!name || !coins || !price) {
+          Swal.showValidationMessage('Name, Coins, and Price are required.');
+          return false;
+        }
+        return { name, coins, price, badge, order, desc, isActive };
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        const v = result.value;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('action', 'create_bundle');
+        formData.append('name', v.name);
+        formData.append('coins', v.coins);
+        formData.append('price_zar', v.price);
+        formData.append('badge', v.badge);
+        formData.append('description', v.desc);
+        formData.append('order', v.order);
+        formData.append('is_active', v.isActive ? '1' : '0');
+        formData.append('is_ajax', '1');
+
+        fetch("{% url 'wallet:admin_pricing' %}", {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'success') {
+            Swal.fire({ icon: 'success', title: 'Bundle Created!', text: data.message, confirmButtonColor: '#16a34a' })
+            .then(() => window.location.reload());
+          } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#dc2626' });
+          }
+        });
+      }
+    });
+  }
+
+  // 3. Open Modal to Edit All Fields of a Bundle
+  function openEditBundleModal(id, name, coins, price, badge, desc, order, isActive) {
+    Swal.fire({
+      title: `Edit Bundle: ${name}`,
+      html: `
+        <div style="text-align: left; font-size: 13px; color: #334155;">
+          <div style="margin-bottom: 10px;">
+            <label style="font-weight: 700; display: block; margin-bottom: 4px;">Bundle Name *</label>
+            <input type="text" id="editBundleName" class="swal2-input" value="${name}" style="margin: 0; width: 100%; box-sizing: border-box;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Coins Granted *</label>
+              <input type="number" id="editBundleCoins" min="1" class="swal2-input" value="${coins}" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Price in {{ currency_symbol }} *</label>
+              <input type="number" step="0.01" min="1" id="editBundlePrice" class="swal2-input" value="${price}" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Badge</label>
+              <input type="text" id="editBundleBadge" class="swal2-input" value="${badge}" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="font-weight: 700; display: block; margin-bottom: 4px;">Display Order</label>
+              <input type="number" id="editBundleOrder" class="swal2-input" value="${order}" style="margin: 0; width: 100%; box-sizing: border-box;">
+            </div>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <label style="font-weight: 700; display: block; margin-bottom: 4px;">Description</label>
+            <input type="text" id="editBundleDesc" class="swal2-input" value="${desc}" style="margin: 0; width: 100%; box-sizing: border-box;">
+          </div>
+          <div style="margin-bottom: 10px;">
+            <label style="font-weight: 700; display: block; margin-bottom: 4px;">Reason for Change (Audit Note)</label>
+            <input type="text" id="editBundleReason" class="swal2-input" placeholder="e.g. End of term discount or pack adjustments" style="margin: 0; width: 100%; box-sizing: border-box;">
+          </div>
+          <div style="margin-top: 10px;">
+            <label style="font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="editBundleActive" ${isActive ? 'checked' : ''} style="width: 18px; height: 18px;">
+              Active & visible to learners
+            </label>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Save Bundle Changes',
+      confirmButtonColor: '#2563eb',
+      cancelButtonText: 'Cancel',
+      cancelButtonColor: '#64748b',
+      preConfirm: () => {
+        const uName = document.getElementById('editBundleName').value.trim();
+        const uCoins = document.getElementById('editBundleCoins').value.trim();
+        const uPrice = document.getElementById('editBundlePrice').value.trim();
+        const uBadge = document.getElementById('editBundleBadge').value.trim();
+        const uOrder = document.getElementById('editBundleOrder').value.trim();
+        const uDesc = document.getElementById('editBundleDesc').value.trim();
+        const uReason = document.getElementById('editBundleReason').value.trim();
+        const uActive = document.getElementById('editBundleActive').checked;
+
+        if (!uName || !uCoins || !uPrice) {
+          Swal.showValidationMessage('Name, Coins, and Price are required.');
+          return false;
+        }
+        return { uName, uCoins, uPrice, uBadge, uOrder, uDesc, uReason, uActive };
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        const v = result.value;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('action', 'save_bundle');
+        formData.append('bundle_id', id);
+        formData.append('name', v.uName);
+        formData.append('coins', v.uCoins);
+        formData.append('price_zar', v.uPrice);
+        formData.append('badge', v.uBadge);
+        formData.append('description', v.uDesc);
+        formData.append('order', v.uOrder);
+        formData.append('change_reason', v.uReason);
+        formData.append('is_active', v.uActive ? '1' : '0');
+        formData.append('is_ajax', '1');
+
+        fetch("{% url 'wallet:admin_pricing' %}", {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'success') {
+            Swal.fire({ icon: 'success', title: 'Bundle Updated!', text: data.message, confirmButtonColor: '#16a34a' })
+            .then(() => window.location.reload());
+          } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#dc2626' });
+          }
+        });
+      }
+    });
+  }
+
+  // 4. Delete Bundle
+  function deleteBundle(id, name) {
+    Swal.fire({
+      title: `Delete Bundle?`,
+      html: `Are you sure you want to permanently delete the coin bundle <b>${name}</b>? Learners will no longer be able to select this pack.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Delete Bundle',
+      confirmButtonColor: '#dc2626',
+      cancelButtonText: 'Cancel',
+      cancelButtonColor: '#64748b'
+    }).then(res => {
+      if (res.isConfirmed) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('action', 'delete_bundle');
+        formData.append('bundle_id', id);
+        formData.append('is_ajax', '1');
+
+        fetch("{% url 'wallet:admin_pricing' %}", {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'success') {
+            Swal.fire({ icon: 'success', title: 'Deleted!', text: data.message, confirmButtonColor: '#16a34a' })
+            .then(() => window.location.reload());
+          } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#dc2626' });
+          }
+        });
+      }
+    });
+  }
+</script>
+{% endblock %}
