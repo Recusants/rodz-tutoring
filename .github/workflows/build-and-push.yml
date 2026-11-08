@@ -139,8 +139,7 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY || secrets.AWS_SSH_KEY }}
           port: ${{ secrets.AWS_PORT || 22 }}
           source: "docker-compose.prod.yml"
-          target: "/home/${{ secrets.AWS_USER || 'ubuntu' }}/rodz-tutoring/docker-compose.yml"
-          strip_components: 1
+          target: "/home/${{ secrets.AWS_USER || 'ubuntu' }}/rodz-tutoring"
 
       - name: Execute Remote AWS Update via SSH
         if: steps.check-aws.outputs.configured == 'true'
@@ -159,6 +158,14 @@ jobs:
             set -e
             mkdir -p $APP_DIR
             cd $APP_DIR
+
+            # Fix if docker-compose.yml was previously created as a directory by scp
+            if [ -d "docker-compose.yml" ]; then
+              rm -rf docker-compose.yml
+            fi
+            if [ -f "docker-compose.prod.yml" ]; then
+              cp -f docker-compose.prod.yml docker-compose.yml
+            fi
 
             echo "[1/4] Authenticating with Docker Hub if credentials provided..."
             if [ -n "$DOCKER_USER" ] && [ -n "$DOCKER_PASS" ]; then
