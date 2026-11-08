@@ -20,17 +20,26 @@ if %ERRORLEVEL% neq 0 (
 
 REM 2. Verify or Initialize Git Repository
 if not exist ".git" (
-    echo [INFO] Git repository is not yet initialized in this folder.
-    choice /C YN /M "Would you like to initialize git now"
-    if !ERRORLEVEL! neq 1 exit /b 0
+    echo [*] Initializing Git repository...
     git init
     git branch -M main
-    set /p "GIT_REMOTE=Enter GitHub remote URL: "
+)
+
+git remote get-url origin >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo ============================================================
+    echo [ACTION NEEDED] GitHub Remote URL not configured yet.
+    echo ============================================================
+    set /p "GIT_REMOTE=Enter your GitHub repository URL (e.g. https://github.com/Avail-Technologies-Pvt-Ltd/rodz-tutoring.git): "
     if not "!GIT_REMOTE!"=="" (
         git remote add origin !GIT_REMOTE!
-        echo [OK] Initialized git repository with remote origin: !GIT_REMOTE!
+        echo [OK] Remote origin set to: !GIT_REMOTE!
+    ) else (
+        echo [ERROR] No remote URL provided. Aborting.
+        pause
+        exit /b 1
     )
-    echo.
 )
 
 REM 3. Determine current branch
