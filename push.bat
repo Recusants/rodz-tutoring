@@ -56,7 +56,7 @@ if exist "version.txt" (
 )
 
 REM Auto-calculate next patch version via PowerShell
-for /f "tokens=*" %%v in ('powershell -NoProfile -Command "$v = '%CURR_VER%'.Trim().TrimStart('v'); $parts = $v.Split('.'); if ($parts.Length -eq 3) { [int]$p = $parts[2] + 1; $parts[0] + '.' + $parts[1] + '.' + $p } else { '1.0.1' }"') do set "NEXT_VER=%%v"
+for /f "tokens=*" %%v in ('powershell -NoProfile -Command "$v = '%CURR_VER%'.Trim().TrimStart('v'); $parts = $v.Split('.'); if ($parts.Length -eq 3) { $p = ([int]$parts[2]) + 1; $parts[0] + '.' + $parts[1] + '.' + $p } else { '1.0.1' }"') do set "NEXT_VER=%%v"
 
 echo ------------------------------------------------------------
 echo  VERSION RELEASE MANAGEMENT
@@ -134,7 +134,11 @@ echo [4/5] Creating Git release tag: !TAG_NAME!...
 git tag -fa !TAG_NAME! -m "Release !TAG_NAME!"
 
 echo [5/5] Pushing code and tag to GitHub origin %CURRENT_BRANCH%...
-git push origin %CURRENT_BRANCH% !TAG_NAME! --force
+git -c http.version=HTTP/1.1 -c http.postBuffer=524288000 push origin %CURRENT_BRANCH% !TAG_NAME! --force
+if %ERRORLEVEL% neq 0 (
+    echo [WARN] Initial push failed; retrying over HTTP/1.1...
+    git -c http.version=HTTP/1.1 -c http.postBuffer=524288000 push origin %CURRENT_BRANCH% !TAG_NAME! --force
+)
 
 if %ERRORLEVEL% neq 0 (
     echo.

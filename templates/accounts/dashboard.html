@@ -610,7 +610,7 @@
                       {{ tx.get_clean_description }}
                       {% if tx.counterparty %}
                         <span class="badge outline" style="font-size: 10px; margin-left: 6px; background: #f8fafc; color: var(--blue); border-color: #cbd5e1;">
-                          <i class="fa-solid fa-user"></i> {{ tx.counterparty.get_full_name|default:tx.counterparty.username }}
+                          <i class="fa-solid fa-user"></i> {{ tx.counterparty.full_name|default:tx.counterparty.email }}
                         </span>
                       {% endif %}
                     </td>

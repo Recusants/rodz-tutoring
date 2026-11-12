@@ -1085,14 +1085,21 @@ class SeedCommandTest(TestCase):
                 self.assertEqual(TermsContent.objects.count(), 1)
                 self.assertEqual(SystemWallet.objects.count(), 1)
 
-                # Verify every user type & tutor status exists and authenticates
-                self.assertTrue(self.client.login(email='admin@rodztutoring.co.za', password='RodzAdmin2026!'))
-                self.assertTrue(self.client.login(email='operations@rodztutoring.co.za', password='RodzAdmin2026!'))
-                self.assertTrue(self.client.login(email='tutor@rodztutoring.co.za', password='RodzTutor2026!'))
-                self.assertTrue(self.client.login(email='peer.tutor1@rodztutoring.co.za', password='RodzTutor2026!'))
-                self.assertTrue(self.client.login(email='applicant.pending1@rodztutoring.co.za', password='RodzStudent2026!'))
-                self.assertTrue(self.client.login(email='applicant.rejected1@rodztutoring.co.za', password='RodzStudent2026!'))
-                self.assertTrue(self.client.login(email='student@rodztutoring.co.za', password='RodzStudent2026!'))
+                # Verify every user type & tutor status exists, authenticates, and loads dashboard cleanly
+                test_accounts = [
+                    ('admin@rodztutoring.co.za', 'RodzAdmin2026!'),
+                    ('operations@rodztutoring.co.za', 'RodzAdmin2026!'),
+                    ('tutor@rodztutoring.co.za', 'RodzTutor2026!'),
+                    ('peer.tutor1@rodztutoring.co.za', 'RodzTutor2026!'),
+                    ('applicant.pending1@rodztutoring.co.za', 'RodzStudent2026!'),
+                    ('applicant.rejected1@rodztutoring.co.za', 'RodzStudent2026!'),
+                    ('student@rodztutoring.co.za', 'RodzStudent2026!'),
+                ]
+                dashboard_url = reverse('accounts:dashboard')
+                for email, pwd in test_accounts:
+                    self.assertTrue(self.client.login(email=email, password=pwd), f"Login failed for {email}")
+                    dash_resp = self.client.get(dashboard_url)
+                    self.assertEqual(dash_resp.status_code, 200, f"Dashboard failed for {email}")
 
                 student_coins_before = StudentWallet.objects.get(user__email='student@rodztutoring.co.za').coins
 
