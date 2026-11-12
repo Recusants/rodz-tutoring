@@ -38,6 +38,13 @@ if [ "$NEEDS_SETUP" = true ]; then
         python manage.py collectstatic --noinput
         echo "[OK] Static files collected!"
     fi
+
+    if [ "${AUTO_SEED:-True}" = "True" ] || [ "${AUTO_SEED:-True}" = "true" ] || [ "${AUTO_SEED:-True}" = "1" ]; then
+        echo "Seeding Rodz Tutoring database (idempotent)..."
+        python manage.py seed_rodz
+        echo "[OK] Database seeding complete!"
+    fi
+
     mkdir -p /app/staticfiles
     echo "$CURRENT_HASH" > "$MARKER_FILE"
 fi

@@ -1022,6 +1022,92 @@ startxref
         self.assertEqual(response.status_code, 403)
 
 
+class SeedCommandTest(TestCase):
+    def test_seed_rodz_populates_all_models_and_is_idempotent(self):
+        import tempfile
+        from io import StringIO
+        from django.core.management import call_command
+        from django.test import override_settings
+        from content_hub.models import (
+            AboutContent,
+            ContactInfo,
+            Curriculum,
+            HowToGuide,
+            HowToStep,
+        )
+        from quizzes.models import Choice, Question, Quiz, QuizAttempt
+        from wallet.models import (
+            CoinBundle,
+            CoinPaymentRequest,
+            CoinPriceChangeLog,
+            CoinTransaction,
+            ContentUnlock,
+            CourseUnlock,
+            PaymentMethod,
+            StudentWallet,
+            SystemWallet,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_media:
+            with override_settings(MEDIA_ROOT=tmp_media):
+                out = StringIO()
+                call_command('seed_rodz', stdout=out)
+
+                # Verify >= 10 objects on all multi-record models
+                model_classes = [
+                    CustomUser,
+                    Curriculum,
+                    Subject,
+                    ContentItem,
+                    Course,
+                    HowToGuide,
+                    HowToStep,
+                    Quiz,
+                    Question,
+                    Choice,
+                    QuizAttempt,
+                    StudentWallet,
+                    CoinBundle,
+                    PaymentMethod,
+                    CoinTransaction,
+                    ContentUnlock,
+                    CourseUnlock,
+                    CoinPaymentRequest,
+                    CoinPriceChangeLog,
+                ]
+                first_counts = {cls.__name__: cls.objects.count() for cls in model_classes}
+                for name, count in first_counts.items():
+                    self.assertGreaterEqual(count, 10, f"Expected >= 10 records for {name}, got {count}")
+
+                # Verify singletons exist cleanly
+                self.assertEqual(AboutContent.objects.count(), 1)
+                self.assertEqual(ContactInfo.objects.count(), 1)
+                self.assertEqual(TermsContent.objects.count(), 1)
+                self.assertEqual(SystemWallet.objects.count(), 1)
+
+                # Verify every user type & tutor status exists and authenticates
+                self.assertTrue(self.client.login(email='admin@rodztutoring.co.za', password='RodzAdmin2026!'))
+                self.assertTrue(self.client.login(email='operations@rodztutoring.co.za', password='RodzAdmin2026!'))
+                self.assertTrue(self.client.login(email='tutor@rodztutoring.co.za', password='RodzTutor2026!'))
+                self.assertTrue(self.client.login(email='peer.tutor1@rodztutoring.co.za', password='RodzTutor2026!'))
+                self.assertTrue(self.client.login(email='applicant.pending1@rodztutoring.co.za', password='RodzStudent2026!'))
+                self.assertTrue(self.client.login(email='applicant.rejected1@rodztutoring.co.za', password='RodzStudent2026!'))
+                self.assertTrue(self.client.login(email='student@rodztutoring.co.za', password='RodzStudent2026!'))
+
+                student_coins_before = StudentWallet.objects.get(user__email='student@rodztutoring.co.za').coins
+
+                # Run seed_rodz a second time to verify strict idempotency
+                call_command('seed_rodz', stdout=StringIO())
+
+                second_counts = {cls.__name__: cls.objects.count() for cls in model_classes}
+                self.assertEqual(first_counts, second_counts)
+                self.assertEqual(
+                    StudentWallet.objects.get(user__email='student@rodztutoring.co.za').coins,
+                    student_coins_before,
+                )
+
+
+
 
 
 

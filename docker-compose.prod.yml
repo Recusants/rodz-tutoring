@@ -11,6 +11,7 @@ services:
       - SQLITE_PATH=/app/data/db.sqlite3
       - PYTHONUNBUFFERED=1
       - GUNICORN_WORKERS=${GUNICORN_WORKERS:-0}
+      - AUTO_SEED=${AUTO_SEED:-True}
     volumes:
       - rodz_prod_media:/app/media
       - rodz_prod_data:/app/data
